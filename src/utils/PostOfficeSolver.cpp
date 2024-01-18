@@ -14,8 +14,8 @@ int PostOfficeResult::getAppCost() const {
 }
 
 std::vector<int>
-PostOfficeSolver::initRoundAndRepresentation(std::vector<int> &distribution, std::vector<int> &representation,
-                                             std::vector<int> &round) {
+PostOfficeSolver::initRoundAndRepresentation(std::vector<int> &distribution, std::vector<int> representation,
+                                             std::vector<int> round) {
     std::vector<int> preNonZerosCount(distribution.size());   // 当前及前面的非零个数（包括当前）
     std::vector<int> postNonZerosCount(distribution.size());  // 当前后面的非零个数（不包括当前）
     std::vector<int> totalCountAndNonZerosCount = calTotalCountAndNonZerosCounts(distribution, preNonZerosCount, postNonZerosCount);

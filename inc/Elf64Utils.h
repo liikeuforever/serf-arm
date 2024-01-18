@@ -5,7 +5,6 @@
 
 class Elf64Utils {
 private:
-    long END_SIGN = 0x7ff8000000000000L;
     constexpr static int f[] = {0, 4, 7, 10, 14, 17, 20, 24, 27, 30, 34, 37, 40, 44, 47, 50, 54, 57, 60, 64, 67};
     constexpr static double map10iP[] = {1.0, 1.0E1, 1.0E2, 1.0E3, 1.0E4, 1.0E5, 1.0E6, 1.0E7,
                                          1.0E8, 1.0E9, 1.0E10, 1.0E11, 1.0E12, 1.0E13, 1.0E14,
@@ -19,6 +18,8 @@ private:
     const double LOG_2_10 = log(10) / log(2);
 
 public:
+    static const long END_SIGN = 0x7ff8000000000000L;
+
     int getFAlpha(int alpha) const;
     static int getSignificantCount(double v, int sp);
     static double get10iP(int i);
