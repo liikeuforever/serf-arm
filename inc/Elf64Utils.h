@@ -19,7 +19,7 @@ private:
     const double LOG_2_10 = log(10) / log(2);
 
 public:
-    int getFAlpha(int alpha) const;
+    static int getFAlpha(int alpha);
     static int getSignificantCount(double v, int sp);
     static double get10iP(int i);
     static double get10iN(int i);

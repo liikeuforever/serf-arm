@@ -1,0 +1,14 @@
+//
+// Created by czc on 18/01/24.
+//
+
+#ifndef SERFNATIVE_SERFXORDECOMPRESSOR_H
+#define SERFNATIVE_SERFXORDECOMPRESSOR_H
+
+
+class SerfXORDecompressor {
+
+};
+
+
+#endif //SERFNATIVE_SERFXORDECOMPRESSOR_H
