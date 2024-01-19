@@ -21,13 +21,15 @@ public:
         }
     }
 
-    void writeBit(bool bit) {
+    int writeBit(bool bit) {
         buffer_ = (buffer_ << 1) | (bit & 1);
         bitsAvailable_--;
 
         if (bitsAvailable_ == 0) {
             flush();
         }
+
+        return 1;
     }
 
     void writeLong(long data, size_t numBits) {
