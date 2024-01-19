@@ -15,12 +15,11 @@ private:
     constexpr static long mapSPGreater1[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
     constexpr static double mapSPLess1[] = {1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001,
                                           0.000000001, 0.0000000001};
-    const double LOG_2_10 = log(10) / log(2);
 
 public:
     static const long END_SIGN = 0x7ff8000000000000L;
-
-    int getFAlpha(int alpha) const;
+    static double LOG_2_10;
+    static int getFAlpha(int alpha);
     static int getSignificantCount(double v, int sp);
     static double get10iP(int i);
     static double get10iN(int i);

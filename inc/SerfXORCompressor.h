@@ -114,7 +114,7 @@ public:
         this->updatePositions = true;
     }
 
-private:
+public:
     int numberOfTrailingZeros(long value) {
         if (value == 0) {
             return sizeof(value) * 8;

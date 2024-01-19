@@ -1,7 +1,7 @@
 #include "Elf64Utils.h"
 #include <stdexcept>
 
-int Elf64Utils::getFAlpha(int alpha) const {
+int Elf64Utils::getFAlpha(int alpha) {
     if (alpha < 0) {
         throw std::invalid_argument("Alpha should be greater than 0");
     }
