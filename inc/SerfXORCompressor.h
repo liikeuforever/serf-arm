@@ -150,7 +150,7 @@ public:
         int trailingZeros = numberOfTrailingZeros(value);
         out.writeInt(trailingZeros, 7);
         if (trailingZeros < 64) {
-            out.writeLong(storedVal >> (trailingZeros + 1), 63 - trailingZeros);
+            out.writeLong(static_cast<unsigned long>(storedVal) >> (trailingZeros + 1), 63 - trailingZeros);
             return 70 - trailingZeros;
         } else {
             return 7;
@@ -180,9 +180,9 @@ public:
                 int len = 1 + centerBits;
                 if (len > 64) {
                     out.writeInt(1, 1);
-                    out.writeLong(xorResult >> storedTrailingZeros, centerBits);
+                    out.writeLong(static_cast<unsigned long>(xorResult) >> storedTrailingZeros, centerBits);
                 } else {
-                    out.writeLong((1L << centerBits) | (xorResult >> storedTrailingZeros), 1 + centerBits);
+                    out.writeLong((1L << centerBits) | (static_cast<unsigned long>(xorResult) >> storedTrailingZeros), 1 + centerBits);
                 }
                 thisSize += len;
             } else {
@@ -195,11 +195,11 @@ public:
                 if (len > 64) {
                     out.writeInt((leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue)
                                  | trailingRepresentation[storedTrailingZeros], 2 + leadingBitsPerValue + trailingBitsPerValue);
-                    out.writeLong(xorResult >> storedTrailingZeros, centerBits);
+                    out.writeLong(static_cast<unsigned long>(xorResult) >> storedTrailingZeros, centerBits);
                 } else {
                     out.writeLong(
                             ((((long) leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue) |
-                              trailingRepresentation[storedTrailingZeros]) << centerBits) | (xorResult >> storedTrailingZeros),
+                              trailingRepresentation[storedTrailingZeros]) << centerBits) | (static_cast<unsigned long>(xorResult) >> storedTrailingZeros),
                     len
                     );
                 }

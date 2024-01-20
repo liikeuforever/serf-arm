@@ -13,11 +13,12 @@ private:
     double storedCompressionRatio = 0;
     int fAlpha;
     double maxDiff;
-    double storedErasedDoubleValue = static_cast<double>(0x7ff8000000000000L);
+    double storedErasedDoubleValue = longBitsToDouble(0x7ff8000000000000L);
     long storedErasedLongValue = 0x7ff8000000000000L;
 
 public:
     SerfCompressor(int alpha) {
+        static_assert(sizeof(long) == 8);
         fAlpha = 1075 - Elf64Utils::getFAlpha(alpha);
         maxDiff = Elf64Utils::get10iN(alpha);
     }
@@ -88,7 +89,10 @@ public:
     }
 
     std::vector<char> getBytes() {
-        return xor_compressor.getOut();
+        int byteCount = ceil(compressedSizeInBits / 8.0);
+        std::vector<char> result(byteCount);
+        std::copy_n(xor_compressor.getOut().begin(), byteCount, result.begin());
+        return result;
     }
 
     void close() {
@@ -103,7 +107,6 @@ public:
     void refresh() {
         compressedSizeInBits = 0;
         numberOfValues = 0;
-
         xor_compressor.refresh();        // note this refresh should be at the last
     }
 };
