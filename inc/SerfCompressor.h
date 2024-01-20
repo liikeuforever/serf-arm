@@ -11,16 +11,15 @@ private:
     int compressedSizeInBits = 0;
     int numberOfValues = 0;
     double storedCompressionRatio = 0;
-    static int fAlpha;
-    static double maxDiff;
+    int fAlpha;
+    double maxDiff;
     double storedErasedDoubleValue = static_cast<double>(0x7ff8000000000000L);
     long storedErasedLongValue = 0x7ff8000000000000L;
 
 public:
-    SerfCompressor(SerfXORCompressor xorCompressor, int alpha) {
-        Elf64Utils::LOG_2_10 = log(10) / log(2);
-        SerfCompressor::fAlpha = 1075 - Elf64Utils::getFAlpha(alpha);
-        SerfCompressor::maxDiff = Elf64Utils::get10iN(alpha);
+    SerfCompressor(int alpha) {
+        fAlpha = 1075 - Elf64Utils::getFAlpha(alpha);
+        maxDiff = Elf64Utils::get10iN(alpha);
     }
 
     bool isInfinite(double value) {
@@ -82,6 +81,30 @@ public:
         }
 
         compressedSizeInBits += xor_compressor.addValue(vPrimeLong);
+    }
+
+    long getCompressedSizeInBits() {
+        return compressedSizeInBits;
+    }
+
+    std::vector<char> getBytes() {
+        return xor_compressor.getOut();
+    }
+
+    void close() {
+        double thisCompressionRatio = compressedSizeInBits / (numberOfValues * 64.0);
+        if (storedCompressionRatio < thisCompressionRatio) {
+            xor_compressor.setDistribution();
+        }
+        storedCompressionRatio = thisCompressionRatio;
+        compressedSizeInBits += xor_compressor.close();
+    }
+
+    void refresh() {
+        compressedSizeInBits = 0;
+        numberOfValues = 0;
+
+        xor_compressor.refresh();        // note this refresh should be at the last
     }
 };
 

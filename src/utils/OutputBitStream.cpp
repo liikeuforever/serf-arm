@@ -1,6 +1,6 @@
 #include "OutputBitStream.h"
 
-void OutputBitStream::writeInt(int data, size_t numBits) {
+int OutputBitStream::writeInt(int data, size_t numBits) {
     while (numBits > 0) {
         buffer_ = (buffer_ << 1) | ((data >> (numBits - 1)) & 1);
         bitsAvailable_--;
@@ -10,6 +10,7 @@ void OutputBitStream::writeInt(int data, size_t numBits) {
             flush();
         }
     }
+    return numBits;
 }
 
 int OutputBitStream::writeBit(bool bit) {

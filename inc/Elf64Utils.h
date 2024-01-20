@@ -15,7 +15,7 @@ private:
 
 public:
     static const long END_SIGN = 0x7ff8000000000000L;
-    static double LOG_2_10;
+    constexpr static double LOG_2_10 = 3.32192809488736263f;
     static int getFAlpha(int alpha);
     static double get10iP(int i);
     static double get10iN(int i);

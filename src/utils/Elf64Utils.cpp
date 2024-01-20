@@ -1,4 +1,5 @@
 #include <stdexcept>
+
 #include "Elf64Utils.h"
 
 int Elf64Utils::getFAlpha(int alpha) {
