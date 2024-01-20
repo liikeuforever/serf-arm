@@ -12,27 +12,6 @@ int Elf64Utils::getFAlpha(int alpha) {
     }
 }
 
-int Elf64Utils::getSignificantCount(double v, int sp) {
-    int i;
-    if (sp >= 0) {
-        i = 1;
-    } else {
-        i = -sp;
-    }
-    double temp = v * get10iP(i);
-    while ((long) temp != temp) {
-        i++;
-        temp = v * get10iP(i);
-    }
-    // There are some bugs for those with high significand, i.e., 0.23911204406033099
-    // So we should further check
-    if (temp / get10iP(i) != v) {
-        return 17;
-    } else {
-        return sp + i + 1;
-    }
-}
-
 double Elf64Utils::get10iP(int i) {
     if (i < 0) {
         throw std::invalid_argument("The argument should be greater than 0");

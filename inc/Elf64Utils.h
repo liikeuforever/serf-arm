@@ -20,7 +20,6 @@ public:
     static const long END_SIGN = 0x7ff8000000000000L;
     static double LOG_2_10;
     static int getFAlpha(int alpha);
-    static int getSignificantCount(double v, int sp);
     static double get10iP(int i);
     static double get10iN(int i);
 };
