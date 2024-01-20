@@ -1,5 +1,5 @@
-#include "Elf64Utils.h"
 #include <stdexcept>
+#include "Elf64Utils.h"
 
 int Elf64Utils::getFAlpha(int alpha) {
     if (alpha < 0) {
