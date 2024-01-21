@@ -1,6 +1,7 @@
 #include "OutputBitStream.h"
 
 int OutputBitStream::writeInt(int data, size_t numBits) {
+    int count = static_cast<int>(numBits);
     while (numBits > 0) {
         buffer_ |= (((data >> (numBits - 1)) & 1) << (bitsAvailable_ - 1));
         bitsAvailable_--;
@@ -10,7 +11,7 @@ int OutputBitStream::writeInt(int data, size_t numBits) {
             flush();
         }
     }
-    return numBits;
+    return count;
 }
 
 int OutputBitStream::writeBit(bool bit) {
