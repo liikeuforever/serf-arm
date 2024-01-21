@@ -61,8 +61,7 @@ int SerfXORCompressor::numberOfTrailingZeros(long value) {
     if (y != 0) {
         n = n - 32;
         x = y;
-    }
-    else x = (int) (static_cast<unsigned long>(value) >> 32);
+    } else x = (int) (static_cast<unsigned long>(value) >> 32);
     y = x << 16;
     if (y != 0) {
         n = n - 16;
@@ -184,4 +183,8 @@ int SerfXORCompressor::compressValue(long value) {
         storedVal = value;
     }
     return thisSize;
+}
+
+SerfXORCompressor::SerfXORCompressor() {
+
 }

@@ -11,10 +11,15 @@ public:
     OutputBitStream(int bufSize) : buffer_(0), bitsAvailable_(8) {
         output_.reserve(bufSize);
     }
+
     int writeInt(int data, size_t numBits);
+
     int writeBit(bool bit);
+
     void writeLong(long data, size_t numBits);
+
     std::vector<char> getBuffer();
+
     void flush();
 
 private:

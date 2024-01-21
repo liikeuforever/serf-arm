@@ -9,8 +9,11 @@ class InputBitStream {
 public:
     InputBitStream(const char *data, size_t size) : data_(data), size_(size), index_(0), buffer_(0),
                                                     bitsAvailable_(0) {}
+
     int readInt(size_t numBits);
+
     long readLong(size_t numBits);
+
     int readBit();
 
 private:

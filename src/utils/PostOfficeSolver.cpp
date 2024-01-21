@@ -18,7 +18,8 @@ PostOfficeSolver::initRoundAndRepresentation(std::vector<int> &distribution, std
                                              std::vector<int> round) {
     std::vector<int> preNonZerosCount(distribution.size());   // 当前及前面的非零个数（包括当前）
     std::vector<int> postNonZerosCount(distribution.size());  // 当前后面的非零个数（不包括当前）
-    std::vector<int> totalCountAndNonZerosCount = calTotalCountAndNonZerosCounts(distribution, preNonZerosCount, postNonZerosCount);
+    std::vector<int> totalCountAndNonZerosCount = calTotalCountAndNonZerosCounts(distribution, preNonZerosCount,
+                                                                                 postNonZerosCount);
 
     int maxZ = std::min(positionLength2Bits[totalCountAndNonZerosCount[1]], 5); // 最多用5个bit来表示
 
@@ -75,7 +76,7 @@ PostOfficeSolver::calTotalCountAndNonZerosCounts(const std::vector<int> &arr, st
     for (int i = 0; i < arr.size(); ++i) {
         outPostNonZerosCount[i] = nonZerosCount - outPreNonZerosCount[i];
     }
-    return std::vector<int> {totalCount, nonZerosCount};
+    return std::vector<int>{totalCount, nonZerosCount};
 }
 
 PostOfficeResult
@@ -181,7 +182,7 @@ PostOfficeSolver::buildPostOffice(std::vector<int> &arr, int num, int nonZerosCo
 
 int PostOfficeSolver::writePositions(std::vector<int> positions, OutputBitStream out) {
     int thisSize = out.writeInt(positions.size(), 5);
-    for (int p : positions) {
+    for (int p: positions) {
         thisSize += out.writeInt(p, 6);
     }
     return thisSize;
