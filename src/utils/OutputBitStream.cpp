@@ -14,7 +14,7 @@ int OutputBitStream::writeInt(int data, size_t numBits) {
 }
 
 int OutputBitStream::writeBit(bool bit) {
-    buffer_ = (buffer_ << 1) | (bit & 1);
+    buffer_ |= ((bit & 1) << (bitsAvailable_ - 1));
     bitsAvailable_--;
 
     if (bitsAvailable_ == 0) {
