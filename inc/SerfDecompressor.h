@@ -14,12 +14,11 @@ private:
     SerfXORDecompressor xor_decompressor;
 
 public:
-    SerfDecompressor() = default;
 
     std::vector<double> decompress() {
-        std::vector<double> values(1024);
+        std::vector<double> values;
         double value;
-        while ((value = nextValue()) != -1) {
+        while (!isnan(value = xor_decompressor.readValue())) {
             values.emplace_back(value);
         }
         return values;
@@ -35,6 +34,10 @@ public:
 
     void refresh() {
         xor_decompressor.refresh();
+    }
+
+    bool available() {
+        return xor_decompressor.available();
     }
 };
 

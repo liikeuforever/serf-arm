@@ -15,7 +15,7 @@ private:
     int storedTrailingZeros = std::numeric_limits<int>::max();
     bool first = true;
     bool endOfStream = false;
-    InputBitStream in;
+    InputBitStream in = InputBitStream(nullptr, 0);
     std::vector<int> leadingRepresentation = {0, 8, 12, 16, 18, 20, 22, 24};
     std::vector<int> trailingRepresentation = {0, 22, 28, 32, 36, 40, 42, 46};
     int leadingBitsPerValue = 3;
@@ -23,7 +23,9 @@ private:
 
 public:
 
-    SerfXORDecompressor() = default;
+    SerfXORDecompressor() {
+        in = InputBitStream(nullptr, 0);
+    }
 
     void initLeadingRepresentation() {
         int num = in.readInt(5);
@@ -107,11 +109,11 @@ public:
 
     double readValue() {
         next();
-        if (endOfStream) {
-            // return null in java here, this needs refactoring
-            return -1;
-        }
         return longBitsToDouble(storedVal);
+    }
+
+    bool available() const {
+        return (storedVal != Elf64Utils::END_SIGN);
     }
 
 private:

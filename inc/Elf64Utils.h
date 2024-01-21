@@ -2,6 +2,7 @@
 #define SERFNATIVE_ELF64UTILS_H
 
 #include <cmath>
+#include <string>
 
 class Elf64Utils {
 private:
@@ -17,7 +18,6 @@ public:
     static const long END_SIGN = 0x7ff8000000000000L;
     constexpr static double LOG_2_10 = 3.32192809488736263f;
     static int getFAlpha(int alpha);
-    static double get10iP(int i);
     static double get10iN(int i);
 };
 

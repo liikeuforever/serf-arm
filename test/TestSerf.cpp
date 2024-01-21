@@ -2,9 +2,9 @@
 #pragma once
 
 #include <iostream>
-#include <bitset>
 
 #include "SerfCompressor.h"
+#include "SerfDecompressor.h"
 
 using std::cout, std::endl;
 
@@ -14,10 +14,13 @@ int main() {
     compressor.addValue(0.11);
     compressor.close();
 
-    std::vector<char> result = compressor.getBytes();
-    for (const auto &item: result) {
-        std::bitset<8> bin(item);
-        cout << bin << endl;
+    std::vector<char> compressed_data = compressor.getBytes();
+
+    SerfDecompressor decompressor;
+    decompressor.setBytes(compressed_data.data(), compressed_data.size());
+    for (const auto &item: decompressor.decompress()) {
+        cout << item << endl;
     }
+
     return 0;
 }

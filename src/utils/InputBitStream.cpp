@@ -1,53 +1,42 @@
 #include "InputBitStream.h"
 
 int InputBitStream::readInt(size_t numBits) {
+    if (numBits <= 0 || numBits > 32) {
+        return -1;
+    }
     int result = 0;
-    while (numBits > 0) {
-        // Load more data into buffer when bits in buffer are less than `numBits`
+    for (int i = 0; i < numBits; ++i) {
         if (bitsAvailable_ == 0) {
-            if (index_ < size_) {
-                buffer_ = static_cast<unsigned char>(data_[index_]);
-                bitsAvailable_ = 8;
-                index_++;
-            } else {
-                // Input data runs out
-                break;
+            if (index_ >= size_) {
+                return -1;
             }
+
+            buffer_ = data_[index_++];
+            bitsAvailable_ = 8;
         }
 
-        // read one bit from buffer
-        int bit = (buffer_ >> (bitsAvailable_ - 1)) & 1;
-        // add this bit to result
-        result = (result << 1) | bit;
-        // update self status
+        result = (result << 1) | ((buffer_ >> (bitsAvailable_ - 1)) & 1);
         bitsAvailable_--;
-        numBits--;
     }
     return result;
 }
 
 long InputBitStream::readLong(size_t numBits) {
-    int result = 0;
-    while (numBits > 0) {
-        // Load more data into buffer when bits in buffer are less than `numBits`
+    if (numBits <= 0 || numBits > 64) {
+        return -1;
+    }
+    long result = 0;
+    for (int i = 0; i < numBits; ++i) {
         if (bitsAvailable_ == 0) {
-            if (index_ < size_) {
-                buffer_ = static_cast<unsigned char>(data_[index_]);
-                bitsAvailable_ = 8;
-                index_++;
-            } else {
-                // Input data runs out
-                break;
+            if (index_ >= size_) {
+                return -1;
             }
-        }
 
-        // read one bit from buffer
-        int bit = (buffer_ >> (bitsAvailable_ - 1)) & 1;
-        // add this bit to result
-        result = (result << 1) | bit;
-        // update self status
+            buffer_ = data_[index_++];
+            bitsAvailable_ = 8;
+        }
+        result = (result << 1) | ((buffer_ >> (bitsAvailable_ - 1)) & 1);
         bitsAvailable_--;
-        numBits--;
     }
     return result;
 }

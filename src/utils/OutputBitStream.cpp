@@ -2,7 +2,7 @@
 
 int OutputBitStream::writeInt(int data, size_t numBits) {
     while (numBits > 0) {
-        buffer_ = (buffer_ << 1) | ((data >> (numBits - 1)) & 1);
+        buffer_ |= (((data >> (numBits - 1)) & 1) << (bitsAvailable_ - 1));
         bitsAvailable_--;
         numBits--;
 
@@ -25,8 +25,9 @@ int OutputBitStream::writeBit(bool bit) {
 }
 
 void OutputBitStream::writeLong(long data, size_t numBits) {
+    unsigned long data_tmp = static_cast<unsigned long>(data);
     while (numBits > 0) {
-        buffer_ = (buffer_ << 1) | ((data >> (numBits - 1)) & 1);
+        buffer_ |= (((data_tmp >> (numBits - 1)) & 1) << (bitsAvailable_ - 1));
         bitsAvailable_--;
         numBits--;
 

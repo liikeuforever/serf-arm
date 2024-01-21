@@ -13,17 +13,6 @@ int Elf64Utils::getFAlpha(int alpha) {
     }
 }
 
-double Elf64Utils::get10iP(int i) {
-    if (i < 0) {
-        throw std::invalid_argument("The argument should be greater than 0");
-    }
-    if (i >= sizeof(map10iP) / sizeof(double)) {
-        return std::stod("10E" + std::to_string(i));
-    } else {
-        return map10iP[i];
-    }
-}
-
 double Elf64Utils::get10iN(int i) {
     if (i < 0) {
         throw std::invalid_argument("The argument should be greater than 0");
