@@ -2,7 +2,7 @@
 #pragma once
 
 #include <iostream>
-#include <fstream>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -77,8 +77,6 @@ int main() {
             clock_t totalDecompressTime = 0;
             long totalCompressSize = 0;
             while (readBlock(dataSetInputStream, doubleBuffer)) {
-                cout << alpha << " " << dataSet << endl;
-
                 SerfCompressor compressor(alpha);
                 SerfDecompressor decompressor;
 
@@ -86,6 +84,7 @@ int main() {
                 for (const auto &item: doubleBuffer) {
                     compressor.addValue(item);
                 }
+                compressor.close();
                 clock_t compressEndTime = clock();
 
                 vector<char> compressedData = compressor.getBytes();
@@ -95,8 +94,6 @@ int main() {
                 clock_t decompressStartTime = clock();
                 decompressedData = decompressor.decompress();
                 clock_t decompressEndTime = clock();
-
-                cout << "I am here" << endl;
 
                 assert(decompressedData.size() == blockSize);
                 for (int i = 0; i < doubleBuffer.size(); ++i) {

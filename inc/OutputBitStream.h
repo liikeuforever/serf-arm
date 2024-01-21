@@ -4,10 +4,13 @@
 #define SERFNATIVE_OUTPUTBITSTREAM_H
 
 #include <vector>
+#include <fstream>
 
 class OutputBitStream {
 public:
-    OutputBitStream() : buffer_(0), bitsAvailable_(8) {}
+    OutputBitStream(int bufSize) : buffer_(0), bitsAvailable_(8) {
+        output_.reserve(bufSize);
+    }
     int writeInt(int data, size_t numBits);
     int writeBit(bool bit);
     void writeLong(long data, size_t numBits);
