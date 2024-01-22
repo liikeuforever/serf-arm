@@ -1,7 +1,7 @@
 #include "SerfXORDecompressor.h"
 
 SerfXORDecompressor::SerfXORDecompressor() {
-    in = InputBitStream(nullptr, 0);
+    in = NewInputBitStream(nullptr, 0);
 }
 
 void SerfXORDecompressor::initLeadingRepresentation() {
@@ -29,7 +29,7 @@ void SerfXORDecompressor::initTrailingRepresentation() {
 }
 
 void SerfXORDecompressor::setBytes(char *data, size_t data_size) {
-    in = InputBitStream(data, data_size);
+    in = NewInputBitStream(data, data_size);
 }
 
 void SerfXORDecompressor::refresh() {

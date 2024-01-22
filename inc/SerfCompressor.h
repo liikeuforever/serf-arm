@@ -3,6 +3,7 @@
 
 #include "SerfXORCompressor.h"
 
+#include <iostream>
 #include <cstring>
 
 class SerfCompressor {

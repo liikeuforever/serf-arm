@@ -37,12 +37,12 @@ int SerfXORCompressor::close() {
     return thisSize;
 }
 
-std::vector<char> SerfXORCompressor::getOut() {
+uint8_t * SerfXORCompressor::getOut() {
     return out.getBuffer();
 }
 
 void SerfXORCompressor::refresh() {
-    out = OutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
+    out = NewOutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
     first = true;
     updatePositions = false;
     leadDistribution.clear();
@@ -137,8 +137,8 @@ int SerfXORCompressor::compressValue(long value) {
         out.writeInt(1, 2);
         thisSize += 2;
     } else {
-        int leadingCount = numberOfLeadingZeros(xorResult);
-        int trailingCount = numberOfTrailingZeros(xorResult);
+        int leadingCount = __builtin_clzl(xorResult);
+        int trailingCount = __builtin_ctzl(xorResult);
         int leadingZeros = leadingRound[leadingCount];
         int trailingZeros = trailingRound[trailingCount];
         ++leadDistribution[leadingCount];

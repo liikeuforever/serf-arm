@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "InputBitStream.h"
+#include "NewInputBitStream.h"
 #include "PostOfficeSolver.h"
 #include "Elf64Utils.h"
 
@@ -15,7 +16,7 @@ private:
     int storedTrailingZeros = std::numeric_limits<int>::max();
     bool first = true;
     bool endOfStream = false;
-    InputBitStream in = InputBitStream(nullptr, 0);
+    NewInputBitStream in = NewInputBitStream(nullptr, 0);
     std::vector<int> leadingRepresentation = {0, 8, 12, 16, 18, 20, 22, 24};
     std::vector<int> trailingRepresentation = {0, 22, 28, 32, 36, 40, 42, 46};
     int leadingBitsPerValue = 3;

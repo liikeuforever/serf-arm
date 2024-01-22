@@ -7,6 +7,7 @@
 #include <vector>
 #include <ctime>
 #include <cassert>
+#include <bitset>
 
 #include "SerfCompressor.h"
 #include "SerfDecompressor.h"
@@ -15,8 +16,8 @@ using std::cout, std::endl, std::string, std::vector;
 using std::ifstream, std::ofstream;
 
 // Test Parameter Config
-const static string dataSetDir = "/Users/thatcherchen/WorkSpace/CLionProjects/SerfNative/test/dataSet";
-const static string testOutput = "/Users/thatcherchen/WorkSpace/CLionProjects/SerfNative/test/result.csv";
+const static string dataSetDir = "/home/czc/WorkSpace/ClionProjects/SerfNative/test/dataSet";
+const static string testOutput = "/home/czc/WorkSpace/ClionProjects/SerfNative/test/result.csv";
 const static int blockSize = 1000;
 constexpr static int alphaArray[] = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr static double alphaPrecisionTable[] = {10E0, 10E-1, 10E-2, 10E-3, 10E-4, 10E-5, 10E-6, 10E-7, 10E-8};
@@ -53,6 +54,17 @@ bool readBlock(ifstream &fileInputStreamRef, vector<double> &doubleBufferRef) {
 
 
 int main() {
+//    SerfCompressor compressor_1(2);
+//    SerfDecompressor decompressor_1;
+//    compressor_1.addValue(0.11f);
+//    compressor_1.addValue(0.21f);
+//    compressor_1.close();
+//    vector<char> compressed_data = compressor_1.getBytes();
+//    decompressor_1.setBytes(compressed_data.data(), compressed_data.size());
+//    decompressor_1.decompress();
+//
+//    exit(0);
+
     vector<string> dataSetList = scanDataSetList();
     vector<double> doubleBuffer;
     ofstream result(testOutput);

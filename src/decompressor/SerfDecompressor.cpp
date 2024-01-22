@@ -3,7 +3,7 @@
 std::vector<double> SerfDecompressor::decompress() {
     std::vector<double> values;
     double value;
-    while (!isnan(value = xor_decompressor.readValue())) {
+    while (!std::isnan(value = xor_decompressor.readValue())) {
         values.emplace_back(value);
     }
     return values;

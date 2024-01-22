@@ -45,8 +45,8 @@ void SerfCompressor::addValue(double v) {
                 mask = 0xffffffffffffffffL << eraseBits;
                 vPrimeLongTemp = mask & vLongTemp;
                 xoredLongValue = vPrimeLongTemp ^ storedErasedLongValue;
-                xoredTrailingZerosCount = xor_compressor.numberOfTrailingZeros(xoredLongValue);
-                xoredLeadingZeroCount = xor_compressor.numberOfLeadingZeros(xoredLongValue);
+                xoredTrailingZerosCount = __builtin_ctzl(xoredLongValue);
+                xoredLeadingZeroCount = __builtin_clzl(xoredLongValue);
                 if (xoredTrailingZerosCount >= maxXoredTrailingZerosCount
                     && xoredLeadingZeroCount >= maxXoredLeadingZerosCount
                     && std::abs(longBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
@@ -69,8 +69,11 @@ long SerfCompressor::getCompressedSizeInBits() {
 
 std::vector<char> SerfCompressor::getBytes() {
     int byteCount = ceil(compressedSizeInBits / 8.0);
-    std::vector<char> result(byteCount);
-    std::copy_n(xor_compressor.getOut().begin(), byteCount, result.begin());
+    std::vector<char> result; result.reserve(byteCount);
+    auto bytes = xor_compressor.getOut();
+    for (int i = 0; i < byteCount; ++i) {
+        result.push_back(static_cast<char>(bytes[i]));
+    }
     return std::move(result);
 }
 

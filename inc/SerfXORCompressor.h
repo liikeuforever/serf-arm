@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <limits>
+#include "NewOutputBitStream.h"
 #include "PostOfficeSolver.h"
 #include "Elf64Utils.h"
 
@@ -61,7 +62,17 @@ private:
     int leadingBitsPerValue = 3;
     int trailingBitsPerValue = 3;
     const int capacity = 1000;
-    OutputBitStream out = (int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2);
+    NewOutputBitStream out = NewOutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
+    const int leadingZerosTable[256] = {
+            8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
 
 public:
     SerfXORCompressor();
@@ -70,7 +81,7 @@ public:
 
     int close();
 
-    std::vector<char> getOut();
+    uint8_t * getOut();
 
     void refresh();
 
