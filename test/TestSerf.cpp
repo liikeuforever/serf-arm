@@ -7,12 +7,12 @@
 #include <vector>
 #include <ctime>
 #include <cassert>
-#include <bitset>
+#include <unordered_map>
 
 #include "SerfCompressor.h"
 #include "SerfDecompressor.h"
 
-using std::cout, std::endl, std::string, std::vector;
+using std::cout, std::endl, std::string, std::vector, std::unordered_map, std::pair, std::make_pair;
 using std::ifstream, std::ofstream;
 
 // Test Parameter Config
@@ -41,17 +41,50 @@ bool readBlock(ifstream &fileInputStreamRef, vector<double> &doubleBufferRef) {
     doubleBufferRef.clear();
     int readDoubleCount = 0;
     string lineBuffer;
-    while (std::getline(fileInputStreamRef, lineBuffer) && readDoubleCount < blockSize) {
-        doubleBufferRef.emplace_back(std::stod(lineBuffer));
+    while (!fileInputStreamRef.eof() && readDoubleCount < blockSize) {
+        std::getline(fileInputStreamRef, lineBuffer);
+        if (!lineBuffer.empty()) doubleBufferRef.emplace_back(std::stod(lineBuffer));
         ++readDoubleCount;
     }
-    if (readDoubleCount != blockSize) {
+    if (doubleBufferRef.size() != blockSize) {
         doubleBufferRef.clear();
         return false;
     }
     return true;
 }
 
+template <typename T>
+inline void hash_combine(std::size_t &seed, const T &val) {
+    seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename T> inline void hash_val(std::size_t &seed, const T &val) {
+    hash_combine(seed, val);
+}
+template <typename T, typename... Types>
+inline void hash_val(std::size_t &seed, const T &val, const Types &... args) {
+    hash_combine(seed, val);
+    hash_val(seed, args...);
+}
+
+template <typename... Types>
+inline std::size_t hash_val(const Types &... args) {
+    std::size_t seed = 0;
+    hash_val(seed, args...);
+    return seed;
+}
+
+struct pairHash {
+    template<class T1, class T2>
+    size_t operator() (const pair<T1, T2> &p) const {
+        return hash_val(p.first, p.second);
+    }
+};
+
+// Experiment Data
+unordered_map<string, long> file2OriBits;
+unordered_map<pair<string, int>, long, pairHash> fileAlpha2CmpBits;
+unordered_map<pair<string, int>, pair<double, double>, pairHash> fileAlpha2CmpTimeAndDmpTime;
 
 int main() {
 //    SerfCompressor compressor_1(2);
@@ -71,13 +104,24 @@ int main() {
     if (!result.is_open()) {
         fprintf(stderr, "[Error] Failed to open the file '%s'", testOutput.c_str());
     }
-    result << "Param, Method, Ratio, CTime, DTime" << endl;
+    result << "DataSet,Param,Method,CB,OB,Ratio,CTime,DTime" << endl;
+
+    for (const auto &item: dataSetList) {
+        ifstream dataSetInputStream(item);
+        if (!dataSetInputStream.is_open()) {
+            fprintf(stderr, "[Error] Failed to open the file '%s'", item.c_str());
+        }
+        int blockCnt = 0;
+        while (readBlock(dataSetInputStream, doubleBuffer)) {
+            ++blockCnt;
+        }
+        file2OriBits.emplace(item, blockCnt * blockSize * 64L);
+        dataSetInputStream.close();
+    }
+
+    doubleBuffer.clear();
 
     for (const auto &alpha: alphaArray) {
-        vector<double> compressionRatioList;
-        vector<double> compressionTimeList;
-        vector<double> decompressionTimeList;
-
         for (const auto &dataSet: dataSetList) {
             ifstream dataSetInputStream(dataSet);
             if (!dataSetInputStream.is_open()) {
@@ -88,10 +132,10 @@ int main() {
             clock_t totalCompressTime = 0;
             clock_t totalDecompressTime = 0;
             long totalCompressSize = 0;
+
             while (readBlock(dataSetInputStream, doubleBuffer)) {
                 SerfCompressor compressor(alpha);
                 SerfDecompressor decompressor;
-
                 clock_t compressStartTime = clock();
                 for (const auto &item: doubleBuffer) {
                     compressor.addValue(item);
@@ -117,36 +161,36 @@ int main() {
                 totalDecompressTime += (decompressEndTime - decompressStartTime);
                 totalCompressSize += compressor.getCompressedSizeInBits();
             }
-
-            compressionRatioList.emplace_back(
-                    static_cast<double>(totalCompressSize) /
-                    static_cast<double>((blockCount * blockSize * sizeof(double) * 8)));
-            compressionTimeList.emplace_back(static_cast<double>(totalCompressTime) / blockCount);
-            decompressionTimeList.emplace_back(static_cast<double>(totalDecompressTime) / blockCount);
-
             dataSetInputStream.close();
-        }
 
-        double compressionRatioOnCurAlpha = 0;
-        double compressionTimeOnCurAlpha = 0;
-        double decompressionTimeOnCurAlpha = 0;
-        for (const auto &e: compressionRatioList) {
-            compressionRatioOnCurAlpha += e;
+            fileAlpha2CmpBits.emplace(make_pair(dataSet, alpha), totalCompressSize);
+            fileAlpha2CmpTimeAndDmpTime.emplace(make_pair(dataSet, alpha), make_pair(static_cast<double>(totalCompressTime) / blockCount,
+                                                                                     static_cast<double>(totalDecompressTime) / blockCount));
         }
-        for (const auto &e: compressionTimeList) {
-            compressionTimeOnCurAlpha += e;
-        }
-        for (const auto &e: decompressionTimeList) {
-            decompressionTimeOnCurAlpha += e;
-        }
-        compressionRatioOnCurAlpha /= compressionRatioList.size();
-        compressionTimeOnCurAlpha /= compressionTimeList.size();
-        decompressionTimeOnCurAlpha /= decompressionTimeList.size();
+    }
 
-        result << alpha << "," << "SerfNative" << ","
-               << compressionRatioOnCurAlpha << ","
-               << compressionTimeOnCurAlpha << ","
-               << decompressionTimeOnCurAlpha << endl;
+    for (const auto &alpha: alphaArray) {
+        double cmpRatioOnCurAlpha = 0;
+        double cmpTimeOnCurAlpha = 0;
+        double dmpTimeOnCurAlpha = 0;
+        for (const auto &dataSet: dataSetList) {
+            cmpRatioOnCurAlpha += static_cast<double>(fileAlpha2CmpBits.find(make_pair(dataSet, alpha))->second) /
+                    static_cast<double>(file2OriBits.find(dataSet)->second);
+            cmpTimeOnCurAlpha += fileAlpha2CmpTimeAndDmpTime.find(make_pair(dataSet, alpha))->second.first;
+            dmpTimeOnCurAlpha += fileAlpha2CmpTimeAndDmpTime.find(make_pair(dataSet, alpha))->second.second;
+            result << dataSet.substr(dataSet.find_last_of("/") + 1, dataSet.size()) << "," << alpha << "," << "SerfNative" << ","
+            << fileAlpha2CmpBits.find(make_pair(dataSet, alpha))->second << ","
+            << file2OriBits.find(dataSet)->second << ","
+            << static_cast<double>(fileAlpha2CmpBits.find(make_pair(dataSet, alpha))->second) /
+               static_cast<double>(file2OriBits.find(dataSet)->second) << ","
+            << fileAlpha2CmpTimeAndDmpTime.find(make_pair(dataSet, alpha))->second.first << ","
+            << fileAlpha2CmpTimeAndDmpTime.find(make_pair(dataSet, alpha))->second.second
+            << endl;
+        }
+        cout << alpha << "," << "SerfNative" << ","
+        << cmpRatioOnCurAlpha / static_cast<double>(dataSetList.size()) << ","
+        << cmpTimeOnCurAlpha / static_cast<double>(dataSetList.size()) << "," << dmpTimeOnCurAlpha /
+                static_cast<double>(dataSetList.size()) << endl;
     }
 
     result.flush();
