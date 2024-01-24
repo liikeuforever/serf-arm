@@ -14,8 +14,9 @@ private:
     double storedCompressionRatio = 0;
     int fAlpha;
     double maxDiff;
-    double storedErasedDoubleValue = longBitsToDouble(0x7ff8000000000000L);
-    long storedErasedLongValue = 0x7ff8000000000000L;
+    double NaN = longBitsToDouble(0x7ff8000000000000L);
+    double storedErasedDoubleValue = NaN;
+    long storedErasedLongValue = doubleToLongBits(NaN);
 
 public:
     SerfCompressor(int alpha);
