@@ -87,17 +87,6 @@ unordered_map<pair<string, int>, long, pairHash> fileAlpha2CmpBits;
 unordered_map<pair<string, int>, pair<double, double>, pairHash> fileAlpha2CmpTimeAndDmpTime;
 
 int main() {
-//    SerfCompressor compressor_1(2);
-//    SerfDecompressor decompressor_1;
-//    compressor_1.addValue(0.11f);
-//    compressor_1.addValue(0.21f);
-//    compressor_1.close();
-//    vector<char> compressed_data = compressor_1.getBytes();
-//    decompressor_1.setBytes(compressed_data.data(), compressed_data.size());
-//    decompressor_1.decompress();
-//
-//    exit(0);
-
     vector<string> dataSetList = scanDataSetList();
     vector<double> doubleBuffer;
     ofstream result(testOutput);
@@ -134,8 +123,8 @@ int main() {
             long totalCompressSize = 0;
 
             while (readBlock(dataSetInputStream, doubleBuffer)) {
-                SerfCompressor compressor(alpha);
-                SerfDecompressor decompressor;
+                SerfCompressor compressor = SerfCompressor(alpha);
+                SerfDecompressor decompressor = SerfDecompressor();
                 clock_t compressStartTime = clock();
                 for (const auto &item: doubleBuffer) {
                     compressor.addValue(item);
