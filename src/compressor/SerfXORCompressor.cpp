@@ -1,6 +1,6 @@
 #include "SerfXORCompressor.h"
 
-int SerfXORCompressor::addValue(long value) {
+int SerfXORCompressor::addValue(b64 value) {
     if (first) {
         if (writePositions) {
             return out.writeBit(true)
@@ -20,24 +20,17 @@ int SerfXORCompressor::close() {
     out.flush();
     if (updatePositions) {
         // we update distribution using the inner info
-        leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution,
-                                                                     std::vector<int>(std::begin(leadingRepresentation),
-                                                                                      std::end(leadingRepresentation)),
-                                                                     std::vector<int>(std::begin(leadingRound),
-                                                                                      std::end(leadingRound)));
+        leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation, leadingRound);
         leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.size()];
 
-        trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, std::vector<int>(
-                                                                              std::begin(trailingRepresentation), std::end(trailingRepresentation)),
-                                                                      std::vector<int>(std::begin(trailingRound),
-                                                                                       std::end(trailingRound)));
+        trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation, trailingRound);
         trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.size()];
     }
     writePositions = updatePositions;
     return thisSize;
 }
 
-uint8_t * SerfXORCompressor::getOut() {
+uint8_t *SerfXORCompressor::getOut() {
     return out.getBuffer();
 }
 
@@ -53,84 +46,22 @@ void SerfXORCompressor::setDistribution() {
     this->updatePositions = true;
 }
 
-int SerfXORCompressor::numberOfTrailingZeros(long value) {
-    int x, y;
-    if (value == 0) return 64;
-    int n = 63;
-    y = (int) value;
-    if (y != 0) {
-        n = n - 32;
-        x = y;
-    } else x = (int) (static_cast<unsigned long>(value) >> 32);
-    y = x << 16;
-    if (y != 0) {
-        n = n - 16;
-        x = y;
-    }
-    y = x << 8;
-    if (y != 0) {
-        n = n - 8;
-        x = y;
-    }
-    y = x << 4;
-    if (y != 0) {
-        n = n - 4;
-        x = y;
-    }
-    y = x << 2;
-    if (y != 0) {
-        n = n - 2;
-        x = y;
-    }
-    return n - (static_cast<unsigned int>((x << 1)) >> 31);
-}
-
-int SerfXORCompressor::numberOfLeadingZeros(int i) {
-    // HD, Count leading 0's
-    if (i <= 0)
-        return i == 0 ? 32 : 0;
-    int n = 31;
-    if (i >= 1 << 16) {
-        n -= 16;
-        i >>= 16;
-    }
-    if (i >= 1 << 8) {
-        n -= 8;
-        i >>= 8;
-    }
-    if (i >= 1 << 4) {
-        n -= 4;
-        i >>= 4;
-    }
-    if (i >= 1 << 2) {
-        n -= 2;
-        i >>= 2;
-    }
-    return n - (static_cast<unsigned int>(i) >> 1);
-}
-
-int SerfXORCompressor::numberOfLeadingZeros(long num) {
-    int x = (int) (static_cast<unsigned long>(num) >> 32);
-    return x == 0 ? 32 + numberOfLeadingZeros((int) num)
-                  : numberOfLeadingZeros(x);
-}
-
-int SerfXORCompressor::writeFirst(long value) {
+int SerfXORCompressor::writeFirst(b64 value) {
     first = false;
     storedVal = value;
-    int trailingZeros = numberOfTrailingZeros(value);
+    int trailingZeros = __builtin_ctzl(value);
     out.writeInt(trailingZeros, 7);
     if (trailingZeros < 64) {
-        out.writeLong(static_cast<unsigned long>(storedVal) >> (trailingZeros + 1), 63 - trailingZeros);
+        out.writeLong(storedVal >> (trailingZeros + 1), 63 - trailingZeros);
         return 70 - trailingZeros;
     } else {
         return 7;
     }
 }
 
-int SerfXORCompressor::compressValue(long value) {
+int SerfXORCompressor::compressValue(b64 value) {
     int thisSize = 0;
-    long xorResult = storedVal xor value;
+    b64 xorResult = storedVal xor value;
 
     if (xorResult == 0) {
         // case 01
@@ -152,9 +83,9 @@ int SerfXORCompressor::compressValue(long value) {
             int len = 1 + centerBits;
             if (len > 64) {
                 out.writeInt(1, 1);
-                out.writeLong(static_cast<unsigned long>(xorResult) >> storedTrailingZeros, centerBits);
+                out.writeLong(xorResult >> storedTrailingZeros, centerBits);
             } else {
-                out.writeLong((1L << centerBits) | (static_cast<unsigned long>(xorResult) >> storedTrailingZeros),
+                out.writeLong((1UL << centerBits) | (xorResult >> storedTrailingZeros),
                               1 + centerBits);
             }
             thisSize += len;
@@ -172,9 +103,9 @@ int SerfXORCompressor::compressValue(long value) {
                 out.writeLong(static_cast<unsigned long>(xorResult) >> storedTrailingZeros, centerBits);
             } else {
                 out.writeLong(
-                        ((((long) leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue) |
+                        (((static_cast<b64>(leadingRepresentation[storedLeadingZeros]) << trailingBitsPerValue) |
                           trailingRepresentation[storedTrailingZeros]) << centerBits) |
-                        (static_cast<unsigned long>(xorResult) >> storedTrailingZeros),
+                        (xorResult >> storedTrailingZeros),
                         len
                 );
             }

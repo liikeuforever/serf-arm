@@ -5,26 +5,26 @@ SerfXORDecompressor::SerfXORDecompressor() {
 }
 
 void SerfXORDecompressor::initLeadingRepresentation() {
-    int num = in.readInt(5);
+    unsigned int num = in.readInt(5);
     if (num == 0) {
         num = 32;
     }
     leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
     leadingRepresentation = std::vector<int>(num);
     for (int i = 0; i < num; i++) {
-        leadingRepresentation[i] = in.readInt(6);
+        leadingRepresentation[i] = static_cast<int>(in.readInt(6));
     }
 }
 
 void SerfXORDecompressor::initTrailingRepresentation() {
-    int num = in.readInt(5);
+    uint32_t num = in.readInt(5);
     if (num == 0) {
         num = 32;
     }
     trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
     trailingRepresentation = std::vector<int>(num);
     for (int i = 0; i < num; i++) {
-        trailingRepresentation[i] = in.readInt(6);
+        trailingRepresentation[i] = static_cast<int>(in.readInt(6));
     }
 }
 
@@ -38,7 +38,7 @@ void SerfXORDecompressor::refresh() {
 }
 
 void SerfXORDecompressor::nextValue() {
-    long value;
+    b64 value;
     int centerBits;
 
     if (in.readInt(1) == 1) {
@@ -51,9 +51,9 @@ void SerfXORDecompressor::nextValue() {
         storedVal = value;
     } else if (in.readInt(1) == 0) {
         // case 00
-        int leadAndTrail = in.readInt(leadingBitsPerValue + trailingBitsPerValue);
-        int lead = leadAndTrail >> trailingBitsPerValue;
-        int trail = ~(0xffffffff << trailingBitsPerValue) & leadAndTrail;
+        uint32_t leadAndTrail = in.readInt(leadingBitsPerValue + trailingBitsPerValue);
+        uint32_t lead = leadAndTrail >> trailingBitsPerValue;
+        uint32_t trail = ~(0xffffffff << trailingBitsPerValue) & leadAndTrail;
         storedLeadingZeros = leadingRepresentation[lead];
         storedTrailingZeros = trailingRepresentation[trail];
         centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
@@ -72,7 +72,7 @@ void SerfXORDecompressor::next() {
             initTrailingRepresentation();
         }
         first = false;
-        int trailingZeros = in.readInt(7);
+        uint32_t trailingZeros = in.readInt(7);
         if (trailingZeros < 64) {
             storedVal = ((in.readLong(63 - trailingZeros) << 1) + 1) << trailingZeros;
         } else {
@@ -93,7 +93,7 @@ bool SerfXORDecompressor::available() const {
     return (storedVal != Elf64Utils::END_SIGN);
 }
 
-double SerfXORDecompressor::longBitsToDouble(long bits) {
+double SerfXORDecompressor::longBitsToDouble(b64 bits) {
     double result;
     std::memcpy(&result, &bits, sizeof(bits));
     return result;

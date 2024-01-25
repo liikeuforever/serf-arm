@@ -1,25 +1,25 @@
 #include "SerfCompressor.h"
 
 SerfCompressor::SerfCompressor(int alpha) {
-    static_assert(sizeof(long) == 8);
+    static_assert(sizeof(unsigned long) == 8);
     fAlpha = 1075 - Elf64Utils::getFAlpha(alpha);
     maxDiff = Elf64Utils::get10iN(alpha);
 }
 
-long SerfCompressor::doubleToLongBits(double value) {
-    long result;
+b64 SerfCompressor::doubleToLongBits(double value) {
+    b64 result;
     std::memcpy(&result, &value, sizeof(value));
     return result;
 }
 
-double SerfCompressor::longBitsToDouble(long bits) {
+double SerfCompressor::longBitsToDouble(b64 bits) {
     double result;
     std::memcpy(&result, &bits, sizeof(bits));
     return result;
 }
 
 void SerfCompressor::addValue(double v) {
-    long vPrimeLong = 0;
+    b64 vPrimeLong = 0;
     numberOfValues++;
 
     // let current value be the last value, making an XORed value of 0.
@@ -29,17 +29,17 @@ void SerfCompressor::addValue(double v) {
         if (std::isinf(v) || std::isnan(v)) {
             vPrimeLong = doubleToLongBits(v);
         } else {
-            long vLongs[] = {
+            b64 vLongs[] = {
                     doubleToLongBits(v + maxDiff),
                     doubleToLongBits(v),
                     doubleToLongBits(v - maxDiff)
             };
             int maxXoredTrailingZerosCount = -1, maxXoredLeadingZerosCount = -1;
             int xoredTrailingZerosCount, xoredLeadingZeroCount;
-            long xoredLongValue;
-            long vPrimeLongTemp, mask;
+            b64 xoredLongValue;
+            b64 vPrimeLongTemp, mask;
             int e, eraseBits;
-            for (long vLongTemp: vLongs) {
+            for (b64 vLongTemp: vLongs) {
                 e = ((int) (vLongTemp >> 52)) & 0x7ff;      // e may be different
                 eraseBits = fAlpha - e;
                 mask = 0xffffffffffffffffL << eraseBits;
@@ -63,7 +63,7 @@ void SerfCompressor::addValue(double v) {
     compressedSizeInBits += xor_compressor.addValue(vPrimeLong);
 }
 
-long SerfCompressor::getCompressedSizeInBits() {
+long SerfCompressor::getCompressedSizeInBits() const {
     return compressedSizeInBits;
 }
 

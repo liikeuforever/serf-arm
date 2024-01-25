@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cstring>
 
+typedef unsigned long b64;
+
 class SerfCompressor {
 private:
     SerfXORCompressor xor_compressor;
@@ -16,18 +18,18 @@ private:
     double maxDiff;
     double NaN = longBitsToDouble(0x7ff8000000000000L);
     double storedErasedDoubleValue = NaN;
-    long storedErasedLongValue = doubleToLongBits(NaN);
+    b64 storedErasedLongValue = doubleToLongBits(NaN);
 
 public:
-    SerfCompressor(int alpha);
+    explicit SerfCompressor(int alpha);
 
-    long doubleToLongBits(double value);
+    b64 doubleToLongBits(double value);
 
-    double longBitsToDouble(long bits);
+    double longBitsToDouble(b64 bits);
 
     void addValue(double v);
 
-    long getCompressedSizeInBits();
+    long getCompressedSizeInBits() const;
 
     std::vector<char> getBytes();
 

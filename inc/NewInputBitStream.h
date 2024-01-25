@@ -34,7 +34,7 @@ private:
     }
 
 public:
-    NewInputBitStream(char *raw_data, int size) {
+    NewInputBitStream(char *raw_data, size_t size) {
         len = size / sizeof(uint32_t) + 1;
         convertCharArrToUInt32Arr(raw_data, size);
         buffer = ((uint64_t) data[0]) << 32;
@@ -61,33 +61,33 @@ public:
         }
     }
 
-    long readLong(size_t num) {
+    uint64_t readLong(size_t num) {
         if (num == 0) return 0;
-        long result = 0;
+        uint64_t result = 0;
         if (num > 32) {
-            result = static_cast<long>(peek(32));
+            result = peek(32);
             forward(32);
             result <<= num - 32;
             num -= 32;
         }
-        result |= static_cast<long>(peek(num));
+        result |= peek(num);
         forward(num);
         return result;
     }
 
-    int readInt(size_t num) {
+    uint32_t readInt(size_t num) {
         if (num == 0) return 0;
-        int result = 0;
-        result |= static_cast<int>(peek(num));
+        uint32_t result = 0;
+        result |= peek(num);
         forward(num);
         return result;
     }
 
-    int readBit() {
+    uint32_t readBit() {
         uint32_t result = 0;
         result |= peek(1);
         forward(1);
-        return static_cast<int>(result);
+        return result;
     }
 };
 

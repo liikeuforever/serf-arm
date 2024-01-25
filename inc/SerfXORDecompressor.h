@@ -9,9 +9,11 @@
 #include "PostOfficeSolver.h"
 #include "Elf64Utils.h"
 
+typedef unsigned long b64;
+
 class SerfXORDecompressor {
 private:
-    long storedVal = 0;
+    b64 storedVal = 0;
     int storedLeadingZeros = std::numeric_limits<int>::max();
     int storedTrailingZeros = std::numeric_limits<int>::max();
     bool first = true;
@@ -42,7 +44,7 @@ public:
     bool available() const;
 
 private:
-    double longBitsToDouble(long bits);
+    double longBitsToDouble(b64 bits);
 };
 
 
