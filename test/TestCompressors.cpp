@@ -14,9 +14,105 @@
 #include <stdlib.h>
 #include <string.h>
 #include <list>
-#include "..\..\main\cpp\include\lz4\lz4frame.h"
-#include "..\..\main\cpp\include\deflate\deflate.h"
+#include "..\src\compare\include\lz4\lz4frame.h"
+#include "..\src\compare\include\deflate\deflate.h"
+#include "..\src\compare\include\deflate\compress.h"
+#include "..\src\compare\include\deflate\uncompr.h"
 using namespace std;
+#define MAX_LINE_LENGTH 256
+#define MAX_BLOCK_SIZE 100
+#define DIR "../../main/resources/floating/"
+typedef struct
+{
+    FILE *file;
+    int blockSize;
+    int end;
+} BlockReader;
+
+BlockReader *createBlockReader(const char *fileName, int blockSize)
+{
+    BlockReader *reader = (BlockReader *)malloc(sizeof(BlockReader));
+    if (reader == NULL)
+    {
+        fprintf(stderr, "Error allocating memory for BlockReader.\n");
+        exit(EXIT_FAILURE);
+    }
+    char *file_end = new char[strlen(DIR) + strlen(fileName) + 1];
+    strcpy(file_end, DIR);
+    strcat(file_end, fileName);
+
+    reader->file = fopen(file_end, "r");
+    if (reader->file == NULL)
+    {
+        fprintf(stderr, "Error opening file: %s\n", fileName);
+        free(reader);
+        exit(EXIT_FAILURE);
+    }
+
+    reader->blockSize = blockSize;
+    reader->end = 0;
+
+    return reader;
+}
+
+void closeBlockReader(BlockReader *reader)
+{
+    if (reader != NULL)
+    {
+        fclose(reader->file);
+        free(reader);
+    }
+}
+
+double *nextBlock(BlockReader *reader)
+{
+    if (reader->end)
+    {
+        return NULL;
+    }
+
+    double *floatings = (double *)malloc(sizeof(double) * reader->blockSize);
+    if (floatings == NULL)
+    {
+        fprintf(stderr, "Error allocating memory for floatings.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int i = 0;
+    char line[MAX_LINE_LENGTH];
+    while (i < reader->blockSize && fgets(line, sizeof(line), reader->file) != NULL)
+    {
+        if (line[0] == '#' || line[0] == '\n')
+        {
+            continue;
+        }
+
+        floatings[i++] = strtof(line, NULL);
+    }
+
+    if (i < reader->blockSize)
+    {
+        reader->end = 1;
+    }
+
+    if (i == 0)
+    {
+        free(floatings);
+        return NULL;
+    }
+
+    return floatings;
+}
+vector<Bytef> transform(list<double> floatings_list)
+{
+    vector<Bytef> byteData;
+    for (const auto &value : floatings_list)
+    {
+        const Bytef *bytes = reinterpret_cast<const Bytef *>(&value);
+        byteData.insert(byteData.end(), bytes, bytes + sizeof(double));
+    }
+    return byteData;
+}
 class TestCompressors
 {
 private:
@@ -73,39 +169,6 @@ const double TestCompressors::TIME_PRECISION = 1000.0;
 const int TestCompressors::BLOCK_SIZE = 1000;
 const string TestCompressors::INIT_FILE = "init.csv";
 const int TestCompressors::ALPHA[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-void TestCompressors::testAllCompressor()
-{
-    cout << "test begin" << endl;
-    for (string fileName : fileNames)
-    {
-        for (int alpha : ALPHA)
-        {
-            // testSerfCompressor(fileName, alpha);
-            // testBuffCompressor(fileName, alpha);
-            testDeflateCompressor(fileName, alpha); // 无损流式
-            testLz4Compressor(fileName, alpha);     // 无损流式
-        }
-    }
-    cout << "test end" << endl;
-    for (const auto &entry : fileNameParamMethodToCompressedBits)
-    {
-        const string fileNameParamMethod = entry.first;
-        long compressedBits = entry.second;
-
-        istringstream ss(fileNameParamMethod);
-        string token;
-        getline(ss, token, ',');
-        string fileNameParam = token + ",";
-        getline(ss, token, ',');
-        fileNameParam += token;
-
-        long fileTotalBits = fileNameParamToTotalBits[fileNameParam];
-        fileNameParamMethodToCompressedRatio.insert(make_pair(fileNameParamMethod, (compressedBits * 1.0) / fileTotalBits));
-    }
-    cout << "Test All Compressor" << endl;
-    writeResult(fileNameParamMethodToCompressedRatio, fileNameParamMethodToCompressTime,
-                fileNameParamMethodToDecompressTime, fileNameParamToTotalBlock);
-};
 void TestCompressors::testDeflateCompressor(const string &fileName, int alpha)
 {
     string fileNameParam = fileName + "," + to_string(alpha);
@@ -135,91 +198,72 @@ void TestCompressors::testDeflateCompressor(const string &fileName, int alpha)
         fileNameParamToTotalBits[fileNameParam] += BLOCK_SIZE * sizeof(double) * 8L;
         fileNameParamToTotalBlock[fileNameParam] += 1L;
 
-        vector<vector<uint8_t>> floatings_bytes = convertDoubleArrayToByteArray(floatings_list);
-        // 压缩和解压
         // 压缩后的数据缓冲区
-        const size_t compressedBufferSize = LZ4F_compressFrameBound(BLOCK_SIZE * 64, nullptr);
-        char compressedBuffer[compressedBufferSize];
-        uint8_t byteArray[] = {};
-
-        list<double> deValues;
-        // 判断准确率
-
-        string fileNameParamMethod = fileName + "," + to_string(alpha) + "," + "Deflate";
-        if (auto it = fileNameParamMethodToCompressedBits.find(fileNameParamMethod) == fileNameParamMethodToCompressedBits.end())
+        vector<Bytef> byteData = transform(floatings_list); // 源数据
+        uLongf sourceLen = static_cast<uLongf>(byteData.size());
+        uLong compressedSize = compressBound(BLOCK_SIZE * 64);
+        vector<Bytef> compressedBuffer(compressedSize); // 压缩后数据
+        int result = compress(compressedBuffer.data(), &compressedSize, byteData.data(), sourceLen);
+        if (result == Z_OK)
         {
-            fileNameParamMethodToCompressedBits.insert(make_pair(fileNameParamMethod,
-                                                                 (long)(outputStream.toByteArray().length * 8L)));
-            fileNameParamMethodToCompressTime.insert(make_pair(fileNameParamMethod, compressTime));
-            fileNameParamMethodToDecompressTime.insert(make_pair(fileNameParamMethod, decompressTime));
+            // 压缩成功，compressedBuffer中存储了压缩后的数据
+            std::cout << "Compression successful. Compressed size: " << compressedSize << " bytes." << std::endl;
         }
         else
         {
-            long newSize = fileNameParamMethodToCompressedBits[fileNameParamMethod] + (long)(outputStream.toByteArray().length * 8L);
-            double newCTime = fileNameParamMethodToCompressTime[fileNameParamMethod] + compressTime;
-            double newDTime = fileNameParamMethodToDecompressTime[fileNameParamMethod] + decompressTime;
-            fileNameParamMethodToCompressedBits.insert(make_pair(fileNameParamMethod, newSize));
-            fileNameParamMethodToCompressTime.insert(make_pair(fileNameParamMethod, newCTime));
-            fileNameParamMethodToDecompressTime.insert(make_pair(fileNameParamMethod, newDTime));
+            std::cerr << "Compression failed with error code: " << result << std::endl;
         }
+
+        // 解压缩
+        vector<Bytef> uncompressedBuffer(sourceLen); // 解压缩后数据
+        result = uncompress(uncompressedBuffer.data(), &sourceLen, compressedBuffer.data(), compressedSize);
+        if (result == Z_OK)
+        {
+            // 解压缩成功，uncompressedBuffer中存储了解压缩后的数据
+            std::cout << "Decompression successful. Compressed size: " << sourceLen << " bytes." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Decompression failed with error code: " << result << std::endl;
+        }
+        // 判断准确率
+        list<double> deValues;
     }
 };
-void TestCompressors::testLz4Compressor(const string &fileName, int alpha)
+void TestCompressors::testAllCompressor()
 {
-    string fileNameParam = fileName + "," + to_string(alpha);
-    fileNameParamToTotalBits.insert(make_pair(fileNameParam, 0L));
-    fileNameParamToTotalBlock.insert(make_pair(fileNameParam, 0L));
-
-    // Assuming fileNameParamToTotalBits, fileNameParamToTotalBlock, and other data structures are defined globally
-
-    BlockReader *br = createBlockReader(fileName.c_str(), BLOCK_SIZE);
-    if (br == NULL)
+    cout << "test begin" << endl;
+    for (string fileName : fileNames)
     {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    double *floatings;
-    while ((floatings = nextBlock(br)) != nullptr)
-    {
-        list<double> floatings_list(floatings, floatings + BLOCK_SIZE);
-        double compressTime = 0;
-        double decompressTime = 0;
-        if (floatings_list.size() != BLOCK_SIZE)
+        for (int alpha : ALPHA)
         {
-            break;
-        }
-
-        fileNameParamToTotalBits[fileNameParam] += BLOCK_SIZE * sizeof(double) * 8L;
-        fileNameParamToTotalBlock[fileNameParam] += 1L;
-
-        vector<vector<uint8_t>> floatings_bytes = convertDoubleArrayToByteArray(floatings_list);
-        // 压缩和解压
-        // todo
-        uint8_t byteArray[] = {};
-
-        list<double> deValues;
-        // 判断准确率
-
-        string fileNameParamMethod = fileName + "," + to_string(alpha) + "," + "Lz4";
-        if (auto it = fileNameParamMethodToCompressedBits.find(fileNameParamMethod) == fileNameParamMethodToCompressedBits.end())
-        {
-            fileNameParamMethodToCompressedBits.insert(make_pair(fileNameParamMethod,
-                                                                 (long)(outputStream.toByteArray().length * 8L)));
-            fileNameParamMethodToCompressTime.insert(make_pair(fileNameParamMethod, compressTime));
-            fileNameParamMethodToDecompressTime.insert(make_pair(fileNameParamMethod, decompressTime));
-        }
-        else
-        {
-            long newSize = fileNameParamMethodToCompressedBits[fileNameParamMethod] + (long)(outputStream.toByteArray().length * 8L);
-            double newCTime = fileNameParamMethodToCompressTime[fileNameParamMethod] + compressTime;
-            double newDTime = fileNameParamMethodToDecompressTime[fileNameParamMethod] + decompressTime;
-            fileNameParamMethodToCompressedBits.insert(make_pair(fileNameParamMethod, newSize));
-            fileNameParamMethodToCompressTime.insert(make_pair(fileNameParamMethod, newCTime));
-            fileNameParamMethodToDecompressTime.insert(make_pair(fileNameParamMethod, newDTime));
+            // testSerfCompressor(fileName, alpha);
+            // testBuffCompressor(fileName, alpha);
+            testDeflateCompressor(fileName, alpha); // 无损流式
+            // testLz4Compressor(fileName, alpha);     // 无损流式
         }
     }
+    cout << "test end" << endl;
+    for (const auto &entry : fileNameParamMethodToCompressedBits)
+    {
+        const string fileNameParamMethod = entry.first;
+        long compressedBits = entry.second;
+
+        istringstream ss(fileNameParamMethod);
+        string token;
+        getline(ss, token, ',');
+        string fileNameParam = token + ",";
+        getline(ss, token, ',');
+        fileNameParam += token;
+
+        long fileTotalBits = fileNameParamToTotalBits[fileNameParam];
+        fileNameParamMethodToCompressedRatio.insert(make_pair(fileNameParamMethod, (compressedBits * 1.0) / fileTotalBits));
+    }
+    cout << "Test All Compressor" << endl;
+    writeResult(fileNameParamMethodToCompressedRatio, fileNameParamMethodToCompressTime,
+                fileNameParamMethodToDecompressTime, fileNameParamToTotalBlock);
 };
+
 void TestCompressors::testSerfCompressor(const string &fileName, int alpha){};
 void TestCompressors::testBuffCompressor(const string &fileName, int alpha){};
 void TestCompressors::writeResult(const map<string, double> &fileNameParamMethodToRatio,
@@ -306,90 +350,7 @@ void TestCompressors::writeResult(const map<string, double> &fileNameParamMethod
         cerr << e.what() << endl;
     }
 };
-#define MAX_LINE_LENGTH 256
-#define MAX_BLOCK_SIZE 100
-#define DIR "../../main/resources/floating/"
-typedef struct
-{
-    FILE *file;
-    int blockSize;
-    int end;
-} BlockReader;
 
-BlockReader *createBlockReader(const char *fileName, int blockSize)
-{
-    BlockReader *reader = (BlockReader *)malloc(sizeof(BlockReader));
-    if (reader == NULL)
-    {
-        fprintf(stderr, "Error allocating memory for BlockReader.\n");
-        exit(EXIT_FAILURE);
-    }
-    char *file_end = new char[strlen(DIR) + strlen(fileName) + 1];
-    strcpy(file_end, DIR);
-    strcat(file_end, fileName);
-
-    reader->file = fopen(file_end, "r");
-    if (reader->file == NULL)
-    {
-        fprintf(stderr, "Error opening file: %s\n", fileName);
-        free(reader);
-        exit(EXIT_FAILURE);
-    }
-
-    reader->blockSize = blockSize;
-    reader->end = 0;
-
-    return reader;
-}
-
-void closeBlockReader(BlockReader *reader)
-{
-    if (reader != NULL)
-    {
-        fclose(reader->file);
-        free(reader);
-    }
-}
-
-double *nextBlock(BlockReader *reader)
-{
-    if (reader->end)
-    {
-        return NULL;
-    }
-
-    double *floatings = (double *)malloc(sizeof(double) * reader->blockSize);
-    if (floatings == NULL)
-    {
-        fprintf(stderr, "Error allocating memory for floatings.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    int i = 0;
-    char line[MAX_LINE_LENGTH];
-    while (i < reader->blockSize && fgets(line, sizeof(line), reader->file) != NULL)
-    {
-        if (line[0] == '#' || line[0] == '\n')
-        {
-            continue;
-        }
-
-        floatings[i++] = strtof(line, NULL);
-    }
-
-    if (i < reader->blockSize)
-    {
-        reader->end = 1;
-    }
-
-    if (i == 0)
-    {
-        free(floatings);
-        return NULL;
-    }
-
-    return floatings;
-}
 vector<vector<uint8_t>> convertDoubleArrayToByteArray(list<double> doubleArray)
 {
     vector<vector<uint8_t>> byteArray;
@@ -403,6 +364,7 @@ vector<vector<uint8_t>> convertDoubleArrayToByteArray(list<double> doubleArray)
     }
     return byteArray;
 }
+
 int main()
 {
     cout << "all begin" << endl;
