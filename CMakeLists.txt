@@ -23,7 +23,8 @@ AUX_SOURCE_DIRECTORY(src/compare/lib/lz4 SRC6)
 ADD_LIBRARY(SerfNative-lib STATIC ${SRC1} ${SRC2} ${SRC3} ${SRC4} ${SRC5} ${SRC6})
 
 # Compile test source code
-ADD_EXECUTABLE(SerfNative test/TestDeflate.cpp)
+ADD_EXECUTABLE(SerfNative test/TestLz4.cpp)
+# ADD_EXECUTABLE(SerfNative test/TestDeflate.cpp)
 # ADD_EXECUTABLE(SerfNative test/TestSerf.cpp)
 
 # Link Serf to test program

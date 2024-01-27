@@ -9,8 +9,11 @@
 #include <cassert>
 #include <unordered_map>
 #include <list>
-#include "compress.h"
-#include "uncompr.h"
+#include "SerfCompressor.h"
+#include "SerfDecompressor.h"
+#include "frameCompress.h"
+#include "lz4frame.h"
+#include "zlib.h"
 
 using std::cout, std::endl, std::string, std::vector, std::unordered_map, std::pair, std::make_pair;
 using std::ifstream, std::ofstream;
@@ -181,18 +184,20 @@ int main()
             {
                 // 压缩
                 vector<Bytef> byteData = transform(doubleBuffer); // 源数据
-                uLongf sourceLen = static_cast<uLongf>(byteData.size());
-                uLong compressedSize = compressBound(blockSize * 64);
+                size_t sourceLen = static_cast<size_t>(byteData.size());
+                size_t compressedSize = LZ4F_compressFrameBound(blockSize * 64,nullptr);
                 vector<Bytef> compressedBuffer(compressedSize); // 压缩后数据
                 clock_t compressStartTime = clock();
-                int result = compress(compressedBuffer.data(), &compressedSize, byteData.data(), sourceLen);
+                size_t result = LZ4F_compressFrame(compressedBuffer.data(), compressedSize, byteData.data(), sourceLen,nullptr);
                 clock_t compressEndTime = clock();
 
                 // 解压缩
+                unsigned version=1;
+                LZ4F_dctx* dctx=LZ4F_createDecompressionContext_advanced(LZ4F_defaultCMem,version);
                 vector<double> decompressedData;
                 vector<Bytef> uncompressedBuffer(sourceLen); // 解压缩后数据
                 clock_t decompressStartTime = clock();
-                result = uncompress(uncompressedBuffer.data(), &sourceLen, compressedBuffer.data(), compressedSize);
+                result = LZ4F_decompress(dctx,uncompressedBuffer.data(), &sourceLen, compressedBuffer.data(), &compressedSize,nullptr);
                 clock_t decompressEndTime = clock();
 
                 // 判断准确率
@@ -228,7 +233,7 @@ int main()
             cmpTimeOnCurAlpha += fileAlpha2CmpTimeAndDmpTime.find(make_pair(dataSet, alpha))->second.first;
             dmpTimeOnCurAlpha += fileAlpha2CmpTimeAndDmpTime.find(make_pair(dataSet, alpha))->second.second;
             result << dataSet.substr(dataSet.find_last_of("/") + 1, dataSet.size()) << "," << alpha << ","
-                   << "DeFflate"
+                   << "Lz4"
                    << ","
                    << fileAlpha2CmpBits.find(make_pair(dataSet, alpha))->second << ","
                    << file2OriBits.find(dataSet)->second << ","
@@ -240,7 +245,7 @@ int main()
                    << endl;
         }
         cout << alpha << ","
-             << "Deflate"
+             << "Lz4"
              << ","
              << cmpRatioOnCurAlpha / static_cast<double>(dataSetList.size()) << ","
              << cmpTimeOnCurAlpha / static_cast<double>(dataSetList.size()) << "," << dmpTimeOnCurAlpha / static_cast<double>(dataSetList.size()) << endl;
