@@ -9,6 +9,8 @@
 #include <cassert>
 #include <unordered_map>
 #include <list>
+#include "SerfCompressor.h"
+#include "SerfDecompressor.h"
 #include "compress.h"
 #include "uncompr.h"
 
