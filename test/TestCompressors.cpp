@@ -14,14 +14,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <list>
-#include "..\src\compare\include\lz4\lz4frame.h"
-#include "..\src\compare\include\deflate\deflate.h"
-#include "..\src\compare\include\deflate\compress.h"
-#include "..\src\compare\include\deflate\uncompr.h"
+#include "lz4frame.h"
+#include "deflate.h"
+#include "compress.h"
+#include "uncompr.h"
 using namespace std;
 #define MAX_LINE_LENGTH 256
 #define MAX_BLOCK_SIZE 100
-#define DIR "../../main/resources/floating/"
+#define DIR "/home/ruyunlu/桌面/myCode/SerfNative/test/dataSet"
 typedef struct
 {
     FILE *file;
@@ -112,6 +112,24 @@ vector<Bytef> transform(list<double> floatings_list)
         byteData.insert(byteData.end(), bytes, bytes + sizeof(double));
     }
     return byteData;
+}
+list<double> reverseTransform(const vector<Bytef> &byteData) {
+    list<double> floatings_list;
+    size_t dataSize = byteData.size();
+    size_t doubleSize = sizeof(double);
+
+    if (dataSize % doubleSize != 0) {
+        cerr << "Error: Invalid byte data size for double conversion." << endl;
+        return floatings_list;
+    }
+
+    for (size_t i = 0; i < dataSize; i += doubleSize) {
+        double value;
+        memcpy(&value, &byteData[i], doubleSize);
+        floatings_list.push_back(value);
+    }
+
+    return floatings_list;
 }
 class TestCompressors
 {
@@ -227,7 +245,8 @@ void TestCompressors::testDeflateCompressor(const string &fileName, int alpha)
             std::cerr << "Decompression failed with error code: " << result << std::endl;
         }
         // 判断准确率
-        list<double> deValues;
+        list<double> deValues=reverseTransform(uncompressedBuffer);
+        
     }
 };
 void TestCompressors::testAllCompressor()
