@@ -6,40 +6,51 @@
 #include <iostream>
 #include <cstring>
 #include <bitset>
+#include <cmath>
+#include <endian.h>
 
 class NewInputBitStream {
 private:
+    uint32_t *mem_start_addr;
     uint32_t *data;
-    int64_t len;
+    uint64_t len;
     uint64_t buffer;
-    int64_t cursor;
-    int64_t bitcnt;
-
-private:
-    void convertCharArrToUInt32Arr(const char *raw_data, int size) {
-        data = (uint32_t *) malloc(len * sizeof(uint32_t));
-        memset(data, 0, len * sizeof(uint32_t));
-
-        int index = 0;
-        short cnt = 1;
-        for (int i = 0; i < size; ++i) {
-            data[index] |= ((static_cast<uint8_t>(raw_data[i]) | (uint32_t) 0) << (32 - cnt * 8));
-            cnt += 1;
-
-            if (cnt == 5) {
-                index += 1;
-                cnt = 1;
-            }
-        }
-    }
+    uint64_t cursor;
+    uint64_t bitcnt;
 
 public:
-    NewInputBitStream(char *raw_data, size_t size) {
-        len = size / sizeof(uint32_t) + 1;
-        convertCharArrToUInt32Arr(raw_data, size);
+    NewInputBitStream() = default;
+
+    NewInputBitStream(uint8_t *raw_data, size_t size) {
+        bool overflow = size % sizeof(uint32_t);
+        len = ceil(static_cast<double>(size) / sizeof(uint32_t));
+        data = new uint32_t [len];
+        mem_start_addr = data;
+
+        auto *tmp_ptr = (uint32_t *) (raw_data);
+        if (overflow) {
+            for (int i = 0; i < len - 1; ++i) {
+                data[i] = be32toh(*(tmp_ptr + i));
+            }
+            int byte_index = 1;
+            data[len - 1] = 0;
+            for (uint64_t i = (size / 4 * 4); i < size; ++i) {
+                data[len - 1] |= (raw_data[i] << (32 - byte_index * 8));
+                ++byte_index;
+            }
+        } else {
+            for (int i = 0; i < len; ++i) {
+                data[i] = be32toh(*(tmp_ptr + i));
+            }
+        }
+
         buffer = ((uint64_t) data[0]) << 32;
         cursor = 1;
         bitcnt = 32;
+    }
+
+    ~NewInputBitStream() {
+        delete[] mem_start_addr;
     }
 
     uint64_t peek(size_t num) {
@@ -51,8 +62,8 @@ public:
         buffer <<= num;
         if (bitcnt < 32) {
             if (cursor < len) {
-                uint64_t data_ = data[cursor];
-                buffer |= data_ << (32 - bitcnt);
+                auto data_ = (uint64_t) data[cursor];
+                buffer |= (data_ << (32 - bitcnt));
                 bitcnt += 32;
                 cursor++;
             } else {
@@ -73,6 +84,11 @@ public:
         result |= peek(num);
         forward(num);
         return result;
+
+//        while (num > bitcnt) {
+//            result |= (peek(bitcnt) << (num - bitcnt));
+//            forward(bitcnt);
+//            num -= bitcnt;
     }
 
     uint32_t readInt(size_t num) {
@@ -81,11 +97,16 @@ public:
         result |= peek(num);
         forward(num);
         return result;
+
+//        while (num > bitcnt) {
+//            result |= (peek(bitcnt) << (num - bitcnt));
+//            forward(bitcnt);
+//            num -= bitcnt;
+//        }
     }
 
     uint32_t readBit() {
-        uint32_t result = 0;
-        result |= peek(1);
+        uint32_t result = peek(1);
         forward(1);
         return result;
     }

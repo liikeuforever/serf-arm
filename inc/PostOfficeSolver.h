@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "OutputBitStream.h"
 #include "NewOutputBitStream.h"
 
 class PostOfficeResult {

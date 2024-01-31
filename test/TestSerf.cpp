@@ -1,8 +1,8 @@
 // Test Program
-#pragma once
 
 #include <iostream>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -20,7 +20,7 @@ const static string dataSetDir = "/home/czc/WorkSpace/ClionProjects/SerfNative/t
 const static string testOutput = "/home/czc/WorkSpace/ClionProjects/SerfNative/test/result.csv";
 const static int blockSize = 1000;
 constexpr static int alphaArray[] = {1, 2, 3, 4, 5, 6, 7, 8};
-constexpr static double alphaPrecisionTable[] = {10E0, 10E-1, 10E-2, 10E-3, 10E-4, 10E-5, 10E-6, 10E-7, 10E-8};
+constexpr static double alphaPrecisionTable[] = {1E0, 1E-1, 1E-2, 1E-3, 1E-4, 1E-5, 1E-6, 1E-7, 10E-8};
 
 // Test Utils
 vector<string> scanDataSetList() {

@@ -12,7 +12,6 @@ private:
                                          1.0E-15, 1.0E-16, 1.0E-17, 1.0E-18, 1.0E-19, 1.0E-20};
 
 public:
-    static const long END_SIGN = 0x7ff8000000000000L;
     constexpr static double LOG_2_10 = 3.32192809488736263f;
 
     static int getFAlpha(int alpha);

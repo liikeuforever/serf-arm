@@ -9,23 +9,25 @@
 
 class NewOutputBitStream {
 private:
+    uint32_t *mem_start_addr;
     uint32_t *output;
-    int64_t len;
+    uint64_t len;
     uint64_t buffer;
-    int64_t cursor;
+    uint64_t cursor;
     uint64_t bitcnt;
 
 public:
     explicit NewOutputBitStream(int bufSize) {
-        output = (uint32_t *) malloc((bufSize / 4 + 1) * sizeof(uint32_t));
         len = bufSize / 4 + 1;
+        output = new uint32_t [len];
+        mem_start_addr = output;
         buffer = 0;
         cursor = 0;
         bitcnt = 0;
     }
 
     ~NewOutputBitStream() {
-        delete output;
+        delete[] mem_start_addr;
     }
 
 public:
@@ -34,7 +36,7 @@ public:
         buffer |= (data >> bitcnt);
         bitcnt += length;
         if (bitcnt >= 32) {
-            output[cursor++] = buffer >> 32;
+            output[cursor++] = (buffer >> 32);
             buffer <<= 32;
             bitcnt -= 32;
         }
@@ -60,7 +62,7 @@ public:
 
 public:
     int writeInt(int n, int length) {
-        write(n, length);
+        write(static_cast<uint64_t>(n), length);
         return length;
     }
 
@@ -70,17 +72,10 @@ public:
     }
 
     uint8_t *getBuffer() {
-        // Tmp resolution for Big-Little Endian Problem
-        uint8_t *convert_buffer = (uint8_t *) malloc((cursor + 1) * sizeof(uint32_t));
-        int array_index = 0;
-        for (int i = 0; i <= cursor; i++) {
-            for (int j = 3; j >= 0; j--) {
-                convert_buffer[array_index] = ((uint8_t *) (output + i))[j];
-                array_index++;
-            }
+        for (int i = 0; i < len ; ++i) {
+            mem_start_addr[i] = htobe32(mem_start_addr[i]);
         }
-
-        return convert_buffer;
+        return (uint8_t *) mem_start_addr;
     }
 };
 

@@ -6,10 +6,14 @@
 #include <vector>
 
 class SerfDecompressor {
-private:
-    SerfXORDecompressor xor_decompressor;
+public:
+    SerfXORDecompressor *xor_decompressor = nullptr;
 
 public:
+    SerfDecompressor();
+
+    ~SerfDecompressor();
+
     std::vector<double> decompress();
 
     double nextValue();

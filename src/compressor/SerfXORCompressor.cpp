@@ -1,4 +1,5 @@
 #include "SerfXORCompressor.h"
+#include "Double.h"
 
 int SerfXORCompressor::addValue(b64 value) {
     if (first) {
@@ -16,7 +17,7 @@ int SerfXORCompressor::addValue(b64 value) {
 }
 
 int SerfXORCompressor::close() {
-    int thisSize = addValue(Elf64Utils::END_SIGN);
+    int thisSize = addValue(Double::doubleToLongBits(NAN));
     out.flush();
     if (updatePositions) {
         // we update distribution using the inner info
@@ -31,6 +32,7 @@ int SerfXORCompressor::close() {
 }
 
 uint8_t *SerfXORCompressor::getOut() {
+    out.flush();
     return out.getBuffer();
 }
 
@@ -61,7 +63,7 @@ int SerfXORCompressor::writeFirst(b64 value) {
 
 int SerfXORCompressor::compressValue(b64 value) {
     int thisSize = 0;
-    b64 xorResult = storedVal xor value;
+    b64 xorResult = storedVal ^ value;
 
     if (xorResult == 0) {
         // case 01

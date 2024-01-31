@@ -6,18 +6,6 @@ SerfCompressor::SerfCompressor(int alpha) {
     maxDiff = Elf64Utils::get10iN(alpha);
 }
 
-b64 SerfCompressor::doubleToLongBits(double value) {
-    b64 result;
-    std::memcpy(&result, &value, sizeof(value));
-    return result;
-}
-
-double SerfCompressor::longBitsToDouble(b64 bits) {
-    double result;
-    std::memcpy(&result, &bits, sizeof(bits));
-    return result;
-}
-
 void SerfCompressor::addValue(double v) {
     b64 vPrimeLong = 0;
     numberOfValues++;
@@ -27,12 +15,12 @@ void SerfCompressor::addValue(double v) {
         vPrimeLong = storedErasedLongValue;
     } else {
         if (std::isinf(v) || std::isnan(v)) {
-            vPrimeLong = doubleToLongBits(v);
+            vPrimeLong = Double::doubleToLongBits(v);
         } else {
             b64 vLongs[] = {
-                    doubleToLongBits(v + maxDiff),
-                    doubleToLongBits(v),
-                    doubleToLongBits(v - maxDiff)
+                    Double::doubleToLongBits(v + maxDiff),
+                    Double::doubleToLongBits(v),
+                    Double::doubleToLongBits(v - maxDiff)
             };
             int maxXoredTrailingZerosCount = -1, maxXoredLeadingZerosCount = -1;
             int xoredTrailingZerosCount, xoredLeadingZeroCount;
@@ -40,7 +28,7 @@ void SerfCompressor::addValue(double v) {
             b64 vPrimeLongTemp, mask;
             int e, eraseBits;
             for (b64 vLongTemp: vLongs) {
-                e = ((int) (vLongTemp >> 52)) & 0x7ff;      // e may be different
+                e = (static_cast<int>(vLongTemp >> 52)) & 0x7ff;      // e may be different
                 eraseBits = fAlpha - e;
                 mask = 0xffffffffffffffffL << eraseBits;
                 vPrimeLongTemp = mask & vLongTemp;
@@ -49,14 +37,14 @@ void SerfCompressor::addValue(double v) {
                 xoredLeadingZeroCount = __builtin_clzl(xoredLongValue);
                 if (xoredTrailingZerosCount >= maxXoredTrailingZerosCount
                     && xoredLeadingZeroCount >= maxXoredLeadingZerosCount
-                    && std::abs(longBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
+                    && std::abs(Double::longBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
                     maxXoredTrailingZerosCount = xoredTrailingZerosCount;
                     maxXoredLeadingZerosCount = xoredLeadingZeroCount;
                     vPrimeLong = vPrimeLongTemp;
                 }
             }
         }
-        storedErasedDoubleValue = longBitsToDouble(vPrimeLong);
+        storedErasedDoubleValue = Double::longBitsToDouble(vPrimeLong);
         storedErasedLongValue = vPrimeLong;
     }
 
