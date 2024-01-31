@@ -184,10 +184,10 @@ PostOfficeSolver::buildPostOffice(std::vector<int> &arr, int num, int nonZerosCo
     return {officePositions, tempTotalAppCost};
 }
 
-int PostOfficeSolver::writePositions(std::vector<int> &positions, NewOutputBitStream &out) {
-    int thisSize = out.writeInt(static_cast<int>(positions.size()), 5);
+int PostOfficeSolver::writePositions(std::vector<int> &positions, NewOutputBitStream *out) {
+    int thisSize = out->writeInt(static_cast<int>(positions.size()), 5);
     for (int p: positions) {
-        thisSize += out.writeInt(p, 6);
+        thisSize += out->writeInt(p, 6);
     }
     return thisSize;
 }

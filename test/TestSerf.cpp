@@ -16,8 +16,8 @@ using std::cout, std::endl, std::string, std::vector, std::unordered_map, std::p
 using std::ifstream, std::ofstream;
 
 // Test Parameter Config
-const static string dataSetDir = "/home/czc/WorkSpace/ClionProjects/SerfNative/test/dataSet";
-const static string testOutput = "/home/czc/WorkSpace/ClionProjects/SerfNative/test/result.csv";
+const static string dataSetDir = "../test/dataSet";
+const static string testOutput = "../test/result.csv";
 const static int blockSize = 1000;
 constexpr static int alphaArray[] = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr static double alphaPrecisionTable[] = {1E0, 1E-1, 1E-2, 1E-3, 1E-4, 1E-5, 1E-6, 1E-7, 10E-8};

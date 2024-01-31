@@ -64,10 +64,12 @@ private:
     int leadingBitsPerValue = 3;
     int trailingBitsPerValue = 3;
     const int capacity = 1000;
-    NewOutputBitStream out = NewOutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
+    NewOutputBitStream *out = nullptr;
 
 public:
     SerfXORCompressor();
+
+    ~SerfXORCompressor();
 
     int addValue(b64 value);
 

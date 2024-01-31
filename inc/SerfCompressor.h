@@ -13,7 +13,7 @@ typedef unsigned long b64;
 
 class SerfCompressor {
 private:
-    SerfXORCompressor xor_compressor = SerfXORCompressor();
+    SerfXORCompressor *xor_compressor = new SerfXORCompressor();
     int compressedSizeInBits = 0;
     int numberOfValues = 0;
     double storedCompressionRatio = 0;
@@ -24,6 +24,8 @@ private:
 
 public:
     explicit SerfCompressor(int alpha);
+
+    ~SerfCompressor();
 
     void addValue(double v);
 

@@ -37,7 +37,7 @@ public:
     static std::vector<int> initRoundAndRepresentation(std::vector<int> &distribution, std::vector<int> &representation,
                                                        std::vector<int> &round);
 
-    static int writePositions(std::vector<int> &positions, NewOutputBitStream &out);
+    static int writePositions(std::vector<int> &positions, NewOutputBitStream *out);
 
     constexpr static int positionLength2Bits[] = {
             0, 0, 1, 2, 2, 3, 3, 3, 3,

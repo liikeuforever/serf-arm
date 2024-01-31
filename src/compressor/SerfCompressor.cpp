@@ -6,6 +6,10 @@ SerfCompressor::SerfCompressor(int alpha) {
     maxDiff = Elf64Utils::get10iN(alpha);
 }
 
+SerfCompressor::~SerfCompressor() {
+    delete xor_compressor;
+}
+
 void SerfCompressor::addValue(double v) {
     b64 vPrimeLong = 0;
     numberOfValues++;
@@ -48,7 +52,7 @@ void SerfCompressor::addValue(double v) {
         storedErasedLongValue = vPrimeLong;
     }
 
-    compressedSizeInBits += xor_compressor.addValue(vPrimeLong);
+    compressedSizeInBits += xor_compressor->addValue(vPrimeLong);
 }
 
 long SerfCompressor::getCompressedSizeInBits() const {
@@ -58,7 +62,7 @@ long SerfCompressor::getCompressedSizeInBits() const {
 std::vector<char> SerfCompressor::getBytes() {
     int byteCount = ceil(compressedSizeInBits / 8.0);
     std::vector<char> result; result.reserve(byteCount);
-    auto bytes = xor_compressor.getOut();
+    auto bytes = xor_compressor->getOut();
     for (int i = 0; i < byteCount; ++i) {
         result.push_back(static_cast<char>(bytes[i]));
     }
@@ -68,14 +72,14 @@ std::vector<char> SerfCompressor::getBytes() {
 void SerfCompressor::close() {
     double thisCompressionRatio = compressedSizeInBits / (numberOfValues * 64.0);
     if (storedCompressionRatio < thisCompressionRatio) {
-        xor_compressor.setDistribution();
+        xor_compressor->setDistribution();
     }
     storedCompressionRatio = thisCompressionRatio;
-    compressedSizeInBits += xor_compressor.close();
+    compressedSizeInBits += xor_compressor->close();
 }
 
 void SerfCompressor::refresh() {
     compressedSizeInBits = 0;
     numberOfValues = 0;
-    xor_compressor.refresh();        // note this refresh should be at the last
+    xor_compressor->refresh();        // note this refresh should be at the last
 }
