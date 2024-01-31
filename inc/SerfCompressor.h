@@ -20,7 +20,7 @@ private:
     int fAlpha;
     double maxDiff;
     double storedErasedDoubleValue = NAN;
-    b64 storedErasedLongValue = Double::doubleToLongBits(NAN);
+    b64 storedErasedLongValue = Double::doubleToULongBits(NAN);
 
 public:
     explicit SerfCompressor(int alpha);

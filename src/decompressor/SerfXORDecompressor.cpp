@@ -47,7 +47,7 @@ void SerfXORDecompressor::nextValue() {
 
         value = in->readLong(centerBits) << storedTrailingZeros;
         value = storedVal ^ value;
-        endOfStream = (value == Double::doubleToLongBits(NAN));
+        endOfStream = (value == Double::doubleToULongBits(NAN));
         storedVal = value;
     } else if (in->readInt(1) == 0) {
         // case 00
@@ -60,7 +60,7 @@ void SerfXORDecompressor::nextValue() {
 
         value = in->readLong(centerBits) << storedTrailingZeros;
         value = storedVal ^ value;
-        endOfStream = (value == Double::doubleToLongBits(NAN));
+        endOfStream = (value == Double::doubleToULongBits(NAN));
         storedVal = value;
     }
 }
@@ -78,7 +78,7 @@ void SerfXORDecompressor::next() {
         } else {
             storedVal = 0;
         }
-        endOfStream = (storedVal == Double::doubleToLongBits(NAN));
+        endOfStream = (storedVal == Double::doubleToULongBits(NAN));
     } else {
         nextValue();
     }
@@ -86,7 +86,7 @@ void SerfXORDecompressor::next() {
 
 double SerfXORDecompressor::readValue() {
     next();
-    return Double::longBitsToDouble(storedVal);
+    return Double::UlongBitsToDouble(storedVal);
 }
 
 bool SerfXORDecompressor::available() const {

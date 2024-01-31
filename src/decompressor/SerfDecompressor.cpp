@@ -5,7 +5,6 @@ std::vector<double> SerfDecompressor::decompress() {
     double value;
     while (!std::isnan(value = xor_decompressor->readValue())) {
         values.push_back(value);
-//        std::cout << value << std::endl;
     }
     return std::move(values);
 }

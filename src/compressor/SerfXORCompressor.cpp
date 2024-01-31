@@ -17,7 +17,7 @@ int SerfXORCompressor::addValue(b64 value) {
 }
 
 int SerfXORCompressor::close() {
-    int thisSize = addValue(Double::doubleToLongBits(NAN));
+    int thisSize = addValue(Double::doubleToULongBits(NAN));
     out->flush();
     if (updatePositions) {
         // we update distribution using the inner info

@@ -19,12 +19,12 @@ void SerfCompressor::addValue(double v) {
         vPrimeLong = storedErasedLongValue;
     } else {
         if (std::isinf(v) || std::isnan(v)) {
-            vPrimeLong = Double::doubleToLongBits(v);
+            vPrimeLong = Double::doubleToULongBits(v);
         } else {
             b64 vLongs[] = {
-                    Double::doubleToLongBits(v + maxDiff),
-                    Double::doubleToLongBits(v),
-                    Double::doubleToLongBits(v - maxDiff)
+                    Double::doubleToULongBits(v + maxDiff),
+                    Double::doubleToULongBits(v),
+                    Double::doubleToULongBits(v - maxDiff)
             };
             int maxXoredTrailingZerosCount = -1, maxXoredLeadingZerosCount = -1;
             int xoredTrailingZerosCount, xoredLeadingZeroCount;
@@ -41,14 +41,14 @@ void SerfCompressor::addValue(double v) {
                 xoredLeadingZeroCount = __builtin_clzl(xoredLongValue);
                 if (xoredTrailingZerosCount >= maxXoredTrailingZerosCount
                     && xoredLeadingZeroCount >= maxXoredLeadingZerosCount
-                    && std::abs(Double::longBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
+                    && std::abs(Double::UlongBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
                     maxXoredTrailingZerosCount = xoredTrailingZerosCount;
                     maxXoredLeadingZerosCount = xoredLeadingZeroCount;
                     vPrimeLong = vPrimeLongTemp;
                 }
             }
         }
-        storedErasedDoubleValue = Double::longBitsToDouble(vPrimeLong);
+        storedErasedDoubleValue = Double::UlongBitsToDouble(vPrimeLong);
         storedErasedLongValue = vPrimeLong;
     }
 

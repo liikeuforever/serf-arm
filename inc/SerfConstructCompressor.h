@@ -13,29 +13,21 @@ private:
     int numberOfValues = 0;
     double storedCompressionRatio = 0;
     double maxDiff;
-    unsigned long storedAppLongValue = Double::doubleToLongBits(NAN);
+    long storedAppLongValue = Double::doubleToLongBits(NAN);
     long bw[64]{};
-    SerfXORCompressor xor_compressor;
+    SerfXORCompressor *xor_compressor = nullptr;
 
 public:
-    explicit SerfConstructCompressor(double maxDiff) {
-        this->maxDiff = maxDiff;
-
-        bw[0] = 1;
-        for (int i = 1; i < 64; i++) {
-            bw[i] = bw[i - 1] << 1;
-        }
-    }
-
+    explicit SerfConstructCompressor(double maxDiff);
+    ~SerfConstructCompressor();
     void addValue(double v);
-    long getCompressedSizeInBits();
+    long getCompressedSizeInBits() const;
     std::vector<char> getBytes();
     void close();
     void refresh();
 
 private:
-    long findAppLong(double minDouble, double maxDouble, long sign, double original, long lastLong, double maxDiff);
-
+    long findAppLong(double minDouble, double maxDouble, long sign, double original, long lastLong);
 };
 
 
