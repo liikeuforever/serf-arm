@@ -1,5 +1,5 @@
-#ifndef SERFNATIVE_NEWINPUTBITSTREAM_H
-#define SERFNATIVE_NEWINPUTBITSTREAM_H
+#ifndef SERFNATIVE_INPUTBITSTREAM_H
+#define SERFNATIVE_INPUTBITSTREAM_H
 
 #include <cinttypes>
 #include <cstdlib>
@@ -9,7 +9,7 @@
 #include <cmath>
 #include <endian.h>
 
-class NewInputBitStream {
+class InputBitStream {
 private:
     uint32_t *mem_start_addr;
     uint32_t *data;
@@ -19,11 +19,11 @@ private:
     uint64_t bitcnt;
 
 public:
-    NewInputBitStream() = default;
+    InputBitStream() = default;
 
-    NewInputBitStream(uint8_t *raw_data, size_t size);
+    InputBitStream(uint8_t *raw_data, size_t size);
 
-    ~NewInputBitStream();
+    ~InputBitStream();
 
     uint64_t peek(size_t num);
 
@@ -37,4 +37,4 @@ public:
 };
 
 
-#endif //SERFNATIVE_NEWINPUTBITSTREAM_H
+#endif //SERFNATIVE_INPUTBITSTREAM_H

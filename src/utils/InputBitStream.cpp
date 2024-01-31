@@ -1,6 +1,6 @@
-#include "NewInputBitStream.h"
+#include "InputBitStream.h"
 
-NewInputBitStream::NewInputBitStream(uint8_t *raw_data, size_t size) {
+InputBitStream::InputBitStream(uint8_t *raw_data, size_t size) {
     bool overflow = size % sizeof(uint32_t);
     len = ceil(static_cast<double>(size) / sizeof(uint32_t));
     data = new uint32_t [len];
@@ -28,15 +28,15 @@ NewInputBitStream::NewInputBitStream(uint8_t *raw_data, size_t size) {
     bitcnt = 32;
 }
 
-NewInputBitStream::~NewInputBitStream() {
+InputBitStream::~InputBitStream() {
     delete[] mem_start_addr;
 }
 
-uint64_t NewInputBitStream::peek(size_t num) {
+uint64_t InputBitStream::peek(size_t num) {
     return buffer >> (64 - num);
 }
 
-void NewInputBitStream::forward(size_t num) {
+void InputBitStream::forward(size_t num) {
     bitcnt -= num;
     buffer <<= num;
     if (bitcnt < 32) {
@@ -51,7 +51,7 @@ void NewInputBitStream::forward(size_t num) {
     }
 }
 
-uint64_t NewInputBitStream::readLong(size_t num) {
+uint64_t InputBitStream::readLong(size_t num) {
     if (num == 0) return 0;
     uint64_t result = 0;
     if (num > 32) {
@@ -65,7 +65,7 @@ uint64_t NewInputBitStream::readLong(size_t num) {
     return result;
 }
 
-uint32_t NewInputBitStream::readInt(size_t num) {
+uint32_t InputBitStream::readInt(size_t num) {
     if (num == 0) return 0;
     uint32_t result = 0;
     result |= peek(num);
@@ -73,7 +73,7 @@ uint32_t NewInputBitStream::readInt(size_t num) {
     return result;
 }
 
-uint32_t NewInputBitStream::readBit() {
+uint32_t InputBitStream::readBit() {
     uint32_t result = peek(1);
     forward(1);
     return result;

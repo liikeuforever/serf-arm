@@ -1,5 +1,5 @@
-#ifndef SERFNATIVE_NEWOUTPUTBITSTREAM_H
-#define SERFNATIVE_NEWOUTPUTBITSTREAM_H
+#ifndef SERFNATIVE_OUTPUTBITSTREAM_H
+#define SERFNATIVE_OUTPUTBITSTREAM_H
 
 #include <cinttypes>
 #include <vector>
@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <bitset>
 
-class NewOutputBitStream {
+class OutputBitStream {
 private:
     uint32_t *mem_start_addr;
     uint32_t *output;
@@ -17,9 +17,9 @@ private:
     uint64_t bitcnt;
 
 public:
-    explicit NewOutputBitStream(int bufSize);
+    explicit OutputBitStream(int bufSize);
 
-    ~NewOutputBitStream();
+    ~OutputBitStream();
 
     void write(uint64_t data, uint64_t length);
 
@@ -35,4 +35,4 @@ public:
 };
 
 
-#endif //SERFNATIVE_NEWOUTPUTBITSTREAM_H
+#endif //SERFNATIVE_OUTPUTBITSTREAM_H

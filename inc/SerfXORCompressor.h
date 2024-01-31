@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <limits>
-#include "NewOutputBitStream.h"
+#include "OutputBitStream.h"
 #include "PostOfficeSolver.h"
 #include "Elf64Utils.h"
 
@@ -64,7 +64,7 @@ private:
     int leadingBitsPerValue = 3;
     int trailingBitsPerValue = 3;
     const int capacity = 1000;
-    NewOutputBitStream *out = nullptr;
+    OutputBitStream *out = nullptr;
 
 public:
     SerfXORCompressor();

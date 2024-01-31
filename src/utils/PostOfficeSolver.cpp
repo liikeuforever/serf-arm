@@ -1,7 +1,7 @@
 #include "PostOfficeSolver.h"
 
 #include <utility>
-#include "NewOutputBitStream.h"
+#include "OutputBitStream.h"
 
 PostOfficeResult::PostOfficeResult(std::vector<int> officePositions, int totalAppCost) {
     this->officePositions = std::move(officePositions);
@@ -184,7 +184,7 @@ PostOfficeSolver::buildPostOffice(std::vector<int> &arr, int num, int nonZerosCo
     return {officePositions, tempTotalAppCost};
 }
 
-int PostOfficeSolver::writePositions(std::vector<int> &positions, NewOutputBitStream *out) {
+int PostOfficeSolver::writePositions(std::vector<int> &positions, OutputBitStream *out) {
     int thisSize = out->writeInt(static_cast<int>(positions.size()), 5);
     for (int p: positions) {
         thisSize += out->writeInt(p, 6);

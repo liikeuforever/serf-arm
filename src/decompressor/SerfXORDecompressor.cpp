@@ -29,7 +29,7 @@ void SerfXORDecompressor::initTrailingRepresentation() {
 }
 
 void SerfXORDecompressor::setBytes(char *data, size_t data_size) {
-    in = new NewInputBitStream(reinterpret_cast<uint8_t *>(data), data_size);
+    in = new InputBitStream(reinterpret_cast<uint8_t *>(data), data_size);
 }
 
 void SerfXORDecompressor::refresh() {

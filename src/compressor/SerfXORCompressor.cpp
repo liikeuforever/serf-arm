@@ -38,7 +38,7 @@ uint8_t *SerfXORCompressor::getOut() {
 
 void SerfXORCompressor::refresh() {
     delete out;
-    out = new NewOutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
+    out = new OutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
     first = true;
     updatePositions = false;
     leadDistribution.clear();
@@ -120,7 +120,7 @@ int SerfXORCompressor::compressValue(b64 value) {
 }
 
 SerfXORCompressor::SerfXORCompressor() {
-    out = new NewOutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
+    out = new OutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
 }
 
 SerfXORCompressor::~SerfXORCompressor() {

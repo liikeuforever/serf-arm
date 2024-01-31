@@ -1,6 +1,6 @@
-#include "NewOutputBitStream.h"
+#include "OutputBitStream.h"
 
-NewOutputBitStream::NewOutputBitStream(int bufSize) {
+OutputBitStream::OutputBitStream(int bufSize) {
     len = bufSize / 4 + 1;
     output = new uint32_t [len];
     mem_start_addr = output;
@@ -9,11 +9,11 @@ NewOutputBitStream::NewOutputBitStream(int bufSize) {
     bitcnt = 0;
 }
 
-NewOutputBitStream::~NewOutputBitStream() {
+OutputBitStream::~OutputBitStream() {
     delete[] mem_start_addr;
 }
 
-void NewOutputBitStream::write(uint64_t data, uint64_t length) {
+void OutputBitStream::write(uint64_t data, uint64_t length) {
     data <<= (64 - length);
     buffer |= (data >> bitcnt);
     bitcnt += length;
@@ -24,7 +24,7 @@ void NewOutputBitStream::write(uint64_t data, uint64_t length) {
     }
 }
 
-void NewOutputBitStream::writeLong(uint64_t data, uint64_t length) {
+void OutputBitStream::writeLong(uint64_t data, uint64_t length) {
     if (length == 0) return;
     if (length > 32) {
         write(data >> (length-32), 32);
@@ -33,7 +33,7 @@ void NewOutputBitStream::writeLong(uint64_t data, uint64_t length) {
     write(data, length);
 }
 
-int NewOutputBitStream::flush() {
+int OutputBitStream::flush() {
     if (bitcnt) {
         output[cursor++] = buffer >> 32;
         buffer = 0;
@@ -42,17 +42,17 @@ int NewOutputBitStream::flush() {
     return cursor;
 }
 
-int NewOutputBitStream::writeInt(int n, int length) {
+int OutputBitStream::writeInt(int n, int length) {
     write(static_cast<uint64_t>(n), length);
     return length;
 }
 
-int NewOutputBitStream::writeBit(bool bit) {
+int OutputBitStream::writeBit(bool bit) {
     write(bit, 1);
     return 1;
 }
 
-uint8_t *NewOutputBitStream::getBuffer() {
+uint8_t *OutputBitStream::getBuffer() {
     for (int i = 0; i < len ; ++i) {
         mem_start_addr[i] = htobe32(mem_start_addr[i]);
     }
