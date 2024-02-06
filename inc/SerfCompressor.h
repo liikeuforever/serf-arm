@@ -23,7 +23,7 @@ private:
     b64 storedErasedLongValue = Double::doubleToULongBits(NAN);
 
 public:
-    explicit SerfCompressor(int alpha);
+    explicit SerfCompressor(double maxDiff);
 
     ~SerfCompressor();
 
