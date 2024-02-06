@@ -111,6 +111,8 @@ int main() {
     doubleBuffer.clear();
 
     for (const auto &alpha: alphaArray) {
+        SerfCompressor compressor = SerfCompressor(alpha);
+        SerfDecompressor decompressor = SerfDecompressor();
         for (const auto &dataSet: dataSetList) {
             ifstream dataSetInputStream(dataSet);
             if (!dataSetInputStream.is_open()) {
@@ -123,8 +125,6 @@ int main() {
             long totalCompressSize = 0;
 
             while (readBlock(dataSetInputStream, doubleBuffer)) {
-                SerfCompressor compressor = SerfCompressor(alpha);
-                SerfDecompressor decompressor = SerfDecompressor();
                 clock_t compressStartTime = clock();
                 for (const auto &item: doubleBuffer) {
                     compressor.addValue(item);
@@ -149,6 +149,9 @@ int main() {
                 totalCompressTime += (compressEndTime - compressStartTime);
                 totalDecompressTime += (decompressEndTime - decompressStartTime);
                 totalCompressSize += compressor.getCompressedSizeInBits();
+
+                compressor.refresh();
+                decompressor.refresh();
             }
             dataSetInputStream.close();
 

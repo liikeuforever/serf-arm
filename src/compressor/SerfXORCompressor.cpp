@@ -32,7 +32,6 @@ int SerfXORCompressor::close() {
 }
 
 uint8_t *SerfXORCompressor::getOut() {
-    out->flush();
     return out->getBuffer();
 }
 
@@ -41,8 +40,8 @@ void SerfXORCompressor::refresh() {
     out = new OutputBitStream((int) (((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
     first = true;
     updatePositions = false;
-    leadDistribution.clear();
-    trailDistribution.clear();
+    std::fill(leadDistribution.begin(), leadDistribution.end(), 0);
+    std::fill(trailDistribution.begin(), trailDistribution.end(), 0);
 }
 
 void SerfXORCompressor::setDistribution() {
