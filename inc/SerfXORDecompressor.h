@@ -6,7 +6,6 @@
 
 #include "InputBitStream.h"
 #include "PostOfficeSolver.h"
-#include "Elf64Utils.h"
 #include "Double.h"
 #include <cinttypes>
 

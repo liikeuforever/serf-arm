@@ -5,7 +5,6 @@
 #include <limits>
 #include "OutputBitStream.h"
 #include "PostOfficeSolver.h"
-#include "Elf64Utils.h"
 
 typedef unsigned long b64;
 
