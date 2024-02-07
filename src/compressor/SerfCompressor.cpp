@@ -33,7 +33,7 @@ void SerfCompressor::addValue(double v) {
             int e, eraseBits;
             for (b64 vLongTemp: vLongs) {
                 e = (static_cast<int>(vLongTemp >> 52)) & 0x7ff;      // e may be different
-                eraseBits = fAlpha - e;
+                eraseBits = 1075 - fAlpha - e;
                 mask = 0xffffffffffffffffL << eraseBits;
                 vPrimeLongTemp = mask & vLongTemp;
                 xoredLongValue = vPrimeLongTemp ^ storedErasedLongValue;

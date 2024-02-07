@@ -111,7 +111,7 @@ int main() {
     doubleBuffer.clear();
 
     for (const auto &alpha: alphaArray) {
-        SerfCompressor compressor = SerfCompressor(alpha);
+        SerfCompressor compressor = SerfCompressor(alphaPrecisionTable[alpha]);
         SerfDecompressor decompressor = SerfDecompressor();
         for (const auto &dataSet: dataSetList) {
             ifstream dataSetInputStream(dataSet);
