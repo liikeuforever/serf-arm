@@ -3,6 +3,9 @@
 
 #include <vector>
 #include <limits>
+#include <cfloat>
+#include <cmath>
+
 #include "OutputBitStream.h"
 #include "PostOfficeSolver.h"
 

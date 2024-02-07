@@ -6,6 +6,7 @@
 #include <cfloat>
 #include <iostream>
 #include <cstring>
+#include <cmath>
 
 #include "Double.h"
 
