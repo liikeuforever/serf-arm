@@ -37,8 +37,6 @@ FpcDeCompressor::~FpcDeCompressor()
 }
 void FpcDeCompressor::setBytes(char *data, size_t data_size)
 {
-    // memcpy(inbuf, data, data_size);
-
     inStream = NewInputBitStream(data, data_size);
 }
 std::vector<double> FpcDeCompressor::decompress()
@@ -46,49 +44,20 @@ std::vector<double> FpcDeCompressor::decompress()
     in = ((intot + 1));
     for (i = 0; i < intot; i++)
     {
-        inbuf[i] = (inStream.readInt(4) << 4);
-        code = inbuf[i];
+        code = inStream.readInt(4);
+        bcode = code & 0x7;
 
-        bcode = (code >> 4) & 0x7;
+        if (bcode >= 4)
+            val = inStream.readLong(8 * (bcode + 1));
+        else if (bcode > 0)
+            val = inStream.readLong(8 * bcode);
+        else
+            val = 0;
 
-        _tmp_ = ((in >> 3) << 3);
-        in += bcode + (bcode >> 2);
-        _out_ = ((in >> 3) << 3);
-        if (_tmp_ < _out_)
-        {
-            for (int j = _tmp_; j < _out_; j++)
-            {
-                inbuf[j] = inStream.readLong(8);
-            }
-        }
-    }
-    for (int j = _out_; j < _tmp_ + 16; j++)
-    {
-        inbuf[j] = inStream.readLong(8);
-    }
-
-    in = ((intot + 1));
-    for (i = 0; i < intot; i++)
-    {
-        code = inbuf[i];
-        bcode = (code >> 4) & 0x7;
-
-        val = *((long long *)&inbuf[(in >> 3) << 3]);
-        next = *((long long *)&inbuf[((in >> 3) << 3) + 8]);
-
-        std::bitset<64> val_(val);
-        std::bitset<64> next_(next);
-
-        tmp = (in & 0x7) << 3;
-        val = (unsigned long long)val >> tmp;
-        next <<= 64 - tmp;
-        if (0 == tmp)
-            next = 0;
-        val |= next;
         val &= mask[bcode];
         in += bcode + (bcode >> 2);
 
-        if (0 != (code & 0x80))
+        if (0 != (code & 0x8))
             pred1 = pred2;
         val ^= pred1;
 

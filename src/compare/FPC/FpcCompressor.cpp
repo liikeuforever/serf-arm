@@ -7,9 +7,6 @@
 
 long FpcCompressor::getCompressedSizeInBits()
 {
-    // out -= (bcode + (bcode >> 2));
-    // return 8 * (((out >> 3) << 3) + 8);
-
     return compressedSizeInBits;
 }
 const long long FpcCompressor::mask[8] =
@@ -63,10 +60,10 @@ void FpcCompressor::addValue(double v)
     code = 0;
     if ((unsigned long long)xor1 > (unsigned long long)xor2)
     {
-        code = 0x80;
+        code = 0x8;
         xor1 = xor2;
     }
-    bcode = 7; // 8 bytes
+    bcode = 7; // 8 bytes: bcode指异或值的字节数量
     if (0 == (xor1 >> 56))
         bcode = 6; // 7 bytes
     if (0 == (xor1 >> 48))
@@ -82,46 +79,28 @@ void FpcCompressor::addValue(double v)
     if (0 == xor1)
         bcode = 0; // 0 bytes
 
-    *((long long *)&outbuf[(out >> 3) << 3]) |= xor1 << ((out & 0x7) << 3); // 从左往右写入数据
-    if (0 == (out & 0x7))                                                   // out是8的倍数
-        xor1 = 0;
-    *((long long *)&outbuf[((out >> 3) << 3) + 8]) = (unsigned long long)xor1 >> (64 - ((out & 0x7) << 3));
-
-    long tmp = out;
     out += bcode + (bcode >> 2); // 0 ~ 8 需要写入的数据大小
-    code |= bcode << 4;
-    outbuf[i] = code;
+    code |= bcode;
     i++;
 
     // 第一个outbuf写入数据时，前面的所有数据都已经稳定，可以write进数据流中
-    outStream.writeInt(code >> 4, 4);
+    outStream.writeInt(code, 4);
     compressedSizeInBits += 4;
 
-    _tmp_ = ((tmp >> 3) << 3); // 当前起始位置
-    _out_ = ((out >> 3) << 3); // 下一轮的位置
-    if (_tmp_ < _out_)         // 如果不变，就不写，等待下一轮，但写入的数据肯定到达_out_-1
+    if (bcode >= 4)
     {
-        for (int j = _tmp_; j < _out_; j++)
-        {
-            outStream.writeLong(outbuf[j], 8);
-            compressedSizeInBits += 8;
-        }
+        outStream.writeLong(xor1, (bcode + 1) * 8);
+        compressedSizeInBits += (bcode + 1) * 8;
     }
-    // 最后一轮的情况
-    // ①_tmp_ = _out_，写入停留在_tmp_-1 = _out_-1，还需要写入 _tmp_ ~ _tmp_ + 8 + 8
-    // ②_tmp_ < _out_，写入停留在_out_-1，还需要写入 _out_-1~ _tmp_ + 8 + 8
+    else if (bcode > 0)
+    {
+        outStream.writeLong(xor1, bcode * 8);
+        compressedSizeInBits += bcode * 8;
+    }
 };
 
 std::vector<char> FpcCompressor::getBytes()
 {
-    // std::vector<char> result;
-    // result.reserve(6 + (SIZE / 2) + (SIZE * 8) + 2);
-    // for (int j = 0; j < 6 + (SIZE / 2) + (SIZE * 8) + 2; ++j)
-    // {
-    //     result.push_back(static_cast<char>(outbuf[j]));
-    // }
-    // return result;
-
     int byteCount = ceil(compressedSizeInBits / 8.0);
     std::vector<char> result;
     result.reserve(byteCount);
@@ -139,10 +118,5 @@ void FpcCompressor::close()
         out -= bcode + (bcode >> 2);
     }
     i = 0;
-
-    for (int j = _out_; j < _tmp_ + 16; j++)
-    {
-        outStream.writeLong(outbuf[j], 8);
-        compressedSizeInBits += 8;
-    }
+    outStream.flush();
 };
