@@ -14,9 +14,10 @@ const long long FpcDeCompressor::mask[8] =
      0x0000ffffffffffffLL,
      0x00ffffffffffffffLL,
      static_cast<long long>(0xffffffffffffffff)};
-FpcDeCompressor::FpcDeCompressor(long pred)
+FpcDeCompressor::FpcDeCompressor(long pred, int num)
 {
     predsizem1 = pred;
+    intot = num;
     predsizem1 = (1L << predsizem1) - 1;
 
     hash = 0;
@@ -36,30 +37,54 @@ FpcDeCompressor::~FpcDeCompressor()
 }
 void FpcDeCompressor::setBytes(char *data, size_t data_size)
 {
-    memcpy(inbuf, data, data_size);
-    intot = inbuf[2];
-    intot = (intot << 8) | inbuf[1];
-    intot = (intot << 8) | inbuf[0];
-    in = inbuf[5];
-    in = (in << 8) | inbuf[4];
-    in = (in << 8) | inbuf[3];
+    // memcpy(inbuf, data, data_size);
+
+    inStream = NewInputBitStream(data, data_size);
 }
 std::vector<double> FpcDeCompressor::decompress()
 {
-    in = 6 + ((intot + 1));
+    in = ((intot + 1));
     for (i = 0; i < intot; i++)
     {
-        code = inbuf[6 + i];
+        inbuf[i] = (inStream.readInt(4) << 4);
+        code = inbuf[i];
+
+        bcode = (code >> 4) & 0x7;
+
+        _tmp_ = ((in >> 3) << 3);
+        in += bcode + (bcode >> 2);
+        _out_ = ((in >> 3) << 3);
+        if (_tmp_ < _out_)
+        {
+            for (int j = _tmp_; j < _out_; j++)
+            {
+                inbuf[j] = inStream.readLong(8);
+            }
+        }
+    }
+    for (int j = _out_; j < _tmp_ + 16; j++)
+    {
+        inbuf[j] = inStream.readLong(8);
+    }
+
+    in = ((intot + 1));
+    for (i = 0; i < intot; i++)
+    {
+        code = inbuf[i];
+        bcode = (code >> 4) & 0x7;
+
         val = *((long long *)&inbuf[(in >> 3) << 3]);
         next = *((long long *)&inbuf[((in >> 3) << 3) + 8]);
+
+        std::bitset<64> val_(val);
+        std::bitset<64> next_(next);
+
         tmp = (in & 0x7) << 3;
         val = (unsigned long long)val >> tmp;
         next <<= 64 - tmp;
         if (0 == tmp)
             next = 0;
         val |= next;
-
-        bcode = (code >> 4) & 0x7;
         val &= mask[bcode];
         in += bcode + (bcode >> 2);
 
