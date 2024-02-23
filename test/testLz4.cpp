@@ -19,8 +19,8 @@ using std::cout, std::endl, std::string, std::vector, std::unordered_map, std::p
 using std::ifstream, std::ofstream;
 
 // Test Parameter Config
-const static string dataSetDir = "/home/ruyunlu/桌面/myCode/SerfNative/test/dataSet";
-const static string testOutput = "/home/ruyunlu/桌面/myCode/SerfNative/test/result.csv";
+const static string dataSetDir = "../test/dataSet";
+const static string testOutput = "../test/result.csv";
 const static int blockSize = 1000;
 constexpr static int alphaArray[] = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr static double alphaPrecisionTable[] = {10E0, 10E-1, 10E-2, 10E-3, 10E-4, 10E-5, 10E-6, 10E-7, 10E-8};
@@ -185,19 +185,19 @@ int main()
                 // 压缩
                 vector<Bytef> byteData = transform(doubleBuffer); // 源数据
                 size_t sourceLen = static_cast<size_t>(byteData.size());
-                size_t compressedSize = LZ4F_compressFrameBound(blockSize * 64,nullptr);
+                size_t compressedSize = LZ4F_compressFrameBound(blockSize * 64, nullptr);
                 vector<Bytef> compressedBuffer(compressedSize); // 压缩后数据
                 clock_t compressStartTime = clock();
-                size_t result = LZ4F_compressFrame(compressedBuffer.data(), compressedSize, byteData.data(), sourceLen,nullptr);
+                size_t result = LZ4F_compressFrame(compressedBuffer.data(), compressedSize, byteData.data(), sourceLen, nullptr);
                 clock_t compressEndTime = clock();
 
                 // 解压缩
-                unsigned version=1;
-                LZ4F_dctx* dctx=LZ4F_createDecompressionContext_advanced(LZ4F_defaultCMem,version);
+                unsigned version = 1;
+                LZ4F_dctx *dctx = LZ4F_createDecompressionContext_advanced(LZ4F_defaultCMem, version);
                 vector<double> decompressedData;
                 vector<Bytef> uncompressedBuffer(sourceLen); // 解压缩后数据
                 clock_t decompressStartTime = clock();
-                result = LZ4F_decompress(dctx,uncompressedBuffer.data(), &sourceLen, compressedBuffer.data(), &compressedSize,nullptr);
+                result = LZ4F_decompress(dctx, uncompressedBuffer.data(), &sourceLen, compressedBuffer.data(), &compressedSize, nullptr);
                 clock_t decompressEndTime = clock();
 
                 // 判断准确率

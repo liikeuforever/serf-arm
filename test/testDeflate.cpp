@@ -18,8 +18,8 @@ using std::cout, std::endl, std::string, std::vector, std::unordered_map, std::p
 using std::ifstream, std::ofstream;
 
 // Test Parameter Config
-const static string dataSetDir = "test/dataSet";
-const static string testOutput = "test/result.csv";
+const static string dataSetDir = "../test/dataSet";
+const static string testOutput = "../test/result.csv";
 const static int blockSize = 1000;
 constexpr static int alphaArray[] = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr static double alphaPrecisionTable[] = {10E0, 10E-1, 10E-2, 10E-3, 10E-4, 10E-5, 10E-6, 10E-7, 10E-8};
