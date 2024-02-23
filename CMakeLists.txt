@@ -51,4 +51,3 @@ TARGET_LINK_LIBRARIES(TestSerf PRIVATE SerfNative-lib GTest::gtest_main)
 
 # Discover test
 gtest_discover_tests(TestSerf)
-Footer

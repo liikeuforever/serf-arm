@@ -1,27 +1,40 @@
-// Fast and lightweight implementation of bit-level input stream
-
 #ifndef SERFNATIVE_INPUTBITSTREAM_H
 #define SERFNATIVE_INPUTBITSTREAM_H
 
-#include <fstream>
+#include <cinttypes>
+#include <cstdlib>
+#include <iostream>
+#include <cstring>
+#include <bitset>
+#include <cmath>
+#include <endian.h>
 
 class InputBitStream {
-public:
-    InputBitStream(const char *data, size_t size) : data_(data), size_(size), index_(0), buffer_(0),
-                                                    bitsAvailable_(0) {}
-
-    int readInt(size_t numBits);
-
-    long readLong(size_t numBits);
-
-    int readBit();
-
 private:
-    const char *data_;
-    size_t size_;
-    size_t index_;
-    unsigned char buffer_;
-    size_t bitsAvailable_;
+    uint32_t *mem_start_addr;
+    uint32_t *data;
+    uint64_t len;
+    uint64_t buffer;
+    uint64_t cursor;
+    uint64_t bitcnt;
+
+public:
+    InputBitStream() = default;
+
+    InputBitStream(uint8_t *raw_data, size_t size);
+
+    ~InputBitStream();
+
+    uint64_t peek(size_t num);
+
+    void forward(size_t num);
+
+    uint64_t readLong(size_t num);
+
+    uint32_t readInt(size_t num);
+
+    uint32_t readBit();
 };
+
 
 #endif //SERFNATIVE_INPUTBITSTREAM_H

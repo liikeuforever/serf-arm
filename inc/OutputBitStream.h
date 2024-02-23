@@ -1,31 +1,38 @@
-// Fast and lightweight implementation of bit-level output stream
-
 #ifndef SERFNATIVE_OUTPUTBITSTREAM_H
 #define SERFNATIVE_OUTPUTBITSTREAM_H
 
+#include <cinttypes>
 #include <vector>
-#include <fstream>
+#include <iostream>
+#include <cstdlib>
+#include <bitset>
 
 class OutputBitStream {
-public:
-    OutputBitStream(int bufSize) : buffer_(0), bitsAvailable_(8) {
-        output_.reserve(bufSize);
-    }
+private:
+    uint32_t *mem_start_addr;
+    uint32_t *output;
+    uint64_t len;
+    uint64_t buffer;
+    uint64_t cursor;
+    uint64_t bitcnt;
 
-    int writeInt(int data, size_t numBits);
+public:
+    explicit OutputBitStream(int bufSize);
+
+    ~OutputBitStream();
+
+    void write(uint64_t data, uint64_t length);
+
+    void writeLong(uint64_t data, uint64_t length);
+
+    int flush();
+
+    int writeInt(int n, int length);
 
     int writeBit(bool bit);
 
-    void writeLong(long data, size_t numBits);
-
-    std::vector<char> getBuffer();
-
-    void flush();
-
-private:
-    unsigned char buffer_;
-    size_t bitsAvailable_;
-    std::vector<char> output_;
+    uint8_t *getBuffer();
 };
+
 
 #endif //SERFNATIVE_OUTPUTBITSTREAM_H

@@ -1,25 +1,17 @@
 #include "SerfCompressor.h"
 
-SerfCompressor::SerfCompressor(int alpha) {
-    static_assert(sizeof(long) == 8);
-    fAlpha = 1075 - Elf64Utils::getFAlpha(alpha);
-    maxDiff = Elf64Utils::get10iN(alpha);
+SerfCompressor::SerfCompressor(double maxDiff) {
+    static_assert(sizeof(unsigned long) == 8);
+    this->fAlpha = (int) ceil(std::abs(log(maxDiff) / log(2)));
+    this->maxDiff = maxDiff;
 }
 
-long SerfCompressor::doubleToLongBits(double value) {
-    long result;
-    std::memcpy(&result, &value, sizeof(value));
-    return result;
-}
-
-double SerfCompressor::longBitsToDouble(long bits) {
-    double result;
-    std::memcpy(&result, &bits, sizeof(bits));
-    return result;
+SerfCompressor::~SerfCompressor() {
+    delete xor_compressor;
 }
 
 void SerfCompressor::addValue(double v) {
-    long vPrimeLong = 0;
+    b64 vPrimeLong = 0;
     numberOfValues++;
 
     // let current value be the last value, making an XORed value of 0.
@@ -27,21 +19,21 @@ void SerfCompressor::addValue(double v) {
         vPrimeLong = storedErasedLongValue;
     } else {
         if (std::isinf(v) || std::isnan(v)) {
-            vPrimeLong = doubleToLongBits(v);
+            vPrimeLong = Double::doubleToULongBits(v);
         } else {
-            long vLongs[] = {
-                    doubleToLongBits(v + maxDiff),
-                    doubleToLongBits(v),
-                    doubleToLongBits(v - maxDiff)
+            b64 vLongs[] = {
+                    Double::doubleToULongBits(v + maxDiff),
+                    Double::doubleToULongBits(v),
+                    Double::doubleToULongBits(v - maxDiff)
             };
             int maxXoredTrailingZerosCount = -1, maxXoredLeadingZerosCount = -1;
             int xoredTrailingZerosCount, xoredLeadingZeroCount;
-            long xoredLongValue;
-            long vPrimeLongTemp, mask;
+            b64 xoredLongValue;
+            b64 vPrimeLongTemp, mask;
             int e, eraseBits;
-            for (long vLongTemp: vLongs) {
-                e = ((int) (vLongTemp >> 52)) & 0x7ff;      // e may be different
-                eraseBits = fAlpha - e;
+            for (b64 vLongTemp: vLongs) {
+                e = (static_cast<int>(vLongTemp >> 52)) & 0x7ff;      // e may be different
+                eraseBits = 1075 - fAlpha - e;
                 mask = 0xffffffffffffffffL << eraseBits;
                 vPrimeLongTemp = mask & vLongTemp;
                 xoredLongValue = vPrimeLongTemp ^ storedErasedLongValue;
@@ -49,28 +41,28 @@ void SerfCompressor::addValue(double v) {
                 xoredLeadingZeroCount = __builtin_clzl(xoredLongValue);
                 if (xoredTrailingZerosCount >= maxXoredTrailingZerosCount
                     && xoredLeadingZeroCount >= maxXoredLeadingZerosCount
-                    && std::abs(longBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
+                    && std::abs(Double::UlongBitsToDouble(vPrimeLongTemp) - v) <= maxDiff) {
                     maxXoredTrailingZerosCount = xoredTrailingZerosCount;
                     maxXoredLeadingZerosCount = xoredLeadingZeroCount;
                     vPrimeLong = vPrimeLongTemp;
                 }
             }
         }
-        storedErasedDoubleValue = longBitsToDouble(vPrimeLong);
+        storedErasedDoubleValue = Double::UlongBitsToDouble(vPrimeLong);
         storedErasedLongValue = vPrimeLong;
     }
 
-    compressedSizeInBits += xor_compressor.addValue(vPrimeLong);
+    compressedSizeInBits += xor_compressor->addValue(vPrimeLong);
 }
 
-long SerfCompressor::getCompressedSizeInBits() {
+long SerfCompressor::getCompressedSizeInBits() const {
     return compressedSizeInBits;
 }
 
 std::vector<char> SerfCompressor::getBytes() {
     int byteCount = ceil(compressedSizeInBits / 8.0);
     std::vector<char> result; result.reserve(byteCount);
-    auto bytes = xor_compressor.getOut();
+    auto bytes = xor_compressor->getOut();
     for (int i = 0; i < byteCount; ++i) {
         result.push_back(static_cast<char>(bytes[i]));
     }
@@ -80,14 +72,14 @@ std::vector<char> SerfCompressor::getBytes() {
 void SerfCompressor::close() {
     double thisCompressionRatio = compressedSizeInBits / (numberOfValues * 64.0);
     if (storedCompressionRatio < thisCompressionRatio) {
-        xor_compressor.setDistribution();
+        xor_compressor->setDistribution();
     }
     storedCompressionRatio = thisCompressionRatio;
-    compressedSizeInBits += xor_compressor.close();
+    compressedSizeInBits += xor_compressor->close();
 }
 
 void SerfCompressor::refresh() {
     compressedSizeInBits = 0;
     numberOfValues = 0;
-    xor_compressor.refresh();        // note this refresh should be at the last
+    xor_compressor->refresh();        // note this refresh should be at the last
 }

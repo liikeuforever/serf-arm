@@ -5,18 +5,20 @@
 #include <cstring>
 
 #include "InputBitStream.h"
-#include "NewInputBitStream.h"
 #include "PostOfficeSolver.h"
-#include "Elf64Utils.h"
+#include "Double.h"
+#include <cinttypes>
+
+typedef unsigned long b64;
 
 class SerfXORDecompressor {
-private:
-    long storedVal = 0;
+public:
+    b64 storedVal = 0;
     int storedLeadingZeros = std::numeric_limits<int>::max();
     int storedTrailingZeros = std::numeric_limits<int>::max();
     bool first = true;
     bool endOfStream = false;
-    NewInputBitStream in = NewInputBitStream(nullptr, 0);
+    InputBitStream *in = nullptr;
     std::vector<int> leadingRepresentation = {0, 8, 12, 16, 18, 20, 22, 24};
     std::vector<int> trailingRepresentation = {0, 22, 28, 32, 36, 40, 42, 46};
     int leadingBitsPerValue = 3;
@@ -24,6 +26,8 @@ private:
 
 public:
     SerfXORDecompressor();
+
+    ~SerfXORDecompressor();
 
     void initLeadingRepresentation();
 
@@ -40,9 +44,6 @@ public:
     double readValue();
 
     bool available() const;
-
-private:
-    double longBitsToDouble(long bits);
 };
 
 

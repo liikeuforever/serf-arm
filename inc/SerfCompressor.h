@@ -3,31 +3,34 @@
 
 #include "SerfXORCompressor.h"
 
+#include <cfloat>
 #include <iostream>
 #include <cstring>
+#include <cmath>
+
+#include "Double.h"
+
+typedef unsigned long b64;
 
 class SerfCompressor {
 private:
-    SerfXORCompressor xor_compressor;
+    SerfXORCompressor *xor_compressor = new SerfXORCompressor();
     int compressedSizeInBits = 0;
     int numberOfValues = 0;
     double storedCompressionRatio = 0;
     int fAlpha;
     double maxDiff;
-    double NaN = longBitsToDouble(0x7ff8000000000000L);
-    double storedErasedDoubleValue = NaN;
-    long storedErasedLongValue = doubleToLongBits(NaN);
+    double storedErasedDoubleValue = NAN;
+    b64 storedErasedLongValue = Double::doubleToULongBits(NAN);
 
 public:
-    SerfCompressor(int alpha);
+    explicit SerfCompressor(double maxDiff);
 
-    long doubleToLongBits(double value);
-
-    double longBitsToDouble(long bits);
+    ~SerfCompressor();
 
     void addValue(double v);
 
-    long getCompressedSizeInBits();
+    long getCompressedSizeInBits() const;
 
     std::vector<char> getBytes();
 

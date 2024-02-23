@@ -1,51 +1,60 @@
 #include "OutputBitStream.h"
 
-int OutputBitStream::writeInt(int data, size_t numBits) {
-    int count = static_cast<int>(numBits);
-    while (numBits > 0) {
-        buffer_ |= (((data >> (numBits - 1)) & 1) << (bitsAvailable_ - 1));
-        bitsAvailable_--;
-        numBits--;
+OutputBitStream::OutputBitStream(int bufSize) {
+    len = bufSize / 4 + 1;
+    output = new uint32_t [len];
+    mem_start_addr = output;
+    buffer = 0;
+    cursor = 0;
+    bitcnt = 0;
+}
 
-        if (bitsAvailable_ == 0) {
-            flush();
-        }
+OutputBitStream::~OutputBitStream() {
+    delete[] mem_start_addr;
+}
+
+void OutputBitStream::write(uint64_t data, uint64_t length) {
+    data <<= (64 - length);
+    buffer |= (data >> bitcnt);
+    bitcnt += length;
+    if (bitcnt >= 32) {
+        output[cursor++] = (buffer >> 32);
+        buffer <<= 32;
+        bitcnt -= 32;
     }
-    return count;
+}
+
+void OutputBitStream::writeLong(uint64_t data, uint64_t length) {
+    if (length == 0) return;
+    if (length > 32) {
+        write(data >> (length-32), 32);
+        length -= 32;
+    }
+    write(data, length);
+}
+
+int OutputBitStream::flush() {
+    if (bitcnt) {
+        output[cursor++] = buffer >> 32;
+        buffer = 0;
+        bitcnt = 0;
+    }
+    return cursor;
+}
+
+int OutputBitStream::writeInt(int n, int length) {
+    write(static_cast<uint64_t>(n), length);
+    return length;
 }
 
 int OutputBitStream::writeBit(bool bit) {
-    buffer_ |= ((bit & 1) << (bitsAvailable_ - 1));
-    bitsAvailable_--;
-
-    if (bitsAvailable_ == 0) {
-        flush();
-    }
-
+    write(bit, 1);
     return 1;
 }
 
-void OutputBitStream::writeLong(long data, size_t numBits) {
-    unsigned long data_tmp = static_cast<unsigned long>(data);
-    while (numBits > 0) {
-        buffer_ |= (((data_tmp >> (numBits - 1)) & 1) << (bitsAvailable_ - 1));
-        bitsAvailable_--;
-        numBits--;
-
-        if (bitsAvailable_ == 0) {
-            flush();
-        }
+uint8_t *OutputBitStream::getBuffer() {
+    for (int i = 0; i < len ; ++i) {
+        mem_start_addr[i] = htobe32(mem_start_addr[i]);
     }
+    return (uint8_t *) mem_start_addr;
 }
-
-std::vector<char> OutputBitStream::getBuffer() {
-    flush();
-    return output_;
-}
-
-void OutputBitStream::flush() {
-    output_.push_back(static_cast<char>(buffer_));
-    buffer_ = 0;
-    bitsAvailable_ = 8;
-}
-
