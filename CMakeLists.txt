@@ -12,7 +12,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 SET(GTEST_VER "1.14.0")
 
 # Set include directories
-INCLUDE_DIRECTORIES(inc src/compare/include/deflate src/compare/include/lz4)
+INCLUDE_DIRECTORIES(inc)
 
 # Load FetchContent Module
 INCLUDE(FetchContent)
@@ -32,11 +32,10 @@ FetchContent_MakeAvailable(googletest)
 AUX_SOURCE_DIRECTORY(src/utils SRC_UTILS)
 AUX_SOURCE_DIRECTORY(src/compressor SRC_COMPRESSOR)
 AUX_SOURCE_DIRECTORY(src/decompressor SRC_DECOMPRESSOR)
-AUX_SOURCE_DIRECTORY(src/compare/lib/deflate SRC_DEFLATE)
-AUX_SOURCE_DIRECTORY(src/compare/lib/lz4 SRC_LZ4)
+AUX_SOURCE_DIRECTORY(test SRC_TEST)
 
 # Compile Serf as a library
-ADD_LIBRARY(SerfNative-lib STATIC ${SRC_UTILS} ${SRC_COMPRESSOR} ${SRC_DECOMPRESSOR} ${SRC_DEFLATE} ${SRC_LZ4})
+ADD_LIBRARY(SerfNative-lib STATIC ${SRC_UTILS} ${SRC_COMPRESSOR} ${SRC_DECOMPRESSOR})
 
 # Enable test
 enable_testing()
@@ -52,3 +51,4 @@ TARGET_LINK_LIBRARIES(TestSerf PRIVATE SerfNative-lib GTest::gtest_main)
 
 # Discover test
 gtest_discover_tests(TestSerf)
+Footer
