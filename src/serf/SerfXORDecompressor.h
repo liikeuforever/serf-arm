@@ -6,7 +6,7 @@
 
 #include "InputBitStream.h"
 #include "PostOfficeSolver.h"
-#include "Double.h"
+#include "utils/Double.h"
 #include <cinttypes>
 
 typedef unsigned long b64;

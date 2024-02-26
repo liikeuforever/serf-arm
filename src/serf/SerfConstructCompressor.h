@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "SerfXORCompressor.h"
-#include "Double.h"
+#include "utils/Double.h"
 
 class SerfConstructCompressor {
 private:
