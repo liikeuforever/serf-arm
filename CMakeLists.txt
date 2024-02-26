@@ -55,9 +55,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 # Scan all source code files
-AUX_SOURCE_DIRECTORY(src/utils SRC_UTILS)
-AUX_SOURCE_DIRECTORY(src/compressor SRC_COMPRESSOR)
-AUX_SOURCE_DIRECTORY(src/decompressor SRC_DECOMPRESSOR)
+AUX_SOURCE_DIRECTORY(src/serf/utils SRC_UTILS)
+AUX_SOURCE_DIRECTORY(src/serf/compressor SRC_COMPRESSOR)
+AUX_SOURCE_DIRECTORY(src/serf/decompressor SRC_DECOMPRESSOR)
 AUX_SOURCE_DIRECTORY(test SRC_TEST)
 AUX_SOURCE_DIRECTORY(src/compare/FPC FPC)
 
