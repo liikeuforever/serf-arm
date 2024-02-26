@@ -21,6 +21,7 @@ INCLUDE(FetchContent)
 FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/tags/v${GTEST_VER}.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP true
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
