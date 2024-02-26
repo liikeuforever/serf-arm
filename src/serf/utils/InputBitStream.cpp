@@ -1,4 +1,4 @@
-#include "InputBitStream.h"
+#include "../InputBitStream.h"
 
 InputBitStream::InputBitStream(uint8_t *raw_data, size_t size) {
     bool overflow = size % sizeof(uint32_t);

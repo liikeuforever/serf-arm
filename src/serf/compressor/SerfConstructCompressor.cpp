@@ -1,4 +1,4 @@
-#include "SerfConstructCompressor.h"
+#include "../SerfConstructCompressor.h"
 
 SerfConstructCompressor::SerfConstructCompressor(double maxDiff) {
     this->maxDiff = maxDiff;
