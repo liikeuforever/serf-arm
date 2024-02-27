@@ -1,13 +1,13 @@
-MESSAGE(STATUS "[Serf] Source Code Dir: " ${CMAKE_CURRENT_SOURCE_DIR})
+message(STATUS "[Serf] Source Code Dir: " ${CMAKE_CURRENT_SOURCE_DIR})
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Scan and collect all source code file
-FILE(GLOB_RECURSE LIB_SRC *.cpp *.c)
-FOREACH (F ${LIB_SRC})
-    MESSAGE(STATUS "[Serf] Collected source code file: " ${F})
-ENDFOREACH (F)
+file(GLOB_RECURSE LIB_SRC *.cpp *.c)
+foreach(F ${LIB_SRC})
+    message(STATUS "[Serf] Collected source code file: " ${F})
+endforeach(F)
 
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-ADD_LIBRARY(serf_lib STATIC ${LIB_SRC})
+add_library(serf STATIC ${LIB_SRC})

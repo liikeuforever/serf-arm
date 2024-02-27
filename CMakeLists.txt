@@ -1,55 +1,53 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
+cmake_minimum_required(VERSION 3.20)
 
-PROJECT(Serf)
+project(Serf)
 
 # Set C++ standard version
-SET(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 # -O3 Optimization for release version
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # Print project self check info
-MESSAGE(STATUS "[SelfCheck] Project Source Dir: " ${PROJECT_SOURCE_DIR})
-MESSAGE(STATUS "[SelfCheck] Project Binary Dir: " ${PROJECT_BINARY_DIR})
+message(STATUS "[SelfCheck] Project Source Dir: " ${PROJECT_SOURCE_DIR})
+message(STATUS "[SelfCheck] Project Binary Dir: " ${PROJECT_BINARY_DIR})
 
 # Set executable file path and print it
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-MESSAGE(STATUS "[SelfCheck] Project Executable Dir: " ${EXECUTABLE_OUTPUT_PATH})
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+message(STATUS "[SelfCheck] Project Executable Dir: " ${EXECUTABLE_OUTPUT_PATH})
 
 # Print system info
-IF(WIN32)
-    MESSAGE(STATUS "[SelfCheck] Host System: Windows (32bit)")
-    ADD_DEFINITIONS(-DWIN32)
-ELSEIF(WIN64)
-    MESSAGE(STATUS "[SelfCheck] Host System: Windows (64bit)")
-    ADD_DEFINITIONS(-DWIN64)
-ELSEIF(APPLE)
-    MESSAGE(STATUS "[SelfCheck] Host System: Apple MacOS")
-    ADD_DEFINITIONS(-D__MACH__ )
-ELSEIF(UNIX)
-    MESSAGE(STATUS "[SelfCheck] Host System: Linux/Unix/*nix")
-    ADD_DEFINITIONS(-DUNIX -DLINUX)
-ELSE()
-    MESSAGE(STATUS "[SelfCheck] Host System: Unknown")
-ENDIF(WIN32)
+if(WIN32)
+    message(STATUS "[SelfCheck] Host System: Windows (32bit)")
+    add_definitions(-DWIN32)
+elseif(WIN64)
+    message(STATUS "[SelfCheck] Host System: Windows (64bit)")
+    add_definitions(-DWIN64)
+elseif(APPLE)
+    message(STATUS "[SelfCheck] Host System: Apple MacOS")
+    add_definitions(-D__MACH__)
+elseif(UNIX)
+    message(STATUS "[SelfCheck] Host System: Linux/Unix/*nix")
+    add_definitions(-DUNIX -DLINUX)
+else()
+    message(STATUS "[SelfCheck] Host System: Unknown")
+endif(WIN32)
 
 # Set GoogleTest version
-SET(GTEST_VER "1.14.0")
+set(GTEST_VER "1.14.0")
 
 # Load FetchContent Module
-INCLUDE(FetchContent)
+include(FetchContent)
 
 # Auto fetch GoogleTest source code
 FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/refs/tags/v${GTEST_VER}.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP true
-)
-
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v${GTEST_VER}.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP true)
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 # set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
-ADD_SUBDIRECTORY(src/serf)
-ADD_SUBDIRECTORY(test)
+add_subdirectory(src/serf)
+add_subdirectory(test)

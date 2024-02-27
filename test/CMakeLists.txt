@@ -1,16 +1,16 @@
 # Scan and collect all test file
-FILE(GLOB_RECURSE TEST_SRC *.cpp *.c)
-FOREACH (F ${TEST_SRC})
-    MESSAGE(STATUS "[Serf-Test] Collected source code file: " ${F})
-ENDFOREACH (F)
+file(GLOB_RECURSE TEST_SRC *.cpp *.c)
+foreach(F ${TEST_SRC})
+    message(STATUS "[Serf-Test] Collected source code file: " ${F})
+endforeach(F)
 
 enable_testing()
 
-INCLUDE(GoogleTest)
+include(GoogleTest)
 
-ADD_EXECUTABLE(serf_test ${TEST_SRC})
+add_executable(serf_test ${TEST_SRC})
 
-target_link_libraries(serf_test PRIVATE serf_lib GTest::gtest_main)
+target_link_libraries(serf_test PRIVATE serf GTest::gtest_main)
 
 # Discover test
 gtest_discover_tests(serf_test)
