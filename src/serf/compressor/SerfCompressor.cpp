@@ -1,4 +1,4 @@
-#include "../SerfCompressor.h"
+#include "SerfCompressor.h"
 
 SerfCompressor::SerfCompressor(double maxDiff) {
     static_assert(sizeof(unsigned long) == 8);

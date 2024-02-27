@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
 
-PROJECT(SerfNative)
+PROJECT(Serf)
 
 # Set C++ standard version
 SET(CMAKE_CXX_STANDARD 17)
@@ -36,9 +36,6 @@ ENDIF(WIN32)
 # Set GoogleTest version
 SET(GTEST_VER "1.14.0")
 
-# Set include directories
-INCLUDE_DIRECTORIES(inc)
-
 # Load FetchContent Module
 INCLUDE(FetchContent)
 
@@ -54,15 +51,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-# Scan all source code files
-AUX_SOURCE_DIRECTORY(src/serf/utils SRC_UTILS)
-AUX_SOURCE_DIRECTORY(src/serf/compressor SRC_COMPRESSOR)
-AUX_SOURCE_DIRECTORY(src/serf/decompressor SRC_DECOMPRESSOR)
-AUX_SOURCE_DIRECTORY(test SRC_TEST)
-AUX_SOURCE_DIRECTORY(src/compare/FPC FPC)
-
-# Compile Serf as a library
-ADD_LIBRARY(SerfNative-lib STATIC ${SRC_UTILS} ${SRC_COMPRESSOR} ${SRC_DECOMPRESSOR} ${FPC})
+ADD_SUBDIRECTORY(src/serf)
 
 # Enable test
 enable_testing()
@@ -70,11 +59,8 @@ enable_testing()
 # Load GoogleTest module
 INCLUDE(GoogleTest)
 
-# Compile test source code
-ADD_EXECUTABLE(TestSerf ${SRC_TEST})
-
 # Link Serf library to test program
-TARGET_LINK_LIBRARIES(TestSerf PRIVATE SerfNative-lib GTest::gtest_main)
+TARGET_LINK_LIBRARIES(serf_lib PRIVATE GTest::gtest_main)
 
 # Discover test
-gtest_discover_tests(TestSerf)
+gtest_discover_tests(serf_lib)

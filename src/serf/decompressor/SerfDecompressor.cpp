@@ -1,4 +1,4 @@
-#include "../SerfDecompressor.h"
+#include "SerfDecompressor.h"
 
 std::vector<double> SerfDecompressor::decompress() {
     std::vector<double> values;

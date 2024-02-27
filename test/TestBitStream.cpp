@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "../src/serf/InputBitStream.h"
-#include "../src/serf/OutputBitStream.h"
+#include "../src/serf/utils/InputBitStream.h"
+#include "../src/serf/utils/OutputBitStream.h"
 
 TEST(TestInputBitStream, BasicTest) {
     uint8_t test_data = 0b1011000;

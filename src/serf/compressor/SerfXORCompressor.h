@@ -6,8 +6,8 @@
 #include <cfloat>
 #include <cmath>
 
-#include "OutputBitStream.h"
-#include "PostOfficeSolver.h"
+#include "../utils/OutputBitStream.h"
+#include "../utils/PostOfficeSolver.h"
 
 typedef unsigned long b64;
 

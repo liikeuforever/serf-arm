@@ -4,9 +4,9 @@
 #include <limits>
 #include <cstring>
 
-#include "InputBitStream.h"
-#include "PostOfficeSolver.h"
-#include "utils/Double.h"
+#include "../utils/InputBitStream.h"
+#include "../utils/PostOfficeSolver.h"
+#include "../utils/Double.h"
 #include <cinttypes>
 
 typedef unsigned long b64;
