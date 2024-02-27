@@ -1,5 +1,5 @@
-#include "SerfXORCompressor.h"
-#include "../utils/Double.h"
+#include "compressor/SerfXORCompressor.h"
+#include "utils/Double.h"
 
 int SerfXORCompressor::addValue(b64 value) {
     if (first) {

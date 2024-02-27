@@ -1,13 +1,13 @@
-#ifndef SERFNATIVE_SERFXORCOMPRESSOR_H
-#define SERFNATIVE_SERFXORCOMPRESSOR_H
+#ifndef SERF_SERFXORCOMPRESSOR_H
+#define SERF_SERFXORCOMPRESSOR_H
 
 #include <vector>
 #include <limits>
 #include <cfloat>
 #include <cmath>
 
-#include "../utils/OutputBitStream.h"
-#include "../utils/PostOfficeSolver.h"
+#include "utils/OutputBitStream.h"
+#include "utils/PostOfficeSolver.h"
 
 typedef unsigned long b64;
 
@@ -88,4 +88,4 @@ public:
     int compressValue(b64 value);
 };
 
-#endif //SERFNATIVE_SERFXORCOMPRESSOR_H
+#endif

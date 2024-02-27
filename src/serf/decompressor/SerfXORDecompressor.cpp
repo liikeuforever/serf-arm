@@ -1,4 +1,4 @@
-#include "SerfXORDecompressor.h"
+#include "decompressor/SerfXORDecompressor.h"
 
 SerfXORDecompressor::SerfXORDecompressor() {
     in = nullptr;

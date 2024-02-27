@@ -1,11 +1,11 @@
-#ifndef SERFNATIVE_SERFCONSTRUCTCOMPRESSOR_H
-#define SERFNATIVE_SERFCONSTRUCTCOMPRESSOR_H
+#ifndef SERF_SERFCONSTRUCTCOMPRESSOR_H
+#define SERF_SERFCONSTRUCTCOMPRESSOR_H
 
 #include <vector>
 #include <cmath>
 
-#include "SerfXORCompressor.h"
-#include "../utils/Double.h"
+#include "compressor/SerfXORCompressor.h"
+#include "utils/Double.h"
 
 class SerfConstructCompressor {
 private:
@@ -31,4 +31,4 @@ private:
 };
 
 
-#endif //SERFNATIVE_SERFCONSTRUCTCOMPRESSOR_H
+#endif

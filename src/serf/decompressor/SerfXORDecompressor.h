@@ -1,13 +1,13 @@
-#ifndef SERFNATIVE_SERFXORDECOMPRESSOR_H
-#define SERFNATIVE_SERFXORDECOMPRESSOR_H
+#ifndef SERF_SERFXORDECOMPRESSOR_H
+#define SERF_SERFXORDECOMPRESSOR_H
 
 #include <limits>
 #include <cstring>
-
-#include "../utils/InputBitStream.h"
-#include "../utils/PostOfficeSolver.h"
-#include "../utils/Double.h"
 #include <cinttypes>
+
+#include "utils/InputBitStream.h"
+#include "utils/PostOfficeSolver.h"
+#include "utils/Double.h"
 
 typedef unsigned long b64;
 
@@ -46,5 +46,4 @@ public:
     bool available() const;
 };
 
-
-#endif //SERFNATIVE_SERFXORDECOMPRESSOR_H
+#endif

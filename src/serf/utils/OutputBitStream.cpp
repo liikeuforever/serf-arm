@@ -1,4 +1,4 @@
-#include "OutputBitStream.h"
+#include "utils/OutputBitStream.h"
 
 OutputBitStream::OutputBitStream(int bufSize) {
     len = bufSize / 4 + 1;

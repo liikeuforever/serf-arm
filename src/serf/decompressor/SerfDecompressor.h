@@ -1,9 +1,8 @@
-#ifndef SERFNATIVE_SERFDECOMPRESSOR_H
-#define SERFNATIVE_SERFDECOMPRESSOR_H
-
-#include "SerfXORDecompressor.h"
+#ifndef SERF_SERFDECOMPRESSOR_H
+#define SERF_SERFDECOMPRESSOR_H
 
 #include <vector>
+#include "decompressor/SerfXORDecompressor.h"
 
 class SerfDecompressor {
 public:
@@ -25,4 +24,4 @@ public:
     bool available();
 };
 
-#endif //SERFNATIVE_SERFDECOMPRESSOR_H
+#endif

@@ -1,5 +1,5 @@
-#ifndef SERFNATIVE_DOUBLE_H
-#define SERFNATIVE_DOUBLE_H
+#ifndef SERF_DOUBLE_H
+#define SERF_DOUBLE_H
 
 namespace Double {
     inline unsigned long doubleToULongBits(double value) {
@@ -19,4 +19,4 @@ namespace Double {
     }
 }
 
-#endif //SERFNATIVE_DOUBLE_H
+#endif

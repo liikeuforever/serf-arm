@@ -1,14 +1,13 @@
-#ifndef SERFNATIVE_SERFCOMPRESSOR_H
-#define SERFNATIVE_SERFCOMPRESSOR_H
-
-#include "SerfXORCompressor.h"
+#ifndef SERF_SERFCOMPRESSOR_H
+#define SERF_SERFCOMPRESSOR_H
 
 #include <cfloat>
 #include <iostream>
 #include <cstring>
 #include <cmath>
 
-#include "../utils/Double.h"
+#include "compressor/SerfXORCompressor.h"
+#include "utils/Double.h"
 
 typedef unsigned long b64;
 

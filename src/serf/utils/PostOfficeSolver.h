@@ -1,12 +1,12 @@
-#ifndef SERFNATIVE_POSTOFFICESOLVER_H
-#define SERFNATIVE_POSTOFFICESOLVER_H
+#ifndef SERF_POSTOFFICESOLVER_H
+#define SERF_POSTOFFICESOLVER_H
 
 #include <algorithm>
 #include <limits>
 #include <utility>
 #include <vector>
 
-#include "OutputBitStream.h"
+#include "utils/OutputBitStream.h"
 
 class PostOfficeResult {
 private:
@@ -51,4 +51,4 @@ public:
     };
 };
 
-#endif //SERFNATIVE_POSTOFFICESOLVER_H
+#endif

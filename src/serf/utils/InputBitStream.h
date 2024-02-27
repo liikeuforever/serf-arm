@@ -1,5 +1,5 @@
-#ifndef SERFNATIVE_INPUTBITSTREAM_H
-#define SERFNATIVE_INPUTBITSTREAM_H
+#ifndef SERF_INPUTBITSTREAM_H
+#define SERF_INPUTBITSTREAM_H
 
 #include <cinttypes>
 #include <cstdlib>
@@ -37,4 +37,4 @@ public:
 };
 
 
-#endif //SERFNATIVE_INPUTBITSTREAM_H
+#endif

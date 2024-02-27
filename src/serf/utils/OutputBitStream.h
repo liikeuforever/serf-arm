@@ -1,5 +1,5 @@
-#ifndef SERFNATIVE_OUTPUTBITSTREAM_H
-#define SERFNATIVE_OUTPUTBITSTREAM_H
+#ifndef SERF_OUTPUTBITSTREAM_H
+#define SERF_OUTPUTBITSTREAM_H
 
 #include <cinttypes>
 #include <vector>
@@ -34,5 +34,4 @@ public:
     uint8_t *getBuffer();
 };
 
-
-#endif //SERFNATIVE_OUTPUTBITSTREAM_H
+#endif
