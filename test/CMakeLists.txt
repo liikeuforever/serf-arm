@@ -1,6 +1,8 @@
 # Scan and collect all test file
 FILE(GLOB_RECURSE TEST_SRC *.cpp *.c)
-MESSAGE(STATUS "[Serf-Test] Collected test file: " ${TEST_SRC})
+FOREACH (F ${TEST_SRC})
+    MESSAGE(STATUS "[Serf-Test] Collected source code file: " ${F})
+ENDFOREACH (F)
 
 enable_testing()
 

@@ -4,7 +4,9 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Scan and collect all source code file
 FILE(GLOB_RECURSE LIB_SRC *.cpp *.c)
-MESSAGE(STATUS "[Serf] Collected source code file: " ${LIB_SRC})
+FOREACH (F ${LIB_SRC})
+    MESSAGE(STATUS "[Serf] Collected source code file: " ${F})
+ENDFOREACH (F)
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
