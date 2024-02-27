@@ -8,4 +8,4 @@ MESSAGE(STATUS "[Serf] Collected source code file: " ${LIB_SRC})
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-ADD_LIBRARY(serf_lib STATIC LIB_SRC)
+ADD_LIBRARY(serf_lib STATIC ${LIB_SRC})

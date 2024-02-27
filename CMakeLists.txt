@@ -52,15 +52,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 ADD_SUBDIRECTORY(src/serf)
-
-# Enable test
-enable_testing()
-
-# Load GoogleTest module
-INCLUDE(GoogleTest)
-
-# Link Serf library to test program
-TARGET_LINK_LIBRARIES(serf_lib PRIVATE GTest::gtest_main)
-
-# Discover test
-gtest_discover_tests(serf_lib)
+ADD_SUBDIRECTORY(test)
