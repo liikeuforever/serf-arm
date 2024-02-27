@@ -7,3 +7,9 @@
 /____/\___/_/  /_/
 ```
 Streaming error-bound compressor.
+
+## How to generate project buildsystem
+`cmake -DCMAKE_BUILD_TYPE=release -B build`
+
+## How to build Serf and test
+`cmake --build build && ./build/bin/serf_test`
