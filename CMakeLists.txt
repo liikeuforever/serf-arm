@@ -36,6 +36,8 @@ else()
     message(STATUS "[SelfCheck] Host System: Unknown")
 endif(WIN32)
 
+message(STATUS "[SelfCheck] Loading GoogleTest module")
+
 # Set GoogleTest version
 set(GTEST_VER "1.14.0")
 
@@ -51,6 +53,8 @@ FetchContent_Declare(
 # set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
+
+message(STATUS "[SelfCheck] Loaded GoogleTest module")
 
 add_subdirectory(src/serf)
 add_subdirectory(test)
