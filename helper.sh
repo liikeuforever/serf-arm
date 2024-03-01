@@ -8,7 +8,7 @@ elif [[ $1 == "test" ]]; then
 	./build/bin/serf_test
 elif [[ $1 == "clean" ]]; then
 	if [[ -e build ]]; then
-		rm -r ./Build
+		rm -r ./build
 	fi
 else
 	printf "%s\n" "Serf Build Helper for everyone"
