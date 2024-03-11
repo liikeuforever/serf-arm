@@ -5,9 +5,9 @@
 #include <cstring>
 #include <cinttypes>
 
-#include "utils/InputBitStream.h"
-#include "utils/PostOfficeSolver.h"
-#include "utils/Double.h"
+#include "serf/utils/InputBitStream.h"
+#include "serf/utils/PostOfficeSolver.h"
+#include "serf/utils/Double.h"
 
 typedef unsigned long b64;
 

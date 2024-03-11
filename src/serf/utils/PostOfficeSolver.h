@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "utils/OutputBitStream.h"
+#include "serf/utils/OutputBitStream.h"
 
 class PostOfficeResult {
 private:

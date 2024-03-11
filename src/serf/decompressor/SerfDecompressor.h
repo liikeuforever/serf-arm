@@ -2,7 +2,7 @@
 #define SERF_SERFDECOMPRESSOR_H
 
 #include <vector>
-#include "decompressor/SerfXORDecompressor.h"
+#include "serf/decompressor/SerfXORDecompressor.h"
 
 class SerfDecompressor {
 public:

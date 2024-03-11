@@ -1,7 +1,7 @@
 #include <utility>
 
-#include "utils/PostOfficeSolver.h"
-#include "utils/OutputBitStream.h"
+#include "serf/utils/PostOfficeSolver.h"
+#include "serf/utils/OutputBitStream.h"
 
 PostOfficeResult::PostOfficeResult(std::vector<int> officePositions, int totalAppCost) {
     this->officePositions = std::move(officePositions);

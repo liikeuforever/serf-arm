@@ -4,8 +4,8 @@
 #include <vector>
 #include <cmath>
 
-#include "compressor/SerfXORCompressor.h"
-#include "utils/Double.h"
+#include "serf/compressor/SerfXORCompressor.h"
+#include "serf/utils/Double.h"
 
 class SerfConstructCompressor {
 private:
