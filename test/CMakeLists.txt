@@ -4,7 +4,7 @@ foreach(F ${TEST_SRC})
     message(STATUS "[Serf-Test] Collected source code file: " ${F})
 endforeach(F)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 enable_testing()
 
