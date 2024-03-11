@@ -10,9 +10,9 @@ enable_testing()
 
 include(GoogleTest)
 
-add_executable(serf_test ${TEST_SRC})
-
-target_link_libraries(serf_test PRIVATE serf GTest::gtest_main)
-
-# Discover test
-gtest_discover_tests(serf_test)
+foreach(F ${TEST_SRC})
+    get_filename_component(prjName ${F} NAME_WE)
+    add_executable(${prjName} ${F})
+    target_link_libraries(${prjName} PRIVATE serf GTest::gtest_main)
+    gtest_discover_tests(${prjName})
+endforeach(F)
