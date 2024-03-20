@@ -4,7 +4,7 @@
 #include "serf/utils/OutputBitStream.h"
 
 PostOfficeResult::PostOfficeResult(std::vector<int> officePositions, int totalAppCost) {
-    this->officePositions = std::move(officePositions);
+    this->officePositions = officePositions;
     this->totalAppCost = totalAppCost;
 }
 

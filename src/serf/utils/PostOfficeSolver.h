@@ -22,17 +22,6 @@ public:
 };
 
 class PostOfficeSolver {
-private:
-    constexpr static int pow2z[] = {1, 2, 4, 8, 16, 32};
-
-    static std::vector<int>
-    calTotalCountAndNonZerosCounts(const std::vector<int> &arr, std::vector<int> &outPreNonZerosCount,
-                                   std::vector<int> &outPostNonZerosCount);
-
-    static PostOfficeResult
-    buildPostOffice(std::vector<int> &arr, int num, int nonZerosCount, std::vector<int> &preNonZerosCount,
-                    std::vector<int> &postNonZerosCount);
-
 public:
     static std::vector<int> initRoundAndRepresentation(std::vector<int> &distribution, std::vector<int> &representation,
                                                        std::vector<int> &round);
@@ -49,6 +38,17 @@ public:
             6, 6, 6, 6, 6, 6, 6, 6,
             6, 6, 6, 6, 6, 6, 6, 6
     };
+
+private:
+    constexpr static int pow2z[] = {1, 2, 4, 8, 16, 32};
+
+    static std::vector<int>
+    calTotalCountAndNonZerosCounts(const std::vector<int> &arr, std::vector<int> &outPreNonZerosCount,
+                                   std::vector<int> &outPostNonZerosCount);
+
+    static PostOfficeResult
+    buildPostOffice(std::vector<int> &arr, int num, int nonZerosCount, std::vector<int> &preNonZerosCount,
+                    std::vector<int> &postNonZerosCount);
 };
 
 #endif
