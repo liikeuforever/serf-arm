@@ -1,21 +1,18 @@
 #ifndef SERF_DOUBLE_H
 #define SERF_DOUBLE_H
 
+#include <cstdint>
+#include <limits>
+
 class Double {
 public:
-    static inline unsigned long doubleToULongBits(double value) {
-        return *reinterpret_cast<unsigned long *>(&value);
+    static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
+
+    static inline uint64_t doubleToLongBits(double value) {
+        return *reinterpret_cast<uint64_t *>(&value);
     }
 
-    static inline double UlongBitsToDouble(unsigned long bits) {
-        return *reinterpret_cast<double *>(&bits);
-    }
-
-    static inline long doubleToLongBits(double value) {
-        return *reinterpret_cast<long *>(&value);
-    }
-
-    static inline double longBitsToDouble(long bits) {
+    static inline double longBitsToDouble(uint64_t bits) {
         return *reinterpret_cast<double *>(&bits);
     }
 };
