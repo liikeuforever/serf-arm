@@ -1,11 +1,8 @@
 #ifndef SERF_INPUT_BIT_STREAM_H
 #define SERF_INPUT_BIT_STREAM_H
 
-#include <cinttypes>
 #include <cstdlib>
-#include <iostream>
 #include <cstring>
-#include <bitset>
 #include <cmath>
 #include <endian.h>
 

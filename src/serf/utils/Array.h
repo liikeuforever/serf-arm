@@ -1,9 +1,8 @@
 #ifndef SERF_ARRAY_H
 #define SERF_ARRAY_H
 
+#include <initializer_list>
 #include <memory>
-
-#include "serf/utils/InputBitStream.h"
 
 template<typename T>
 class Array {
@@ -14,7 +13,7 @@ public:
 public:
     explicit Array<T> (int length): length(length) {
         this->_data = std::make_unique<T []>(this->length);
-    };
+    }
 
     Array<T> (std::initializer_list<T> list): length(list.size()) {
         this->_data = std::make_unique<T []>(this->length);
@@ -35,7 +34,7 @@ public:
 
     T &operator [] (int index) {
         return this->_data[index];
-    };
+    }
 };
 
 #endif //SERF_ARRAY_H
