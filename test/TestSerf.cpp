@@ -40,9 +40,10 @@ std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
     double buffer;
     while (!fileInputStreamRef.eof() && readDoubleCount < BLOCK_SIZE) {
         fileInputStreamRef >> buffer;
-        returnData.push_back(buffer);
+        returnData.emplace_back(buffer);
         ++readDoubleCount;
     }
+    return returnData;
 }
 
 TEST(TestSerf, BoundingTest) {
@@ -52,5 +53,15 @@ TEST(TestSerf, BoundingTest) {
         if (!dataSetInputStream.is_open()) {
             fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
         }
+        std::vector<double> originalData = readBlock(dataSetInputStream);
+        SerfXORCompressor xor_compressor(1000, 0.01, 2);
+        SerfXORDecompressor xor_decompressor(2);
+        for (const auto &item: originalData) {
+            xor_compressor.addValue(item);
+        }
+        xor_compressor.close();
+        Array<uint8_t> result = xor_compressor.getBytes();
+        std::vector<double> decompressed = xor_decompressor.decompress(result);
+        EXPECT_EQ(originalData.size(), decompressed.size());
     }
 }
