@@ -1,49 +1,37 @@
-#ifndef SERF_SERFXORDECOMPRESSOR_H
-#define SERF_SERFXORDECOMPRESSOR_H
+#ifndef SERF_XOR_DECOMPRESSOR_H
+#define SERF_XOR_DECOMPRESSOR_H
 
-#include <limits>
-#include <cstring>
-#include <cinttypes>
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 #include "serf/utils/InputBitStream.h"
-#include "serf/utils/PostOfficeSolver.h"
 #include "serf/utils/Double.h"
-
-typedef unsigned long b64;
+#include "serf/utils/Array.h"
+#include "serf/utils/Serf64Utils.h"
 
 class SerfXORDecompressor {
-public:
-    b64 storedVal = 0;
-    int storedLeadingZeros = std::numeric_limits<int>::max();
-    int storedTrailingZeros = std::numeric_limits<int>::max();
-    bool first = true;
-    bool endOfStream = false;
-    InputBitStream *in = nullptr;
-    std::vector<int> leadingRepresentation = {0, 8, 12, 16, 18, 20, 22, 24};
-    std::vector<int> trailingRepresentation = {0, 22, 28, 32, 36, 40, 42, 46};
+private:
+    uint64_t storedVal = Double::doubleToLongBits(2);
+    uint64_t storedLeadingZeros = std::numeric_limits<int>::max();
+    uint64_t storedTrailingZeros = std::numeric_limits<int>::max();
+    std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();
+    Array<int> leadingRepresentation = {0, 8, 12, 16, 18, 20, 22, 24};
+    Array<int> trailingRepresentation = {0, 22, 28, 32, 36, 40, 42, 46};
     int leadingBitsPerValue = 3;
     int trailingBitsPerValue = 3;
+    bool equalWin = false;
+    long adjustD;
 
 public:
-    SerfXORDecompressor();
+    explicit SerfXORDecompressor(long adjustD): adjustD(adjustD) {};
+    std::vector<double> decompress(Array<uint8_t> bs);
 
-    ~SerfXORDecompressor();
-
-    void initLeadingRepresentation();
-
-    void initTrailingRepresentation();
-
-    void setBytes(char *data, size_t data_size);
-
-    void refresh();
-
-    void nextValue();
-
-    void next();
-
-    double readValue();
-
-    bool available() const;
+private:
+    uint64_t readValue();
+    void updateFlagAndPositionsIfNeeded();
+    void updateLeadingRepresentation();
+    void updateTrailingRepresentation();
 };
 
-#endif
+#endif //SERF_XOR_DECOMPRESSOR_H

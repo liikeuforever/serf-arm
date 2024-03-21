@@ -4,29 +4,28 @@
 #include <algorithm>
 #include <limits>
 #include <utility>
-#include <vector>
 
+#include "serf/utils/Array.h"
 #include "serf/utils/OutputBitStream.h"
 
 class PostOfficeResult {
 private:
-    std::vector<int> officePositions;
+    Array<int> officePositions;
     int totalAppCost;
 
 public:
-    PostOfficeResult(std::vector<int> officePositions, int totalAppCost);
+    PostOfficeResult(const Array<int>& officePositions, int totalAppCost);
 
-    std::vector<int> getOfficePositions();
+    Array<int> getOfficePositions();
 
     int getAppCost() const;
 };
 
 class PostOfficeSolver {
 public:
-    static std::vector<int> initRoundAndRepresentation(std::vector<int> distribution, std::vector<int> representation,
-                                                       std::vector<int> round);
+    static Array<int> initRoundAndRepresentation(Array<int> distribution, Array<int> representation, Array<int> round);
 
-    static int writePositions(std::vector<int> &positions, OutputBitStream *out);
+    static int writePositions(Array<int> &positions, OutputBitStream *out);
 
     constexpr static int positionLength2Bits[] = {
             0, 0, 1, 2, 2, 3, 3, 3, 3,
@@ -42,13 +41,9 @@ public:
 private:
     constexpr static int pow2z[] = {1, 2, 4, 8, 16, 32};
 
-    static std::vector<int>
-    calTotalCountAndNonZerosCounts(const std::vector<int> &arr, std::vector<int> &outPreNonZerosCount,
-                                   std::vector<int> &outPostNonZerosCount);
+    static Array<int> calTotalCountAndNonZerosCounts(Array<int> arr, Array<int> outPreNonZerosCount, Array<int> outPostNonZerosCount);
 
-    static PostOfficeResult
-    buildPostOffice(std::vector<int> &arr, int num, int nonZerosCount, std::vector<int> &preNonZerosCount,
-                    std::vector<int> &postNonZerosCount);
+    static PostOfficeResult buildPostOffice(Array<int> arr, int num, int nonZerosCount, Array<int> preNonZerosCount, Array<int>postNonZerosCount);
 };
 
 #endif

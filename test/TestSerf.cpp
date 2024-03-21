@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "serf/compressor/SerfCompressor.h"
-#include "serf/decompressor/SerfDecompressor.h"
+#include "serf/compressor/SerfXORCompressor.h"
+#include "serf/decompressor/SerfXORDecompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";

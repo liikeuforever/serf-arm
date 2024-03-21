@@ -78,3 +78,31 @@ uint32_t InputBitStream::readBit() {
     forward(1);
     return result;
 }
+
+void InputBitStream::setBuffer(Array<uint8_t> newBuffer) {
+    bool overflow = newBuffer.length % sizeof(uint32_t);
+    len = ceil(static_cast<double>(newBuffer.length) / sizeof(uint32_t));
+    data = new uint32_t [len];
+    mem_start_addr = data;
+
+    auto *tmp_ptr = (uint32_t *) (newBuffer._data.get());
+    if (overflow) {
+        for (int i = 0; i < len - 1; ++i) {
+            data[i] = be32toh(*(tmp_ptr + i));
+        }
+        int byte_index = 1;
+        data[len - 1] = 0;
+        for (uint64_t i = (newBuffer.length / 4 * 4); i < newBuffer.length; ++i) {
+            data[len - 1] |= (newBuffer[i] << (32 - byte_index * 8));
+            ++byte_index;
+        }
+    } else {
+        for (int i = 0; i < len; ++i) {
+            data[i] = be32toh(*(tmp_ptr + i));
+        }
+    }
+
+    this->buffer = ((uint64_t) data[0]) << 32;
+    cursor = 1;
+    bitcnt = 32;
+}

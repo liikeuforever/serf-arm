@@ -1,5 +1,5 @@
-#ifndef SERF_INPUTBITSTREAM_H
-#define SERF_INPUTBITSTREAM_H
+#ifndef SERF_INPUT_BIT_STREAM_H
+#define SERF_INPUT_BIT_STREAM_H
 
 #include <cinttypes>
 #include <cstdlib>
@@ -8,6 +8,8 @@
 #include <bitset>
 #include <cmath>
 #include <endian.h>
+
+#include "serf/utils/Array.h"
 
 class InputBitStream {
 private:
@@ -34,6 +36,8 @@ public:
     uint32_t readInt(size_t num);
 
     uint32_t readBit();
+
+    void setBuffer(Array<uint8_t> newBuffer);
 };
 
 
