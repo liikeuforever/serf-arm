@@ -1,23 +1,19 @@
 #include "SerfXORCompressor.h"
 
-SerfXORCompressor::SerfXORCompressor(int capacity, double maxDiff, uint64_t adjustD) : maxDiff(maxDiff),
-                                                                                       adjustD(adjustD) {
-    this->out = new OutputBitStream(((capacity + 1) * 8 + capacity / 8 + 1) * 1.2);
+SerfXORCompressor::SerfXORCompressor(uint32_t capacity, double maxDiff, uint64_t adjustD) : maxDiff(maxDiff),
+                                                                                            adjustD(adjustD) {
+    this->out = std::make_unique<OutputBitStream>(floor(((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
     this->compressedSizeInBits = out->writeInt(0, 2);
-}
-
-SerfXORCompressor::~SerfXORCompressor() {
-    delete out;
 }
 
 void SerfXORCompressor::addValue(double v) {
     uint64_t thisVal;
     // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
-    if (abs(Double::longBitsToDouble(storedVal) - adjustD - v) > maxDiff) {
+    if (std::abs(Double::longBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
-        double adjustValue = v + adjustD;
+        double adjustValue = v + static_cast<double>(adjustD);
         thisVal = Serf64Utils::findAppLong(adjustValue - maxDiff, adjustValue + maxDiff, v, storedVal, maxDiff,
-                                           adjustD);
+                                           static_cast<double>(adjustD));
     } else {
         // let current value be the last value, making an XORed value of 0.
         thisVal = storedVal;
@@ -32,14 +28,16 @@ long SerfXORCompressor::getCompressedSizeInBits() {
     return storedCompressedSizeInBits;
 }
 
-const char *SerfXORCompressor::getBytes() {
-    return outBuffer;
+std::unique_ptr<uint8_t []> SerfXORCompressor::getBytes() {
+    return std::move(outBuffer);
 }
 
 void SerfXORCompressor::close() {
     compressedSizeInBits += compressValue(Serf64Utils::END_SIGN);
     out->flush();
-    outBuffer = Arrays.copyOf(out->getBuffer(), (int) ceil(compressedSizeInBits / 8.0));
+    outBuffer = std::make_unique<uint8_t []>(std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
+    std::copy(out->getBuffer(), out->getBuffer() +
+            static_cast<int>(std::ceil(static_cast<double>(compressedSizeInBits) / 8.0)), outBuffer.get());
     out->refresh();
     storedCompressedSizeInBits = compressedSizeInBits;
     compressedSizeInBits = updateFlagAndPositionsIfNeeded();
@@ -119,27 +117,25 @@ int SerfXORCompressor::compressValue(uint64_t value) {
 int SerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     int len;
     equalWin = equalVote > 0;
-    double thisCompressionRatio = compressedSizeInBits / (numberOfValues * 64.0);
+    double thisCompressionRatio = static_cast<double>(compressedSizeInBits) / (numberOfValues * 64.0);
     if (storedCompressionRatio < thisCompressionRatio) {
         // update positions
-        int []
-        leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation,
+        std::vector<int> leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation,
                                                                      leadingRound);
-        leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.length];
-        int []
-        trailPositions = PostOfficeSolver.initRoundAndRepresentation(trailDistribution, trailingRepresentation,
+        leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.size()];
+        std::vector<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation,
                                                                      trailingRound);
-        trailingBitsPerValue = PostOfficeSolver.positionLength2Bits[trailPositions.length];
+        trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.size()];
         len = out->writeInt(equalWin ? 3 : 1, 2)
-              + PostOfficeSolver.writePositions(leadPositions, out)
-              + PostOfficeSolver.writePositions(trailPositions, out);
+              + PostOfficeSolver::writePositions(leadPositions, out.get())
+              + PostOfficeSolver::writePositions(trailPositions, out.get());
     } else {
         len = out->writeInt(equalWin ? 2 : 0, 2);
     }
     equalVote = 0;
     storedCompressionRatio = thisCompressionRatio;
     numberOfValues = 0;
-    Arrays.fill(leadDistribution, 0);
-    Arrays.fill(trailDistribution, 0);
+    std::fill_n(leadDistribution.begin(), 64, 0);
+    std::fill_n(trailDistribution.begin(), 64, 0);
     return len;
 }

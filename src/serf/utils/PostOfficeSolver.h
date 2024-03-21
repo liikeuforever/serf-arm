@@ -1,5 +1,5 @@
-#ifndef SERF_POSTOFFICESOLVER_H
-#define SERF_POSTOFFICESOLVER_H
+#ifndef SERF_POST_OFFICE_SOLVER_H
+#define SERF_POST_OFFICE_SOLVER_H
 
 #include <algorithm>
 #include <limits>
@@ -16,15 +16,15 @@ private:
 public:
     PostOfficeResult(std::vector<int> officePositions, int totalAppCost);
 
-    std::vector<int> getOfficePositions() const;
+    std::vector<int> getOfficePositions();
 
     int getAppCost() const;
 };
 
 class PostOfficeSolver {
 public:
-    static std::vector<int> initRoundAndRepresentation(std::vector<int> &distribution, std::vector<int> &representation,
-                                                       std::vector<int> &round);
+    static std::vector<int> initRoundAndRepresentation(std::vector<int> distribution, std::vector<int> representation,
+                                                       std::vector<int> round);
 
     static int writePositions(std::vector<int> &positions, OutputBitStream *out);
 

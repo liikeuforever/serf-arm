@@ -3,22 +3,23 @@
 
 #include <cstdint>
 #include <cmath>
+#include <vector>
+
 #include "serf/utils/Double.h"
 #include "serf/utils/OutputBitStream.h"
 #include "serf/compressor/ICompressor.h"
 #include "serf/utils/Serf64Utils.h"
+#include "serf/utils/PostOfficeSolver.h"
 
 class SerfXORCompressor : ICompressor {
 public:
-    SerfXORCompressor(int capacity, double maxDiff, uint64_t adjustD);
-
-    ~SerfXORCompressor();
+    SerfXORCompressor(uint32_t capacity, double maxDiff, uint64_t adjustD);
 
     void addValue(double v) override;
 
     long getCompressedSizeInBits() override;
 
-    const char *getBytes() override;
+    std::unique_ptr<uint8_t []> getBytes() override;
 
     void close() override;
 
@@ -27,8 +28,8 @@ private:
     uint64_t storedVal = Double::doubleToLongBits(2);
     long compressedSizeInBits;
     long storedCompressedSizeInBits = 0;
-    OutputBitStream *out;
-    char *outBuffer;
+    std::unique_ptr<OutputBitStream> out;
+    std::unique_ptr<uint8_t []> outBuffer;
     int numberOfValues = 0;
     double storedCompressionRatio = 0;
     int equalVote = 0;
@@ -76,8 +77,8 @@ private:
     };
     int leadingBitsPerValue = 3;
     int trailingBitsPerValue = 3;
-    std::array<int, 64> leadDistribution;
-    std::array<int, 64> trailDistribution;
+    std::vector<int> leadDistribution = std::vector<int>(64);
+    std::vector<int> trailDistribution = std::vector<int>(64);
     int storedLeadingZeros = std::numeric_limits<int>::max();
     int storedTrailingZeros = std::numeric_limits<int>::max();
 

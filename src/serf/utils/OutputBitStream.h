@@ -21,13 +21,15 @@ public:
 
     uint32_t writeLong(uint64_t src, uint64_t length);
 
-    void flush();
-
     uint32_t writeInt(uint32_t src, uint32_t length);
 
     uint32_t writeBit(bool bit);
 
+    void flush();
+
     uint8_t *getBuffer();
+
+    void refresh();
 };
 
 #endif

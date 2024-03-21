@@ -34,14 +34,6 @@ uint32_t OutputBitStream::writeLong(uint64_t src, uint64_t length) {
     return write(src, length);
 }
 
-void OutputBitStream::flush() {
-    if (bit_in_buffer) {
-        data[cursor++] = buffer >> 32;
-        buffer = 0;
-        bit_in_buffer = 0;
-    }
-}
-
 uint32_t OutputBitStream::writeInt(uint32_t src, uint32_t length) {
     return write(static_cast<uint64_t>(src), length);
 }
@@ -55,4 +47,18 @@ uint8_t *OutputBitStream::getBuffer() {
         data[i] = htobe32(data[i]);
     }
     return (uint8_t *) data;
+}
+
+void OutputBitStream::flush() {
+    if (bit_in_buffer) {
+        data[cursor++] = buffer >> 32;
+        buffer = 0;
+        bit_in_buffer = 0;
+    }
+}
+
+void OutputBitStream::refresh() {
+    cursor = 0;
+    bit_in_buffer = 0;
+    buffer = 0;
 }
