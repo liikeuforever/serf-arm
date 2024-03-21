@@ -1,35 +1,31 @@
-#ifndef SERF_OUTPUTBITSTREAM_H
-#define SERF_OUTPUTBITSTREAM_H
+#ifndef SERF_OUTPUT_BIT_STREAM_H
+#define SERF_OUTPUT_BIT_STREAM_H
 
-#include <cinttypes>
-#include <vector>
-#include <iostream>
 #include <cstdlib>
-#include <bitset>
+#include <cstdint>
 
 class OutputBitStream {
 private:
-    uint32_t *mem_start_addr;
-    uint32_t *output;
-    uint64_t len;
+    uint32_t *data;
+    uint32_t data_len;
+    uint32_t cursor;
+    uint32_t bit_in_buffer;
     uint64_t buffer;
-    uint64_t cursor;
-    uint64_t bitcnt;
 
 public:
-    explicit OutputBitStream(int bufSize);
+    explicit OutputBitStream(uint32_t bufSize);
 
     ~OutputBitStream();
 
-    void write(uint64_t data, uint64_t length);
+    uint32_t write(uint64_t src, uint32_t length);
 
-    void writeLong(uint64_t data, uint64_t length);
+    uint32_t writeLong(uint64_t src, uint64_t length);
 
-    int flush();
+    void flush();
 
-    int writeInt(int n, int length);
+    uint32_t writeInt(uint32_t src, uint32_t length);
 
-    int writeBit(bool bit);
+    uint32_t writeBit(bool bit);
 
     uint8_t *getBuffer();
 };
