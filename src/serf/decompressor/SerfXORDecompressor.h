@@ -25,7 +25,8 @@ private:
 
 public:
     explicit SerfXORDecompressor(long adjustD): adjustD(adjustD) {};
-    std::vector<double> decompress(Array<uint8_t> bs);
+
+    std::vector<double> decompress(const Array<uint8_t> &bs);
 
 private:
     uint64_t readValue();
