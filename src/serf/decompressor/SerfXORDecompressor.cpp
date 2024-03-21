@@ -1,13 +1,13 @@
 #include "SerfXORDecompressor.h"
 #include "serf/utils/PostOfficeSolver.h"
 
-std::vector<double> SerfXORDecompressor::decompress(Array<uint8_t> bs) {
+std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {
     in->setBuffer(bs);
     updateFlagAndPositionsIfNeeded();
     std::vector<double> values(1024);
     uint64_t value;
     while ((value = readValue()) != Serf64Utils::END_SIGN) {
-        values.push_back(Double::longBitsToDouble(value) - this->adjustD);
+        values.push_back(Double::longBitsToDouble(value) - static_cast<double>(adjustD));
         storedVal = value;
     }
     return values;
@@ -63,25 +63,25 @@ void SerfXORDecompressor::updateFlagAndPositionsIfNeeded() {
 }
 
 void SerfXORDecompressor::updateLeadingRepresentation() {
-    int num = in->readInt(5);
+    int num = static_cast<int>(in->readInt(5));
     if (num == 0) {
         num = 32;
     }
     leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
     leadingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
-        leadingRepresentation[i] = in->readInt(6);
+        leadingRepresentation[i] = static_cast<int>(in->readInt(6));
     }
 }
 
 void SerfXORDecompressor::updateTrailingRepresentation() {
-    int num = in->readInt(5);
+    int num = static_cast<int>(in->readInt(5));
     if (num == 0) {
         num = 32;
     }
     trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
     trailingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
-        trailingRepresentation[i] = in->readInt(6);
+        trailingRepresentation[i] = static_cast<int>(in->readInt(6));
     }
 }

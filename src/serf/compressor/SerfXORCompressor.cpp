@@ -126,11 +126,11 @@ int SerfXORCompressor::updateFlagAndPositionsIfNeeded() {
         Array<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation,
                                                                      trailingRound);
         trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length];
-        len = out->writeInt(equalWin ? 3 : 1, 2)
+        len = static_cast<int>(out->writeInt(equalWin ? 3 : 1, 2))
               + PostOfficeSolver::writePositions(leadPositions, out.get())
               + PostOfficeSolver::writePositions(trailPositions, out.get());
     } else {
-        len = out->writeInt(equalWin ? 2 : 0, 2);
+        len = static_cast<int>(out->writeInt(equalWin ? 2 : 0, 2));
     }
     equalVote = 0;
     storedCompressionRatio = thisCompressionRatio;
