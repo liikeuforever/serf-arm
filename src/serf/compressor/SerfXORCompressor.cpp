@@ -35,8 +35,9 @@ void SerfXORCompressor::close() {
     compressedSizeInBits += compressValue(Serf64Utils::END_SIGN);
     out->flush();
     outBuffer = Array<uint8_t> (std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
+    uint8_t *buffer = out->getBuffer();
     for (int i = 0; i < std::ceil(static_cast<double>(compressedSizeInBits) / 8.0); ++i) {
-        outBuffer[i] = out->getBuffer()[i];
+        outBuffer[i] = buffer[i];
     }
     out->refresh();
     storedCompressedSizeInBits = compressedSizeInBits;

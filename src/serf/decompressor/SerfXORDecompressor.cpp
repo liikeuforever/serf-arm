@@ -4,10 +4,10 @@
 std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {
     in->setBuffer(bs);
     updateFlagAndPositionsIfNeeded();
-    std::vector<double> values(1024);
+    std::vector<double> values;
     uint64_t value;
     while ((value = readValue()) != Serf64Utils::END_SIGN) {
-        values.push_back(Double::longBitsToDouble(value) - static_cast<double>(adjustD));
+        values.emplace_back(Double::longBitsToDouble(value) - static_cast<double>(adjustD));
         storedVal = value;
     }
     return values;
@@ -15,17 +15,17 @@ std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {
 
 uint64_t SerfXORDecompressor::readValue() {
     uint64_t value = storedVal;
-    uint32_t centerBits;
+    int centerBits;
 
     if (equalWin) {
         if (in->readInt(1) == 0) {
             if (in->readInt(1) != 1) {
                 // case 00
-                uint32_t leadAndTrail = in->readInt(leadingBitsPerValue + trailingBitsPerValue);
-                uint32_t lead = leadAndTrail >> trailingBitsPerValue;
-                uint32_t trail = ~(0xffffffffU << trailingBitsPerValue) & leadAndTrail;
-                storedLeadingZeros = leadingRepresentation[static_cast<int>(lead)];
-                storedTrailingZeros = trailingRepresentation[static_cast<int>(trail)];
+                int leadAndTrail = static_cast<int>(in->readInt(leadingBitsPerValue + trailingBitsPerValue));
+                int lead = leadAndTrail >> trailingBitsPerValue;
+                int trail = ~(0xffffffff << trailingBitsPerValue) & leadAndTrail;
+                storedLeadingZeros = leadingRepresentation[lead];
+                storedTrailingZeros = trailingRepresentation[trail];
             }
             centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
             value = in->readLong(centerBits) << storedTrailingZeros;
@@ -40,11 +40,11 @@ uint64_t SerfXORDecompressor::readValue() {
             value = storedVal ^ value;
         } else if (in->readInt(1) == 0) {
             // case 00
-            uint32_t leadAndTrail = in->readInt(leadingBitsPerValue + trailingBitsPerValue);
-            uint32_t lead = leadAndTrail >> trailingBitsPerValue;
-            uint32_t trail = ~(0xffffffffU << trailingBitsPerValue) & leadAndTrail;
-            storedLeadingZeros = leadingRepresentation[static_cast<int>(lead)];
-            storedTrailingZeros = trailingRepresentation[static_cast<int>(trail)];
+            int leadAndTrail = static_cast<int>(in->readInt(leadingBitsPerValue + trailingBitsPerValue));
+            int lead = leadAndTrail >> trailingBitsPerValue;
+            int trail = ~(0xffffffff << trailingBitsPerValue) & leadAndTrail;
+            storedLeadingZeros = leadingRepresentation[lead];
+            storedTrailingZeros = trailingRepresentation[trail];
             centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
 
             value = in->readLong(centerBits) << storedTrailingZeros;

@@ -13,8 +13,8 @@
 class SerfXORDecompressor {
 private:
     uint64_t storedVal = Double::doubleToLongBits(2);
-    uint64_t storedLeadingZeros = std::numeric_limits<int>::max();
-    uint64_t storedTrailingZeros = std::numeric_limits<int>::max();
+    int storedLeadingZeros = std::numeric_limits<int>::max();
+    int storedTrailingZeros = std::numeric_limits<int>::max();
     std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();
     Array<int> leadingRepresentation = {0, 8, 12, 16, 18, 20, 22, 24};
     Array<int> trailingRepresentation = {0, 22, 28, 32, 36, 40, 42, 46};
