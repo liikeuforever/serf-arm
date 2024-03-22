@@ -6,13 +6,13 @@ uint64_t Serf64Utils::findAppLong(double min, double max, double v, uint64_t las
         return findAppLong(min, max, 0, v, lastLong, maxDiff, adjustD);
     } else if (max <= 0) {
         // both negative
-        return findAppLong(-max, -min, 0x8000000000000000L, v, lastLong, maxDiff, adjustD);
+        return findAppLong(-max, -min, 0x8000000000000000ULL, v, lastLong, maxDiff, adjustD);
     } else if (lastLong >> 63 == 0) {
         // consider positive part only, to make more leading zeros
         return findAppLong(0, max, 0, v, lastLong, maxDiff, adjustD);
     } else {
         // consider negative part only, to make more leading zeros
-        return findAppLong(0, -min, 0x8000000000000000L, v, lastLong, maxDiff, adjustD);
+        return findAppLong(0, -min, 0x8000000000000000ULL, v, lastLong, maxDiff, adjustD);
     }
 }
 
