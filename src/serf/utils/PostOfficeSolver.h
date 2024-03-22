@@ -23,7 +23,7 @@ public:
 
 class PostOfficeSolver {
 public:
-    static Array<int> initRoundAndRepresentation(Array<int> distribution, Array<int> representation, Array<int> round);
+    static Array<int> initRoundAndRepresentation(Array<int> &distribution, Array<int> &representation, Array<int> &round);
 
     static int writePositions(Array<int> &positions, OutputBitStream *out);
 
@@ -41,9 +41,9 @@ public:
 private:
     constexpr static int pow2z[] = {1, 2, 4, 8, 16, 32};
 
-    static Array<int> calTotalCountAndNonZerosCounts(Array<int> arr, Array<int> outPreNonZerosCount, Array<int> outPostNonZerosCount);
+    static Array<int> calTotalCountAndNonZerosCounts(Array<int> &arr, Array<int> &outPreNonZerosCount, Array<int> &outPostNonZerosCount);
 
-    static PostOfficeResult buildPostOffice(Array<int> arr, int num, int nonZerosCount, Array<int> preNonZerosCount, Array<int>postNonZerosCount);
+    static PostOfficeResult buildPostOffice(Array<int> &arr, int num, int nonZerosCount, Array<int> &preNonZerosCount, Array<int> &postNonZerosCount);
 };
 
 #endif

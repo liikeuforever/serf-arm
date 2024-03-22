@@ -16,7 +16,7 @@ int PostOfficeResult::getAppCost() const {
 }
 
 
-Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> distribution, Array<int> representation, Array<int> round) {
+Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> &distribution, Array<int> &representation, Array<int> &round) {
     Array<int> preNonZerosCount(distribution.length);   // 当前及前面的非零个数（包括当前）
     Array<int> postNonZerosCount(distribution.length);  // 当前后面的非零个数（不包括当前）
     Array<int> totalCountAndNonZerosCount = calTotalCountAndNonZerosCounts(distribution, preNonZerosCount,
@@ -58,7 +58,7 @@ Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> distribution,
     return positions;
 }
 
-Array<int> PostOfficeSolver::calTotalCountAndNonZerosCounts(Array<int> arr, Array<int> outPreNonZerosCount, Array<int> outPostNonZerosCount) {
+Array<int> PostOfficeSolver::calTotalCountAndNonZerosCounts(Array<int> &arr, Array<int> &outPreNonZerosCount, Array<int> &outPostNonZerosCount) {
     int nonZerosCount = arr.length;
     int totalCount = arr[0];
     outPreNonZerosCount[0] = 1;            // 第一个视为非零
@@ -78,7 +78,7 @@ Array<int> PostOfficeSolver::calTotalCountAndNonZerosCounts(Array<int> arr, Arra
 }
 
 PostOfficeResult
-PostOfficeSolver::buildPostOffice(Array<int> arr, int num, int nonZerosCount, Array<int> preNonZerosCount, Array<int> postNonZerosCount) {
+PostOfficeSolver::buildPostOffice(Array<int> &arr, int num, int nonZerosCount, Array<int> &preNonZerosCount, Array<int> &postNonZerosCount) {
     int originalNum = num;
     num = std::min(num, nonZerosCount);
 
