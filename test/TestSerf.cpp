@@ -3,12 +3,30 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "serf/compressor/SerfXORCompressor.h"
 #include "serf/decompressor/SerfXORDecompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
+const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D {
+    std::make_pair("init.csv", 0),
+    std::make_pair("Air-pressure.csv", 0),
+    std::make_pair("Air-sensor.csv", 128),
+    std::make_pair("Bird-migration.csv", 60),
+    std::make_pair("Bitcoin-price.csv", 511220),
+    std::make_pair("Basel-temp.csv", 77),
+    std::make_pair("Basel-wind.csv", 128),
+    std::make_pair("City-temp.csv", 355),
+    std::make_pair("Dew-point-temp.csv", 94),
+    std::make_pair("IR-bio-temp.csv", 49),
+    std::make_pair("PM10-dust.csv", 256),
+    std::make_pair("Stocks-DE.csv", 253),
+    std::make_pair("Stocks-UK.csv", 8047),
+    std::make_pair("Stocks-USA.csv", 243),
+    std::make_pair("Wind-Speed.csv", 2)
+};
 constexpr static double MAX_DIFF[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 
 /**
@@ -49,19 +67,35 @@ std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
 TEST(TestSerf, BoundingTest) {
     std::vector<std::string> dataSetList = scanDataSet();
     for (const auto &dataSet: dataSetList) {
-        std::ifstream dataSetInputStream(dataSet);
-        if (!dataSetInputStream.is_open()) {
-            fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+        std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
+        int adjustD = FILE_TO_ADJUST_D.find(fileName)->second;
+        for (const auto &max_diff: MAX_DIFF) {
+            std::ifstream dataSetInputStream(dataSet);
+            if (!dataSetInputStream.is_open()) {
+                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+            }
+
+            SerfXORCompressor xor_compressor(1000, max_diff, adjustD);
+            SerfXORDecompressor xor_decompressor(adjustD);
+
+            std::vector<double> originalData;
+            while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+                for (const auto &item: originalData) {
+                    xor_compressor.addValue(item);
+                }
+                xor_compressor.close();
+                Array<uint8_t> result = xor_compressor.getBytes();
+                std::vector<double> decompressed = xor_decompressor.decompress(result);
+                EXPECT_EQ(originalData.size(), decompressed.size());
+                for (int i = 0; i < BLOCK_SIZE; ++i) {
+                    if (std::abs(originalData[i] - decompressed[i]) > max_diff) {
+                        GTEST_LOG_(INFO) << originalData[i] << " " << decompressed[i] << " " << max_diff;
+                    }
+                    EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
+                }
+            }
+
+            dataSetInputStream.close();
         }
-        std::vector<double> originalData = readBlock(dataSetInputStream);
-        SerfXORCompressor xor_compressor(1000, 0.01, 2);
-        SerfXORDecompressor xor_decompressor(2);
-        for (const auto &item: originalData) {
-            xor_compressor.addValue(item);
-        }
-        xor_compressor.close();
-        Array<uint8_t> result = xor_compressor.getBytes();
-        std::vector<double> decompressed = xor_decompressor.decompress(result);
-        EXPECT_EQ(originalData.size(), decompressed.size());
     }
 }
