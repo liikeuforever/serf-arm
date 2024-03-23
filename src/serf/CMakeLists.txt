@@ -10,4 +10,4 @@ endforeach(F)
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-add_library(serf STATIC ${LIB_SRC})
+add_library(serf SHARED ${LIB_SRC})

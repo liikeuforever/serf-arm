@@ -64,7 +64,7 @@ std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
     return returnData;
 }
 
-TEST(TestSerf, BoundingTest) {
+TEST(TestSerf, CorrectnessTest) {
     std::vector<std::string> dataSetList = scanDataSet();
     for (const auto &dataSet: dataSetList) {
         std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
@@ -94,6 +94,41 @@ TEST(TestSerf, BoundingTest) {
                     EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
                 }
             }
+
+            dataSetInputStream.close();
+        }
+    }
+}
+
+// TODO Finish Performance Test
+TEST(TestSerf, PerformanceTest) {
+    std::vector<std::string> dataSetList = scanDataSet();
+    for (const auto &dataSet: dataSetList) {
+        std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
+        int adjustD = FILE_TO_ADJUST_D.find(fileName)->second;
+        for (const auto &max_diff: MAX_DIFF) {
+            std::ifstream dataSetInputStream(dataSet);
+            if (!dataSetInputStream.is_open()) {
+                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+            }
+
+            SerfXORCompressor xor_compressor(1000, max_diff, adjustD);
+            SerfXORDecompressor xor_decompressor(adjustD);
+
+            int blockCount = 0;
+            std::vector<double> originalData;
+            while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+                ++blockCount;
+                for (const auto &item: originalData) {
+                    xor_compressor.addValue(item);
+                }
+                xor_compressor.close();
+                Array<uint8_t> result = xor_compressor.getBytes();
+                std::vector<double> decompressed = xor_decompressor.decompress(result);
+            }
+
+            long compressBits = xor_compressor.getCompressedSizeInBits();
+            long originalBits = blockCount * BLOCK_SIZE * 64L;
 
             dataSetInputStream.close();
         }
