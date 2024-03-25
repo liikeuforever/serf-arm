@@ -9,6 +9,8 @@
 #include "serf/decompressor/SerfXORDecompressor.h"
 #include "serf/compressor/TorchSerfXORCompressor.h"
 #include "serf/decompressor/TorchSerfXORDecompressor.h"
+#include "serf/compressor/SerfQtCompressor.h"
+#include "serf/decompressor/SerfQtDecompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -92,6 +94,40 @@ TEST(TestSerfXOR, CorrectnessTest) {
                 for (int i = 0; i < BLOCK_SIZE; ++i) {
                     if (std::abs(originalData[i] - decompressed[i]) > max_diff) {
                         GTEST_LOG_(INFO) << originalData[i] << " " << decompressed[i] << " " << max_diff;
+                    }
+                    EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
+                }
+            }
+
+            dataSetInputStream.close();
+        }
+    }
+}
+
+TEST(TestSerfQt, CorrectnessTest) {
+    std::vector<std::string> dataSetList = scanDataSet();
+    for (const auto &dataSet: dataSetList) {
+        for (const auto &max_diff: MAX_DIFF) {
+            std::ifstream dataSetInputStream(dataSet);
+            if (!dataSetInputStream.is_open()) {
+                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+            }
+
+            SerfQtCompressor qt_compressor(max_diff);
+            SerfQtDecompressor qt_decompressor(max_diff);
+
+            std::vector<double> originalData;
+            while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+                for (const auto &item: originalData) {
+                    qt_compressor.addValue(item);
+                }
+                qt_compressor.close();
+                Array<uint8_t> result = qt_compressor.getBytes();
+                std::vector<double> decompressed = qt_decompressor.decompress(result);
+                EXPECT_EQ(originalData.size(), decompressed.size());
+                for (int i = 0; i < BLOCK_SIZE; ++i) {
+                    if (std::abs(originalData[i] - decompressed[i]) > max_diff) {
+                        GTEST_LOG_(INFO) << " " << originalData[i] << " " << decompressed[i] << " " << max_diff;
                     }
                     EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
                 }
