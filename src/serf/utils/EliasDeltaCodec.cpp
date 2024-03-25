@@ -28,7 +28,7 @@ int EliasDeltaCodec::encode(int64_t number, OutputBitStream &outputBitStream) {
 }
 
 int64_t EliasDeltaCodec::decode(InputBitStream &inputBitStream) {
-    int64_t num = 1;
+    uint64_t num = 1;
     int32_t len = 1;
     int32_t lengthOfLen = 0;
     while (inputBitStream.readBit() == 0)
@@ -36,6 +36,6 @@ int64_t EliasDeltaCodec::decode(InputBitStream &inputBitStream) {
     len <<= lengthOfLen;
     len |= static_cast<int32_t>(inputBitStream.readInt(lengthOfLen));
     num <<= (len - 1);
-    num |= static_cast<int32_t>(inputBitStream.readLong(len - 1));
-    return num;
+    num |= inputBitStream.readLong(len - 1);
+    return *reinterpret_cast<int64_t *>(&num);
 }
