@@ -11,6 +11,8 @@
 #include "serf/decompressor/TorchSerfXORDecompressor.h"
 #include "serf/compressor/SerfQtCompressor.h"
 #include "serf/decompressor/SerfQtDecompressor.h"
+#include "serf/compressor32/SerfXORCompressor32.h"
+#include "serf/decompressor32/SerfXORDecompressor32.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -32,6 +34,7 @@ const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D {
     std::make_pair("Wind-Speed.csv", 2)
 };
 constexpr static double MAX_DIFF[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+constexpr static float MAX_DIFF_32[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.
@@ -60,6 +63,23 @@ std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
     std::vector<double> returnData;
     int readDoubleCount = 0;
     double buffer;
+    while (!fileInputStreamRef.eof() && readDoubleCount < BLOCK_SIZE) {
+        fileInputStreamRef >> buffer;
+        returnData.emplace_back(buffer);
+        ++readDoubleCount;
+    }
+    return returnData;
+}
+
+/**
+ * @brief Read a block of float from file input stream, whose size is equal to BLOCK_SIZE
+ * @param fileInputStreamRef Input steam where this function reads
+ * @return A vector of doubles, whose size may be less than BLOCK_SIZE
+ */
+std::vector<float> readBlock32(std::ifstream &fileInputStreamRef) {
+    std::vector<float> returnData;
+    int readDoubleCount = 0;
+    float buffer;
     while (!fileInputStreamRef.eof() && readDoubleCount < BLOCK_SIZE) {
         fileInputStreamRef >> buffer;
         returnData.emplace_back(buffer);
@@ -161,6 +181,44 @@ TEST(TestTorchSerfXOR, CorrectnessTest) {
                     GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
                 }
                 EXPECT_TRUE(std::abs(originalData - decompressed) <= max_diff);
+            }
+
+            dataSetInputStream.close();
+        }
+    }
+}
+
+TEST(TestSerfXOR32, CorrectnessTest) {
+    std::vector<std::string> dataSetList = scanDataSet();
+    for (const auto &dataSet: dataSetList) {
+        for (const auto &max_diff: MAX_DIFF_32) {
+            std::ifstream dataSetInputStream(dataSet);
+            if (!dataSetInputStream.is_open()) {
+                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+            }
+
+            SerfXORCompressor32 xor_compressor_32(BLOCK_SIZE, max_diff);
+            SerfXORDecompressor32 xor_decompressor_32;
+
+            std::vector<float> originalData;
+            while ((originalData = readBlock32(dataSetInputStream)).size() == BLOCK_SIZE) {
+                for (const auto &item: originalData) {
+                    xor_compressor_32.addValue(item);
+                }
+                xor_compressor_32.close();
+                Array<uint8_t> result = xor_compressor_32.getBytes();
+                std::vector<float> decompressed = xor_decompressor_32.decompress(result);
+                EXPECT_EQ(originalData.size(), decompressed.size());
+                if (originalData.size() != decompressed.size()) {
+                    GTEST_LOG_(INFO) << dataSet << " " << max_diff;
+                } else {
+                    for (int i = 0; i < BLOCK_SIZE; ++i) {
+                        if (std::abs(originalData[i] - decompressed[i]) > max_diff) {
+                            GTEST_LOG_(INFO) << originalData[i] << " " << decompressed[i] << " " << max_diff;
+                        }
+                        EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
+                    }
+                }
             }
 
             dataSetInputStream.close();
