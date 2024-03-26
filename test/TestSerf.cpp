@@ -17,6 +17,8 @@
 #include "serf/decompressor/NetSerfXORDecompressor.h"
 #include "serf/compressor/NetSerfQtCompressor.h"
 #include "serf/decompressor/NetSerfQtDecompressor.h"
+#include "serf/compressor32/SerfQtCompressor32.h"
+#include "serf/decompressor32/SerfQtDecompressor32.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -270,6 +272,44 @@ TEST(TestSerfXOR32, CorrectnessTest) {
                 xor_compressor_32.close();
                 Array<uint8_t> result = xor_compressor_32.getBytes();
                 std::vector<float> decompressed = xor_decompressor_32.decompress(result);
+                EXPECT_EQ(originalData.size(), decompressed.size());
+                if (originalData.size() != decompressed.size()) {
+                    GTEST_LOG_(INFO) << dataSet << " " << max_diff;
+                } else {
+                    for (int i = 0; i < BLOCK_SIZE; ++i) {
+                        if (std::abs(originalData[i] - decompressed[i]) > max_diff) {
+                            GTEST_LOG_(INFO) << originalData[i] << " " << decompressed[i] << " " << max_diff;
+                        }
+                        EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
+                    }
+                }
+            }
+
+            dataSetInputStream.close();
+        }
+    }
+}
+
+TEST(TestSerfQt32, CorrectnessTest) {
+    std::vector<std::string> dataSetList = scanDataSet();
+    for (const auto &dataSet: dataSetList) {
+        for (const auto &max_diff: MAX_DIFF_32) {
+            std::ifstream dataSetInputStream(dataSet);
+            if (!dataSetInputStream.is_open()) {
+                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+            }
+
+            SerfQtCompressor32 qt_compressor_32(max_diff);
+            SerfQtDecompressor32 qt_decompressor_32(max_diff);
+
+            std::vector<float> originalData;
+            while ((originalData = readBlock32(dataSetInputStream)).size() == BLOCK_SIZE) {
+                for (const auto &item: originalData) {
+                    qt_compressor_32.addValue(item);
+                }
+                qt_compressor_32.close();
+                Array<uint8_t> result = qt_compressor_32.getBytes();
+                std::vector<float> decompressed = qt_decompressor_32.decompress(result);
                 EXPECT_EQ(originalData.size(), decompressed.size());
                 if (originalData.size() != decompressed.size()) {
                     GTEST_LOG_(INFO) << dataSet << " " << max_diff;
