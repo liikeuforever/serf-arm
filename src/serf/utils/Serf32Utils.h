@@ -2,12 +2,11 @@
 #define SERF_32_UTILS_H
 
 #include <cstdint>
+
 #include "serf/utils/Float.h"
 
 class Serf32Utils {
 public:
-    static const uint32_t END_SIGN = std::numeric_limits<uint32_t>::quiet_NaN();
-
     static uint32_t findAppInt(float min, float max, float v, uint32_t lastInt, float maxDiff);
 
 private:

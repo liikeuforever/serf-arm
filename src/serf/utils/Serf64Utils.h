@@ -1,13 +1,12 @@
-#ifndef SERF_SERF64UTILS_H
-#define SERF_SERF64UTILS_H
+#ifndef SERF_64_UTILS_H
+#define SERF_64_UTILS_H
 
 #include <cstdint>
+
 #include "serf/utils/Double.h"
 
 class Serf64Utils {
 public:
-    static const uint64_t END_SIGN = std::numeric_limits<uint64_t>::quiet_NaN();
-
     static uint64_t findAppLong(double min, double max, double v, uint64_t lastLong, double maxDiff, double adjustD);
 
 private:
@@ -32,4 +31,4 @@ private:
     };
 };
 
-#endif //SERF_SERF64UTILS_H
+#endif //SERF_64_UTILS_H

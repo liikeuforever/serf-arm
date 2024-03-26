@@ -32,7 +32,7 @@ Array<uint8_t> SerfXORCompressor::getBytes() {
 }
 
 void SerfXORCompressor::close() {
-    compressedSizeInBits += compressValue(Serf64Utils::END_SIGN);
+    compressedSizeInBits += compressValue(Double::doubleToLongBits(Double::NaN));
     out->flush();
     outBuffer = Array<uint8_t> (std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
     uint8_t *buffer = out->getBuffer();
