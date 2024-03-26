@@ -1,6 +1,5 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <bitset>
 
 #include "serf/compressor/SerfXORCompressor.h"
 #include "serf/decompressor/SerfXORDecompressor.h"

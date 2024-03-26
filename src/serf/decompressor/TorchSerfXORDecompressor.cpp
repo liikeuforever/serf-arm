@@ -1,6 +1,6 @@
 #include "TorchSerfXORDecompressor.h"
 
-double TorchSerfXORDecompressor::decompress(Array<uint8_t> input) {
+double TorchSerfXORDecompressor::decompress(const Array<uint8_t>& input) {
     in->setBuffer(input);
     return Double::longBitsToDouble(readValue()) - adjustD;
 }

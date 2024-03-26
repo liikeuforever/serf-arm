@@ -2,6 +2,7 @@
 #define SERF_I_NET_COMPRESSOR_H
 
 #include <string>
+#include <typeinfo>
 
 class INetCompressor {
 public:

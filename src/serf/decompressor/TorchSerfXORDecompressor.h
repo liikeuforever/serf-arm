@@ -28,7 +28,7 @@ private:
 public:
     explicit TorchSerfXORDecompressor(long adjustD): adjustD(adjustD) {}
 
-    double decompress(Array<uint8_t> input);
+    double decompress(const Array<uint8_t>& input);
 
 private:
     uint64_t readValue();
