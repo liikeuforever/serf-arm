@@ -32,7 +32,7 @@ public:
         return *this;
     }
 
-    T &operator [] (int index) {
+    T &operator [] (int index) const {
         return this->_data[index];
     }
 };

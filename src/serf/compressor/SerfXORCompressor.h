@@ -6,7 +6,6 @@
 
 #include "serf/utils/Double.h"
 #include "serf/utils/OutputBitStream.h"
-#include "serf/compressor/ICompressor.h"
 #include "serf/utils/Serf64Utils.h"
 #include "serf/utils/PostOfficeSolver.h"
 #include "serf/utils/Array.h"
