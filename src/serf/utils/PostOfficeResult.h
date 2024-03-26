@@ -15,7 +15,7 @@ public:
         return officePositions;
     }
 
-    int getAppCost() {
+    int getAppCost() const {
         return totalAppCost;
     }
 };

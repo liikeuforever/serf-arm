@@ -1,9 +1,7 @@
 #ifndef SERF_POST_OFFICE_SOLVER_32_H
 #define SERF_POST_OFFICE_SOLVER_32_H
 
-#include <algorithm>
 #include <limits>
-#include <utility>
 
 #include "serf/utils/Array.h"
 #include "serf/utils/OutputBitStream.h"

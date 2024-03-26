@@ -1,9 +1,7 @@
 #ifndef SERF_POST_OFFICE_SOLVER_H
 #define SERF_POST_OFFICE_SOLVER_H
 
-#include <algorithm>
 #include <limits>
-#include <utility>
 
 #include "serf/utils/PostOfficeResult.h"
 #include "serf/utils/Array.h"

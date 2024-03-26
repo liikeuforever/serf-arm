@@ -15,7 +15,7 @@ private:
     uint64_t len;
     uint64_t buffer;
     uint64_t cursor;
-    uint64_t bitcnt;
+    uint64_t bit_in_buffer;
 
 public:
     InputBitStream() = default;

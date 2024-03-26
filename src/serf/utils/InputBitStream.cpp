@@ -25,7 +25,7 @@ InputBitStream::InputBitStream(uint8_t *raw_data, size_t size) {
 
     buffer = ((uint64_t) data[0]) << 32;
     cursor = 1;
-    bitcnt = 32;
+    bit_in_buffer = 32;
 }
 
 InputBitStream::~InputBitStream() {
@@ -37,16 +37,16 @@ uint64_t InputBitStream::peek(size_t num) {
 }
 
 void InputBitStream::forward(size_t num) {
-    bitcnt -= num;
+    bit_in_buffer -= num;
     buffer <<= num;
-    if (bitcnt < 32) {
+    if (bit_in_buffer < 32) {
         if (cursor < len) {
             auto data_ = (uint64_t) data[cursor];
-            buffer |= (data_ << (32 - bitcnt));
-            bitcnt += 32;
+            buffer |= (data_ << (32 - bit_in_buffer));
+            bit_in_buffer += 32;
             cursor++;
         } else {
-            bitcnt = 64;
+            bit_in_buffer = 64;
         }
     }
 }
@@ -104,5 +104,5 @@ void InputBitStream::setBuffer(Array<uint8_t> newBuffer) {
 
     this->buffer = ((uint64_t) data[0]) << 32;
     cursor = 1;
-    bitcnt = 32;
+    bit_in_buffer = 32;
 }
