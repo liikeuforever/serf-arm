@@ -13,6 +13,8 @@
 #include "serf/decompressor/SerfQtDecompressor.h"
 #include "serf/compressor32/SerfXORCompressor32.h"
 #include "serf/decompressor32/SerfXORDecompressor32.h"
+#include "serf/compressor/NetSerfXORCompressor.h"
+#include "serf/decompressor/NetSerfXORDecompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -151,6 +153,36 @@ TEST(TestSerfQt, CorrectnessTest) {
                     }
                     EXPECT_TRUE(std::abs(originalData[i] - decompressed[i]) <= max_diff);
                 }
+            }
+
+            dataSetInputStream.close();
+        }
+    }
+}
+
+TEST(TestNetSerfXOR, CorrectnessTest) {
+    std::vector<std::string> dataSetList = scanDataSet();
+    for (const auto &dataSet: dataSetList) {
+        std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
+        int adjustD = FILE_TO_ADJUST_D.find(fileName)->second;
+        for (const auto &max_diff: MAX_DIFF) {
+            std::ifstream dataSetInputStream(dataSet);
+            if (!dataSetInputStream.is_open()) {
+                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+            }
+
+            NetSerfXORCompressor xor_compressor(max_diff, adjustD);
+            NetSerfXORDecompressor xor_decompressor(adjustD);
+
+            double originalData;
+            while (!dataSetInputStream.eof()) {
+                dataSetInputStream >> originalData;
+                Array<uint8_t> result = xor_compressor.compress(originalData);
+                double decompressed = xor_decompressor.decompress(result);
+                if (std::abs(originalData - decompressed) > max_diff) {
+                    GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
+                }
+                EXPECT_TRUE(std::abs(originalData - decompressed) <= max_diff);
             }
 
             dataSetInputStream.close();
