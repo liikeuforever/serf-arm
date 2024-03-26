@@ -1,20 +1,4 @@
-#include <utility>
-
 #include "serf/utils/PostOfficeSolver.h"
-#include "serf/utils/OutputBitStream.h"
-
-PostOfficeResult::PostOfficeResult(const Array<int>& officePositions, int totalAppCost): officePositions(officePositions) {
-    this->totalAppCost = totalAppCost;
-}
-
-Array<int> PostOfficeResult::getOfficePositions() {
-    return officePositions;
-}
-
-int PostOfficeResult::getAppCost() const {
-    return totalAppCost;
-}
-
 
 Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> &distribution, Array<int> &representation, Array<int> &round) {
     Array<int> preNonZerosCount(distribution.length);   // 当前及前面的非零个数（包括当前）
@@ -184,4 +168,3 @@ int PostOfficeSolver::writePositions(Array<int> &positions, OutputBitStream *out
     }
     return thisSize;
 }
-

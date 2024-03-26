@@ -5,21 +5,9 @@
 #include <limits>
 #include <utility>
 
+#include "serf/utils/PostOfficeResult.h"
 #include "serf/utils/Array.h"
 #include "serf/utils/OutputBitStream.h"
-
-class PostOfficeResult {
-private:
-    Array<int> officePositions;
-    int totalAppCost;
-
-public:
-    PostOfficeResult(const Array<int>& officePositions, int totalAppCost);
-
-    Array<int> getOfficePositions();
-
-    int getAppCost() const;
-};
 
 class PostOfficeSolver {
 public:
