@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "serf/concurrency/SerfTransaction.h"
 #include "serf/compressor/SerfXORCompressor.h"
 #include "serf/decompressor/SerfXORDecompressor.h"
 #include "serf/compressor/TorchSerfXORCompressor.h"
@@ -56,4 +57,8 @@ PYBIND11_MODULE(pyserf, m) {
                 }
                 return xorDecompressor.decompress(input);
             });
+
+    py::class_<SerfTransaction>(m, "SerfTransaction")
+            .def(py::init<int, int, int, int>())
+            .def("compress_tensor", &SerfTransaction::compress_tensor);
 }
