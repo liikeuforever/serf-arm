@@ -136,3 +136,38 @@ int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     }
     return len;
 }
+
+std::vector<uint8_t> TorchSerfXORCompressor::compress_vector(double v) {
+    uint64_t thisVal;
+    // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
+    if (std::abs(Double::longBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
+        // in our implementation, we do not consider special cases and overflow case
+        double adjustValue = v + static_cast<double>(adjustD);
+        thisVal = Serf64Utils::findAppLong(adjustValue - maxDiff, adjustValue + maxDiff, v, storedVal, maxDiff, adjustD);
+    } else {
+        // let current value be the last value, making an XORed value of 0.
+        thisVal = storedVal;
+    }
+    std::vector<uint8_t> result = addValue_vector(thisVal);
+    storedVal = thisVal;
+    return result;
+}
+
+std::vector<uint8_t> TorchSerfXORCompressor::addValue_vector(uint64_t value) {
+    int thisSize = 0;
+    if (numberOfValues >= BLOCK_SIZE) {
+        thisSize += updateFlagAndPositionsIfNeeded();
+    }
+    thisSize += compressValue(value);
+    compressedSizeInBits += thisSize;
+    out->flush();
+    uint8_t *data_ptr = out->getBuffer();
+    int ret_len = std::ceil(static_cast<double>(thisSize) / 8.0);
+    std::vector<uint8_t> result(ret_len);
+    for (int i = 0; i < ret_len; ++i) {
+        result[i] = data_ptr[i];
+    }
+    out->refresh();
+    ++numberOfValues;
+    return result;
+}

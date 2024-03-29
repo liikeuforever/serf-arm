@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <cmath>
+#include <vector>
 
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/Double.h"
@@ -80,8 +81,12 @@ public:
 
     Array<uint8_t> compress(double v);
 
+    std::vector<uint8_t> compress_vector(double v);
+
 private:
     Array<uint8_t> addValue(uint64_t value);
+
+    std::vector<uint8_t> addValue_vector(uint64_t value);
 
     int compressValue(uint64_t value);
 
