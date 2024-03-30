@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 #include <cmath>
 #include <endian.h>
 
@@ -35,6 +36,8 @@ public:
     uint32_t readBit();
 
     void setBuffer(Array<uint8_t> newBuffer);
+
+    void setBuffer(const std::vector<uint8_t> &newBuffer);
 };
 
 

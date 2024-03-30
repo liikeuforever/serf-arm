@@ -106,3 +106,31 @@ void InputBitStream::setBuffer(Array<uint8_t> newBuffer) {
     cursor = 1;
     bit_in_buffer = 32;
 }
+
+void InputBitStream::setBuffer(const std::vector<uint8_t> &newBuffer) {
+    bool overflow = newBuffer.size() % sizeof(uint32_t);
+    len = ceil(static_cast<double>(newBuffer.size()) / sizeof(uint32_t));
+    data = new uint32_t [len];
+    mem_start_addr = data;
+
+    auto *tmp_ptr = (uint32_t *) (newBuffer.data());
+    if (overflow) {
+        for (int i = 0; i < len - 1; ++i) {
+            data[i] = be32toh(*(tmp_ptr + i));
+        }
+        int byte_index = 1;
+        data[len - 1] = 0;
+        for (uint64_t i = (newBuffer.size() / 4 * 4); i < newBuffer.size(); ++i) {
+            data[len - 1] |= (newBuffer[i] << (32 - byte_index * 8));
+            ++byte_index;
+        }
+    } else {
+        for (int i = 0; i < len; ++i) {
+            data[i] = be32toh(*(tmp_ptr + i));
+        }
+    }
+
+    this->buffer = ((uint64_t) data[0]) << 32;
+    cursor = 1;
+    bit_in_buffer = 32;
+}

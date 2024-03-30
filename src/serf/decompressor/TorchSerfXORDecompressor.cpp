@@ -5,6 +5,11 @@ double TorchSerfXORDecompressor::decompress(const Array<uint8_t>& input) {
     return Double::longBitsToDouble(readValue()) - adjustD;
 }
 
+double TorchSerfXORDecompressor::decompress(const std::vector<uint8_t> &input) {
+    in->setBuffer(input);
+    return Double::longBitsToDouble(readValue()) - adjustD;
+}
+
 uint64_t TorchSerfXORDecompressor::readValue() {
     if (numberOfValues >= BLOCK_SIZE) {
         updateFlagAndPositionsIfNeeded();

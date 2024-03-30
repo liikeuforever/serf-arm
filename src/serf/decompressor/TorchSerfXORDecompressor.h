@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "serf/utils/Double.h"
 #include "serf/utils/Array.h"
@@ -29,6 +30,8 @@ public:
     explicit TorchSerfXORDecompressor(long adjustD): adjustD(adjustD) {}
 
     double decompress(const Array<uint8_t>& input);
+
+    double decompress(const std::vector<uint8_t> &input);
 
 private:
     uint64_t readValue();
