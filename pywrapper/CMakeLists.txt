@@ -1,0 +1,9 @@
+message(STATUS "[PySerf] Source Code Dir: " ${CMAKE_CURRENT_SOURCE_DIR})
+
+include_directories(${PROJECT_SOURCE_DIR}/src)
+
+find_package(Python 3.6 COMPONENTS Interpreter Development REQUIRED)
+find_package(pybind11 REQUIRED)
+
+pybind11_add_module(pyserf wrapper.cpp)
+target_link_libraries(pyserf PRIVATE serf)

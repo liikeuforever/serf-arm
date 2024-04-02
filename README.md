@@ -13,3 +13,6 @@ Streaming error-bound compressor.
 
 ## How to build Serf and test
 `cmake --build build && ./build/bin/serf_test`
+
+## Python interface
+Install pybind11 using pip.

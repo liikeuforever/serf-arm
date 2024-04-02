@@ -58,3 +58,4 @@ message(STATUS "[SelfCheck] Loaded GoogleTest module")
 
 add_subdirectory(src/serf)
 add_subdirectory(test)
+add_subdirectory(pywrapper)
