@@ -2,12 +2,13 @@
 #include <cstdio>
 #include <cassert>
 #include <vector>
+#include <algorithm>
 
 #include "serf/utils/InputBitStream.h"
 
 #define SIZE 32768
 
-class FpcDeCompressor {
+class FpcDecompressor {
 private:
     InputBitStream inStream = InputBitStream(nullptr, 0);
 
@@ -19,8 +20,8 @@ public:
     long long outbuf[SIZE];
     unsigned char inbuf[(SIZE / 2) + (SIZE * 8) + 6 + 2];
 
-    FpcDeCompressor(long pred, int num);
-    ~FpcDeCompressor();
+    FpcDecompressor(long pred, int num);
+    ~FpcDecompressor();
 
     void setBytes(char *data, size_t data_size);
 

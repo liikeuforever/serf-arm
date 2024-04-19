@@ -1,6 +1,3 @@
-#include <cstring>
-#include <bitset>
-
 #include "fpc/FpcCompressor.h"
 
 const long long FpcCompressor::mask[8] = {
@@ -95,7 +92,7 @@ void FpcCompressor::addValue(double v) {
 }
 
 std::vector<char> FpcCompressor::getBytes() {
-    int byteCount = ceil(compressedSizeInBits / 8.0);
+    int byteCount = std::ceil(compressedSizeInBits / 8.0);
     std::vector<char> result;
     result.reserve(byteCount);
     auto bytes = outStream.getBuffer();
