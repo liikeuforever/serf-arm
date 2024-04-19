@@ -1,13 +1,6 @@
-#include <cstdio>
-#include <cstdint>
-#include <cstring>
-#include <iostream>
-#include <bitset>
-#include <algorithm>
+#include "fpc/FpcDecompressor.h"
 
-#include "fpc/FpcDeCompressor.h"
-
-const long long FpcDeCompressor::mask[8] = {
+const long long FpcDecompressor::mask[8] = {
         0x0000000000000000LL,
         0x00000000000000ffLL,
         0x000000000000ffffLL,
@@ -18,7 +11,7 @@ const long long FpcDeCompressor::mask[8] = {
         static_cast<long long>(0xffffffffffffffff)
 };
 
-FpcDeCompressor::FpcDeCompressor(long pred, int num) {
+FpcDecompressor::FpcDecompressor(long pred, int num) {
     predsizem1 = pred;
     intot = num;
     predsizem1 = (1L << predsizem1) - 1;
@@ -34,16 +27,16 @@ FpcDeCompressor::FpcDeCompressor(long pred, int num) {
     assert(NULL != dfcm);
 }
 
-FpcDeCompressor::~FpcDeCompressor() {
+FpcDecompressor::~FpcDecompressor() {
     free(fcm);
     free(dfcm);
 }
 
-void FpcDeCompressor::setBytes(char *data, size_t data_size) {
-    inStream = InputBitStream(data, data_size);
+void FpcDecompressor::setBytes(char *data, size_t data_size) {
+    inStream = InputBitStream(reinterpret_cast<uint8_t *>(data), data_size);
 }
 
-std::vector<double> FpcDeCompressor::decompress() {
+std::vector<double> FpcDecompressor::decompress() {
     in = ((intot + 1));
     for (i = 0; i < intot; i++) {
         code = inStream.readInt(4);

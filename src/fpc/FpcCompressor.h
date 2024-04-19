@@ -1,10 +1,6 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
-#include <vector>
-#include <iostream>
 #include <cstring>
 #include <cmath>
+#include <vector>
 
 #include "serf/utils/OutputBitStream.h"
 
@@ -28,8 +24,8 @@ public:
     void addValue(double v);
     void close();
     void refresh();
-    void Compress(long predsizem1);
-    void Decompress();
+    void compress(long predsizem1);
+    void decompress();
     long getCompressedSizeInBits();
     std::vector<char> getBytes();
 
