@@ -33,7 +33,9 @@ FpcDecompressor::~FpcDecompressor() {
 }
 
 void FpcDecompressor::setBytes(char *data, size_t data_size) {
-    inStream = InputBitStream(reinterpret_cast<uint8_t *>(data), data_size);
+    // Only for tmp use. With risk of memory leak
+    // This awful structure must be refactored
+    inStream = *(new InputBitStream(reinterpret_cast<uint8_t *>(data), data_size));
 }
 
 std::vector<double> FpcDecompressor::decompress() {
