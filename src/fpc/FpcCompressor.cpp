@@ -1,25 +1,24 @@
-#include "FpcCompressor.h"
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <iostream>
+#include <cstring>
 #include <bitset>
 
-long FpcCompressor::getCompressedSizeInBits()
-{
+#include "fpc/FpcCompressor.h"
+
+const long long FpcCompressor::mask[8] = {
+        0x0000000000000000LL,
+        0x00000000000000ffLL,
+        0x000000000000ffffLL,
+        0x0000000000ffffffLL,
+        0x000000ffffffffffLL,
+        0x0000ffffffffffffLL,
+        0x00ffffffffffffffLL,
+        static_cast<long long>(0xffffffffffffffff)
+};
+
+long FpcCompressor::getCompressedSizeInBits() {
     return compressedSizeInBits;
 }
-const long long FpcCompressor::mask[8] =
-    {0x0000000000000000LL,
-     0x00000000000000ffLL,
-     0x000000000000ffffLL,
-     0x0000000000ffffffLL,
-     0x000000ffffffffffLL,
-     0x0000ffffffffffffLL,
-     0x00ffffffffffffffLL,
-     static_cast<long long>(0xffffffffffffffff)};
-FpcCompressor::FpcCompressor(long pred, int num)
-{
+
+FpcCompressor::FpcCompressor(long pred, int num) {
     intot = num;
     predsizem1 = pred;
 
@@ -36,14 +35,14 @@ FpcCompressor::FpcCompressor(long pred, int num)
 
     out = ((intot + 1));
     *((long long *)&outbuf[(out >> 3) << 3]) = 0;
-};
-FpcCompressor::~FpcCompressor()
-{
+}
+
+FpcCompressor::~FpcCompressor() {
     free(fcm);
     free(dfcm);
-};
-void FpcCompressor::addValue(double v)
-{
+}
+
+void FpcCompressor::addValue(double v) {
     memcpy(&val, &v, sizeof(double));
     xor1 = val ^ pred1;
     fcm[hash] = val;
@@ -58,8 +57,7 @@ void FpcCompressor::addValue(double v)
     pred2 = dfcm[dhash];
 
     code = 0;
-    if ((unsigned long long)xor1 > (unsigned long long)xor2)
-    {
+    if ((unsigned long long)xor1 > (unsigned long long)xor2) {
         code = 0x8;
         xor1 = xor2;
     }
@@ -87,36 +85,30 @@ void FpcCompressor::addValue(double v)
     outStream.writeInt(code, 4);
     compressedSizeInBits += 4;
 
-    if (bcode >= 4)
-    {
+    if (bcode >= 4) {
         outStream.writeLong(xor1, (bcode + 1) * 8);
         compressedSizeInBits += (bcode + 1) * 8;
-    }
-    else if (bcode > 0)
-    {
+    } else if (bcode > 0) {
         outStream.writeLong(xor1, bcode * 8);
         compressedSizeInBits += bcode * 8;
     }
-};
+}
 
-std::vector<char> FpcCompressor::getBytes()
-{
+std::vector<char> FpcCompressor::getBytes() {
     int byteCount = ceil(compressedSizeInBits / 8.0);
     std::vector<char> result;
     result.reserve(byteCount);
     auto bytes = outStream.getBuffer();
-    for (int i = 0; i < byteCount; ++i)
-    {
+    for (int i = 0; i < byteCount; ++i) {
         result.push_back(static_cast<char>(bytes[i]));
     }
     return result;
-};
-void FpcCompressor::close()
-{
-    if (0 != (intot & 1))
-    {
+}
+
+void FpcCompressor::close() {
+    if (0 != (intot & 1)) {
         out -= bcode + (bcode >> 2);
     }
     i = 0;
     outStream.flush();
-};
+}

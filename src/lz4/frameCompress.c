@@ -10,15 +10,14 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-
 #include <getopt.h>
-#include "lz4frame.h"
-#include "lz4frame_static.h"
+
+#include "lz4/lz4frame.h"
+#include "lz4/lz4frame_static.h"
 
 #define IN_CHUNK_SIZE  (16*1024)
 
-int compareFiles(FILE* fp0, FILE* fp1, FILE* fpUnc, long uncOffset)
-{
+int compareFiles(FILE* fp0, FILE* fp1, FILE* fpUnc, long uncOffset) {
     int result = 0;
     long bytesRead = 0;
     long bytesToOffset = -1;
