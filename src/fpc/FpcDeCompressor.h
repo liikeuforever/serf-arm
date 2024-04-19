@@ -1,13 +1,15 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 #include <vector>
-#include "NewInputBitStream.h"
+
+#include "serf/utils/InputBitStream.h"
+
 #define SIZE 32768
-class FpcDeCompressor
-{
+
+class FpcDeCompressor {
 private:
-    NewInputBitStream inStream = NewInputBitStream(nullptr, 0);
+    InputBitStream inStream = InputBitStream(nullptr, 0);
 
 public:
     static const long long mask[8];

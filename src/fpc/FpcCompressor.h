@@ -1,17 +1,18 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 #include <vector>
 #include <iostream>
 #include <cstring>
-#define SIZE 32768
-#include "NewOutputBitStream.h"
 #include <cmath>
 
-class FpcCompressor
-{
+#include "serf/utils/OutputBitStream.h"
+
+#define SIZE 32768
+
+class FpcCompressor {
 private:
-    NewOutputBitStream outStream = NewOutputBitStream(6 + (SIZE / 2) + (SIZE * 8) + 2);
+    OutputBitStream outStream = OutputBitStream(6 + (SIZE / 2) + (SIZE * 8) + 2);
 
 public:
     static const long long mask[8];
