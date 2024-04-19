@@ -57,5 +57,8 @@ FetchContent_MakeAvailable(googletest)
 message(STATUS "[SelfCheck] Loaded GoogleTest module")
 
 add_subdirectory(src/serf)
+add_subdirectory(src/deflate)
+add_subdirectory(src/fpc)
+add_subdirectory(src/lz4)
 add_subdirectory(test)
 add_subdirectory(pywrapper)
