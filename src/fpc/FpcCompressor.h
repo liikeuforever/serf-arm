@@ -22,9 +22,6 @@ public:
     ~FpcCompressor();
     void addValue(double v);
     void close();
-    void refresh();
-    void compress(long predsizem1);
-    void decompress();
     long getCompressedSizeInBits();
     std::vector<char> getBytes();
 
