@@ -22,21 +22,13 @@ void LZ4Compressor::addValue(double v) {
             throw std::runtime_error(LZ4F_getErrorName(rc));
         }
         pos += rc;
-
-        rc = LZ4F_compressUpdate(compression_context, compress_frame._data.get() + pos, compress_frame.length - pos, &v,
-                                 sizeof(double), nullptr);
-        if (LZ4F_isError(rc)) {
-            throw std::runtime_error(LZ4F_getErrorName(rc));
-        }
-        pos += rc;
-    } else {
-        rc = LZ4F_compressUpdate(compression_context, compress_frame._data.get() + pos, compress_frame.length - pos, &v,
-                                 sizeof(double), nullptr);
-        if (LZ4F_isError(rc)) {
-            throw std::runtime_error(LZ4F_getErrorName(rc));
-        }
-        pos += rc;
     }
+    rc = LZ4F_compressUpdate(compression_context, compress_frame._data.get() + pos, compress_frame.length - pos, &v,
+                             sizeof(double), nullptr);
+    if (LZ4F_isError(rc)) {
+        throw std::runtime_error(LZ4F_getErrorName(rc));
+    }
+    pos += rc;
 }
 
 void LZ4Compressor::close() {
