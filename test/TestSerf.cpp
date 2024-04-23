@@ -20,27 +20,58 @@
 #include "serf/compressor32/SerfQtCompressor32.h"
 #include "serf/decompressor32/SerfQtDecompressor32.h"
 
+using PerfRecord = struct {
+    clock_t compressionTime;
+    clock_t decompressionTime;
+    long compressedSizeInBits;
+    long originBits;
+    double compressionRatio;
+};
+
+using ExprConf = struct {
+    std::string method;
+    std::string dataSet;
+    double maxDiff;
+};
+
+bool exprConfComp(const ExprConf &conf1, const ExprConf &conf2) {
+    return (conf1.method < conf2.method) || (conf1.method == conf2.method && conf1.dataSet < conf2.dataSet) ||
+           (conf1.method == conf2.method && conf1.dataSet == conf2.dataSet && conf1.maxDiff < conf2.maxDiff);
+}
+
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
-const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D {
-    std::make_pair("init.csv", 0),
-    std::make_pair("Air-pressure.csv", 0),
-    std::make_pair("Air-sensor.csv", 128),
-    std::make_pair("Bird-migration.csv", 60),
-    std::make_pair("Bitcoin-price.csv", 511220),
-    std::make_pair("Basel-temp.csv", 77),
-    std::make_pair("Basel-wind.csv", 128),
-    std::make_pair("City-temp.csv", 355),
-    std::make_pair("Dew-point-temp.csv", 94),
-    std::make_pair("IR-bio-temp.csv", 49),
-    std::make_pair("PM10-dust.csv", 256),
-    std::make_pair("Stocks-DE.csv", 253),
-    std::make_pair("Stocks-UK.csv", 8047),
-    std::make_pair("Stocks-USA.csv", 243),
-    std::make_pair("Wind-Speed.csv", 2)
+const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D{
+        {"init.csv",           0},
+        {"Air-pressure.csv",   0},
+        {"Air-sensor.csv",     128},
+        {"Bird-migration.csv", 60},
+        {"Bitcoin-price.csv",  511220},
+        {"Basel-temp.csv",     77},
+        {"Basel-wind.csv",     128},
+        {"City-temp.csv",      355},
+        {"Dew-point-temp.csv", 94},
+        {"IR-bio-temp.csv",    49},
+        {"PM10-dust.csv",      256},
+        {"Stocks-DE.csv",      253},
+        {"Stocks-UK.csv",      8047},
+        {"Stocks-USA.csv",     243},
+        {"Wind-Speed.csv",     2}
 };
 constexpr static double MAX_DIFF[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 constexpr static float MAX_DIFF_32[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+
+std::unordered_map<double, PerfRecord> exprTable{
+        {1.0E-1, PerfRecord{0, 0, 0, 0, 0}},
+        {0.5,    PerfRecord{0, 0, 0, 0, 0}},
+        {1.E-2,  PerfRecord{0, 0, 0, 0, 0}},
+        {1.0E-3, PerfRecord{0, 0, 0, 0, 0}},
+        {1.0E-4, PerfRecord{0, 0, 0, 0, 0}},
+        {1.0E-5, PerfRecord{0, 0, 0, 0, 0}},
+        {1.0E-6, PerfRecord{0, 0, 0, 0, 0}},
+        {1.0E-7, PerfRecord{0, 0, 0, 0, 0}},
+        {1.0E-8, PerfRecord{0, 0, 0, 0, 0}},
+};
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.
@@ -344,6 +375,7 @@ TEST(TestSerf, PerformanceTest) {
             SerfXORDecompressor xor_decompressor(adjustD);
 
             int blockCount = 0;
+            long compressBits = 0;
             std::vector<double> originalData;
             while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
                 ++blockCount;
@@ -351,14 +383,19 @@ TEST(TestSerf, PerformanceTest) {
                     xor_compressor.addValue(item);
                 }
                 xor_compressor.close();
+                compressBits += xor_compressor.getCompressedSizeInBits();
                 Array<uint8_t> result = xor_compressor.getBytes();
                 std::vector<double> decompressed = xor_decompressor.decompress(result);
             }
 
-            long compressBits = xor_compressor.getCompressedSizeInBits();
-            long originalBits = blockCount * BLOCK_SIZE * 64L;
+            exprTable.find(max_diff)->second.compressedSizeInBits += compressBits;
+            exprTable.find(max_diff)->second.originBits += blockCount * BLOCK_SIZE * 64L;
 
             dataSetInputStream.close();
         }
+    }
+
+    for (const auto &item: exprTable) {
+        std::cout << item.first << ", " << item.second.compressedSizeInBits * 1.0 / item.second.originBits << std::endl;
     }
 }
