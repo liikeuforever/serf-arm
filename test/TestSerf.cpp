@@ -2,6 +2,8 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <utility>
+#include <sstream>
 #include <vector>
 #include <unordered_map>
 #include <chrono>
@@ -64,24 +66,27 @@ public:
 
 class ExprConf {
 public:
-    const std::string method;
-    const std::string dataSet;
-    const std::string maxDiff;
+    const std::string method_;
+    const std::string dataSet_;
+    std::string maxDiff_;
 
 public:
     ExprConf() = delete;
 
-    ExprConf(std::string method, std::string dataSet, double maxDiff) : method(method), dataSet(dataSet),
-                                                                          maxDiff(std::to_string(maxDiff)) {}
+    ExprConf(std::string method, std::string dataSet, double maxDiff) : method_(std::move(method)), dataSet_(std::move(dataSet)) {
+        std::ostringstream stringBuffer;
+        stringBuffer << std::setprecision(8) << std::fixed << maxDiff;
+        maxDiff_ = stringBuffer.str();
+    }
 
     bool operator == (const ExprConf &otherConf) const {
-        return method == otherConf.method && dataSet == otherConf.dataSet && maxDiff == otherConf.maxDiff;
+        return method_ == otherConf.method_ && dataSet_ == otherConf.dataSet_ && maxDiff_ == otherConf.maxDiff_;
     }
 };
 
 struct ExprConfHash {
     std::size_t operator()(const ExprConf &conf) const {
-        return std::hash<std::string>()(conf.method + conf.dataSet + conf.maxDiff);
+        return std::hash<std::string>()(conf.method_ + conf.dataSet_ + conf.maxDiff_);
     }
 };
 
@@ -104,8 +109,8 @@ const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D{
         {"Stocks-USA.csv",     243},
         {"Wind-Speed.csv",     2}
 };
-constexpr static double MAX_DIFF[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-constexpr static float MAX_DIFF_32[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+constexpr static double MAX_DIFF[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+constexpr static float MAX_DIFF_32[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 
 std::unordered_map<ExprConf, PerfRecord, ExprConfHash> exprTable;
 
@@ -433,7 +438,8 @@ TEST(TestSerf, PerformanceTest) {
                 total_decompression_duration += std::chrono::duration_cast<std::chrono::microseconds>(decompression_end - decompression_start);
             }
 
-            auto perfRecord = exprTable.find(ExprConf("SerfXOR", fileName, max_diff));
+            std::string method = "SerfXOR";
+            auto perfRecord = exprTable.find(ExprConf(method, fileName, max_diff));
             if (perfRecord != exprTable.end()) {
                 perfRecord->second.setBlockCount(blockCount);
                 perfRecord->second.addCompressedSize(compressBits);
@@ -445,7 +451,7 @@ TEST(TestSerf, PerformanceTest) {
                 newPerfRecord.addCompressedSize(compressBits);
                 newPerfRecord.increaseCompressionTime(total_compression_duration);
                 newPerfRecord.increaseDecompressionTime(total_decompression_duration);
-                exprTable.insert(std::make_pair(ExprConf("SerfXOR", fileName, max_diff), newPerfRecord));
+                exprTable.insert(std::make_pair(ExprConf(method, fileName, max_diff), newPerfRecord));
             }
 
             dataSetInputStream.clear();
@@ -461,20 +467,10 @@ TEST(TestSerf, PerformanceTest) {
         auto exprConf = item.first;
         auto perfRecord = item.second;
 
-        resultOut << exprConf.method << "," << exprConf.dataSet << "," << exprConf.maxDiff << ","
+        resultOut << exprConf.method_ << "," << exprConf.dataSet_ << "," << exprConf.maxDiff_ << ","
                   << perfRecord.getCompressionTime() << "," << perfRecord.getCompressionRatio() << ","
                   << perfRecord.getDecompressionTime() << std::endl;
     }
     resultOut.flush();
     resultOut.close();
-
-//    std::cout << "Method, DataSet, MaxDiff, CompressionTime, CompressionRatio, DecompressionTime" << std::endl;
-//    for (const auto &item: exprTable) {
-//        auto exprConf = item.first;
-//        auto perfRecord = item.second;
-//
-//        std::cout << exprConf.method << ", " << exprConf.dataSet << ", " << exprConf.maxDiff << ", "
-//                  << perfRecord.getCompressionTime() << ", " << perfRecord.getCompressionRatio() << ", "
-//                  << perfRecord.getDecompressionTime() << std::endl;
-//    }
 }
