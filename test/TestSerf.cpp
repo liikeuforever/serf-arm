@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
 
 #include "serf/compressor/SerfXORCompressor.h"
 #include "serf/decompressor/SerfXORDecompressor.h"
@@ -20,24 +21,69 @@
 #include "serf/compressor32/SerfQtCompressor32.h"
 #include "serf/decompressor32/SerfQtDecompressor32.h"
 
-using PerfRecord = struct {
-    clock_t compressionTime;
-    clock_t decompressionTime;
-    long compressedSizeInBits;
-    long originBits;
-    double compressionRatio;
+class PerfRecord {
+private:
+    std::chrono::microseconds compressionTime = std::chrono::microseconds::zero();
+    std::chrono::microseconds decompressionTime = std::chrono::microseconds::zero();
+    long compressedSizeInBits = 0;
+    int blockCount = 0;
+
+public:
+    void increaseCompressionTime(std::chrono::microseconds &duration) {
+        compressionTime += duration;
+    }
+
+    auto getCompressionTime() {
+        return compressionTime.count();
+    }
+
+    void increaseDecompressionTime(std::chrono::microseconds &duration) {
+        decompressionTime += duration;
+    }
+
+    auto getDecompressionTime() {
+        return decompressionTime.count();
+    }
+
+    void addCompressedSize(long size) {
+        compressedSizeInBits += size;
+    }
+
+    void setBlockCount(int blockCount_) {
+        blockCount = blockCount_;
+    }
+
+    int getBlockCount() const {
+        return blockCount;
+    }
+
+    double getCompressionRatio() const {
+        return (double) compressedSizeInBits / (double) (blockCount * 1000 * 64L);
+    }
 };
 
-using ExprConf = struct {
-    std::string method;
-    std::string dataSet;
-    double maxDiff;
+class ExprConf {
+public:
+    const std::string method;
+    const std::string dataSet;
+    const std::string maxDiff;
+
+public:
+    ExprConf() = delete;
+
+    ExprConf(std::string method, std::string dataSet, double maxDiff) : method(method), dataSet(dataSet),
+                                                                          maxDiff(std::to_string(maxDiff)) {}
+
+    bool operator == (const ExprConf &otherConf) const {
+        return method == otherConf.method && dataSet == otherConf.dataSet && maxDiff == otherConf.maxDiff;
+    }
 };
 
-bool exprConfComp(const ExprConf &conf1, const ExprConf &conf2) {
-    return (conf1.method < conf2.method) || (conf1.method == conf2.method && conf1.dataSet < conf2.dataSet) ||
-           (conf1.method == conf2.method && conf1.dataSet == conf2.dataSet && conf1.maxDiff < conf2.maxDiff);
-}
+struct ExprConfHash {
+    std::size_t operator()(const ExprConf &conf) const {
+        return std::hash<std::string>()(conf.method + conf.dataSet + conf.maxDiff);
+    }
+};
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -61,17 +107,7 @@ const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D{
 constexpr static double MAX_DIFF[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 constexpr static float MAX_DIFF_32[] = {1.0E-1, 0.5, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 
-std::unordered_map<double, PerfRecord> exprTable{
-        {1.0E-1, PerfRecord{0, 0, 0, 0, 0}},
-        {0.5,    PerfRecord{0, 0, 0, 0, 0}},
-        {1.E-2,  PerfRecord{0, 0, 0, 0, 0}},
-        {1.0E-3, PerfRecord{0, 0, 0, 0, 0}},
-        {1.0E-4, PerfRecord{0, 0, 0, 0, 0}},
-        {1.0E-5, PerfRecord{0, 0, 0, 0, 0}},
-        {1.0E-6, PerfRecord{0, 0, 0, 0, 0}},
-        {1.0E-7, PerfRecord{0, 0, 0, 0, 0}},
-        {1.0E-8, PerfRecord{0, 0, 0, 0, 0}},
-};
+std::unordered_map<ExprConf, PerfRecord, ExprConfHash> exprTable;
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.
@@ -359,43 +395,86 @@ TEST(TestSerfQt32, CorrectnessTest) {
     }
 }
 
-// TODO Finish Performance Test
 TEST(TestSerf, PerformanceTest) {
     std::vector<std::string> dataSetList = scanDataSet();
     for (const auto &dataSet: dataSetList) {
+        std::ifstream dataSetInputStream(dataSet);
+        if (!dataSetInputStream.is_open()) {
+            fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+        }
+
         std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
         int adjustD = FILE_TO_ADJUST_D.find(fileName)->second;
-        for (const auto &max_diff: MAX_DIFF) {
-            std::ifstream dataSetInputStream(dataSet);
-            if (!dataSetInputStream.is_open()) {
-                fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
-            }
 
+        for (const auto &max_diff: MAX_DIFF) {
             SerfXORCompressor xor_compressor(1000, max_diff, adjustD);
             SerfXORDecompressor xor_decompressor(adjustD);
 
             int blockCount = 0;
             long compressBits = 0;
             std::vector<double> originalData;
+            auto total_compression_duration = std::chrono::microseconds::zero();
+            auto total_decompression_duration = std::chrono::microseconds::zero();
             while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
                 ++blockCount;
+                auto compression_start = std::chrono::steady_clock::now();
                 for (const auto &item: originalData) {
                     xor_compressor.addValue(item);
                 }
                 xor_compressor.close();
+                auto compression_end = std::chrono::steady_clock::now();
                 compressBits += xor_compressor.getCompressedSizeInBits();
                 Array<uint8_t> result = xor_compressor.getBytes();
+                auto decompression_start = std::chrono::steady_clock::now();
                 std::vector<double> decompressed = xor_decompressor.decompress(result);
+                auto decompression_end = std::chrono::steady_clock::now();
+
+                total_compression_duration += std::chrono::duration_cast<std::chrono::microseconds>(compression_end - compression_start);
+                total_decompression_duration += std::chrono::duration_cast<std::chrono::microseconds>(decompression_end - decompression_start);
             }
 
-            exprTable.find(max_diff)->second.compressedSizeInBits += compressBits;
-            exprTable.find(max_diff)->second.originBits += blockCount * BLOCK_SIZE * 64L;
+            auto perfRecord = exprTable.find(ExprConf("SerfXOR", fileName, max_diff));
+            if (perfRecord != exprTable.end()) {
+                perfRecord->second.setBlockCount(blockCount);
+                perfRecord->second.addCompressedSize(compressBits);
+                perfRecord->second.increaseCompressionTime(total_compression_duration);
+                perfRecord->second.increaseDecompressionTime(total_decompression_duration);
+            } else {
+                auto newPerfRecord = PerfRecord();
+                newPerfRecord.setBlockCount(blockCount);
+                newPerfRecord.addCompressedSize(compressBits);
+                newPerfRecord.increaseCompressionTime(total_compression_duration);
+                newPerfRecord.increaseDecompressionTime(total_decompression_duration);
+                exprTable.insert(std::make_pair(ExprConf("SerfXOR", fileName, max_diff), newPerfRecord));
+            }
 
-            dataSetInputStream.close();
+            dataSetInputStream.clear();
+            dataSetInputStream.seekg(0, std::ios::beg);
         }
+
+        dataSetInputStream.close();
     }
 
+    std::ofstream resultOut("result.csv");
+    resultOut << "Method,DataSet,MaxDiff,CompressionTime,CompressionRatio,DecompressionTime" << std::endl;
     for (const auto &item: exprTable) {
-        std::cout << item.first << ", " << item.second.compressedSizeInBits * 1.0 / item.second.originBits << std::endl;
+        auto exprConf = item.first;
+        auto perfRecord = item.second;
+
+        resultOut << exprConf.method << "," << exprConf.dataSet << "," << exprConf.maxDiff << ","
+                  << perfRecord.getCompressionTime() << "," << perfRecord.getCompressionRatio() << ","
+                  << perfRecord.getDecompressionTime() << std::endl;
     }
+    resultOut.flush();
+    resultOut.close();
+
+//    std::cout << "Method, DataSet, MaxDiff, CompressionTime, CompressionRatio, DecompressionTime" << std::endl;
+//    for (const auto &item: exprTable) {
+//        auto exprConf = item.first;
+//        auto perfRecord = item.second;
+//
+//        std::cout << exprConf.method << ", " << exprConf.dataSet << ", " << exprConf.maxDiff << ", "
+//                  << perfRecord.getCompressionTime() << ", " << perfRecord.getCompressionRatio() << ", "
+//                  << perfRecord.getDecompressionTime() << std::endl;
+//    }
 }
