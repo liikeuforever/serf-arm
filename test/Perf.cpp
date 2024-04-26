@@ -59,12 +59,16 @@ public:
     std::string maxDiff_;
 
 public:
+    static std::string double_to_string(double val) {
+        std::ostringstream stringBuffer;
+        stringBuffer << std::setprecision(8) << std::fixed << val;
+        return stringBuffer.str();
+    }
+
     ExprConf() = delete;
 
     ExprConf(std::string method, std::string dataSet, double maxDiff) : method_(std::move(method)), dataSet_(std::move(dataSet)) {
-        std::ostringstream stringBuffer;
-        stringBuffer << std::setprecision(8) << std::fixed << maxDiff;
-        maxDiff_ = stringBuffer.str();
+        maxDiff_ = double_to_string(maxDiff);
     }
 
     bool operator == (const ExprConf &otherConf) const {
@@ -239,7 +243,8 @@ TEST(Serf, Performance) {
         item.second /= dataSetList.size();
     }
 
-    for (const auto &item: maxDiff2Ratio) {
-        std::cout << item.first << ", " << maxDiff2Ratio.find(item.first)->second << ", " << maxDiff2CompressionTime.find(item.first)->second.count() << ", " << maxDiff2DecompressionTime.find(item.first)->second.count() << std::endl;
+    for (const auto &item: MAX_DIFF) {
+        std::string str = ExprConf::double_to_string(item);
+        std::cout << str << ", " << maxDiff2Ratio.find(str)->second << ", " << maxDiff2CompressionTime.find(str)->second.count() << ", " << maxDiff2DecompressionTime.find(str)->second.count() << std::endl;
     }
 }

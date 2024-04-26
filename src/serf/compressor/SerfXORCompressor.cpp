@@ -1,18 +1,17 @@
 #include "SerfXORCompressor.h"
 
 SerfXORCompressor::SerfXORCompressor(int capacity, double maxDiff, long adjustD) : maxDiff(maxDiff), adjustD(adjustD) {
-    this->out = std::make_unique<OutputBitStream>(floor(((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
+    this->out = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
     this->compressedSizeInBits = out->writeInt(0, 2);
 }
 
 void SerfXORCompressor::addValue(double v) {
     uint64_t thisVal;
     // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
-    if (std::abs(Double::longBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
+    if (std::abs(Double::longBitsToDouble(storedVal) - adjustD - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
-        double adjustValue = v + static_cast<double>(adjustD);
-        thisVal = Serf64Utils::findAppLong(adjustValue - maxDiff, adjustValue + maxDiff, v, storedVal, maxDiff,
-                                           static_cast<double>(adjustD));
+        double adjustValue = v + adjustD;
+        thisVal = Serf64Utils::findAppLong(adjustValue - maxDiff, adjustValue + maxDiff, v, storedVal, maxDiff, adjustD);
     } else {
         // let current value be the last value, making an XORed value of 0.
         thisVal = storedVal;
@@ -34,9 +33,9 @@ Array<uint8_t> SerfXORCompressor::getBytes() {
 void SerfXORCompressor::close() {
     compressedSizeInBits += compressValue(Double::doubleToLongBits(Double::NaN));
     out->flush();
-    outBuffer = Array<uint8_t> (std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
+    outBuffer = Array<uint8_t> (std::ceil(compressedSizeInBits / 8.0));
     uint8_t *buffer = out->getBuffer();
-    for (int i = 0; i < std::ceil(static_cast<double>(compressedSizeInBits) / 8.0); ++i) {
+    for (int i = 0; i < std::ceil(compressedSizeInBits / 8.0); ++i) {
         outBuffer[i] = buffer[i];
     }
     out->refresh();
@@ -118,7 +117,7 @@ int SerfXORCompressor::compressValue(uint64_t value) {
 int SerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     int len;
     equalWin = equalVote > 0;
-    double thisCompressionRatio = static_cast<double>(compressedSizeInBits) / (numberOfValues * 64.0);
+    double thisCompressionRatio = (compressedSizeInBits * 1.0) / (numberOfValues * 64);
     if (storedCompressionRatio < thisCompressionRatio) {
         // update positions
         Array<int> leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation,
@@ -127,11 +126,11 @@ int SerfXORCompressor::updateFlagAndPositionsIfNeeded() {
         Array<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation,
                                                                      trailingRound);
         trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length];
-        len = static_cast<int>(out->writeInt(equalWin ? 3 : 1, 2))
+        len = out->writeInt(equalWin ? 3 : 1, 2)
               + PostOfficeSolver::writePositions(leadPositions, out.get())
               + PostOfficeSolver::writePositions(trailPositions, out.get());
     } else {
-        len = static_cast<int>(out->writeInt(equalWin ? 2 : 0, 2));
+        len = out->writeInt(equalWin ? 2 : 0, 2);
     }
     equalVote = 0;
     storedCompressionRatio = thisCompressionRatio;
