@@ -6,7 +6,7 @@ LZ4Compressor::LZ4Compressor() {
         throw std::runtime_error(LZ4F_getErrorName(error_code));
     }
 
-    rc = LZ4F_compressBegin(compression_context, compress_frame._data.get(), compress_frame.length - written_bytes, nullptr);
+    rc = LZ4F_compressBegin(compression_context, compress_frame._data.get(), compress_frame.length, nullptr);
     if (LZ4F_isError(rc)) {
         throw std::runtime_error(LZ4F_getErrorName(rc));
     }

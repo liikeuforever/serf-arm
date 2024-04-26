@@ -207,7 +207,7 @@ TEST(Perf, SerfXOR) {
         dataSetInputStream.close();
     }
 
-    std::ofstream resultOut("result.csv");
+    std::ofstream resultOut("result_serf_xor.csv");
     resultOut << "Method,DataSet,MaxDiff,CompressionTime,CompressionRatio,DecompressionTime" << std::endl;
     for (const auto &item: exprTable) {
         auto exprConf = item.first;
