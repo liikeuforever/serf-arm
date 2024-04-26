@@ -223,7 +223,23 @@ TEST(Serf, Performance) {
         }
 
         maxDiff2Ratio.find(maxDiff)->second += item.second.getCompressionRatio();
-        maxDiff2CompressionTime.find(maxDiff)->second += item.second.getCompressionTime();
-        maxDiff2DecompressionTime.find(maxDiff)->second += item.second.getDecompressionTime();
+        maxDiff2CompressionTime.find(maxDiff)->second += (item.second.getCompressionTime() / item.second.getBlockCount());
+        maxDiff2DecompressionTime.find(maxDiff)->second += (item.second.getDecompressionTime() / item.second.getBlockCount());
+    }
+
+    for (auto &item: maxDiff2Ratio) {
+        item.second /= dataSetList.size();
+    }
+
+    for (auto &item: maxDiff2CompressionTime) {
+        item.second /= dataSetList.size();
+    }
+
+    for (auto &item: maxDiff2DecompressionTime) {
+        item.second /= dataSetList.size();
+    }
+
+    for (const auto &item: maxDiff2Ratio) {
+        std::cout << item.first << ", " << maxDiff2Ratio.find(item.first)->second << ", " << maxDiff2CompressionTime.find(item.first)->second.count() << ", " << maxDiff2DecompressionTime.find(item.first)->second.count() << std::endl;
     }
 }
