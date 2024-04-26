@@ -11,3 +11,5 @@ endforeach(F)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 add_library(fpc SHARED ${LIB_SRC})
+
+target_link_libraries(fpc serf)
