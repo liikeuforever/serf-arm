@@ -35,3 +35,7 @@ void DeflateCompressor::close() {
 Array<unsigned char> DeflateCompressor::getBytes() {
     return compress_pack;
 }
+
+long DeflateCompressor::getCompressedSizeInBits() {
+    return (BLOCK_SIZE * static_cast<int>(sizeof(double)) - strm.avail_out) * 8;
+}

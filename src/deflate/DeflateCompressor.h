@@ -23,6 +23,8 @@ public:
     void close();
 
     Array<unsigned char> getBytes();
+
+    long getCompressedSizeInBits();
 };
 
 #endif //DEFLATE_COMPRESSOR_H

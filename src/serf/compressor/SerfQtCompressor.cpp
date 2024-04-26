@@ -3,7 +3,7 @@
 void SerfQtCompressor::addValue(double v) {
     long q = (long) std::round((v - preValue) / (2 * maxDiff));
     double recoverValue = preValue + 2 * maxDiff * q;
-    if (std::abs(recoverValue - v) > maxDiff || std::isnan(v)) {
+    if (__builtin_expect(std::abs(recoverValue - v) > maxDiff || std::isnan(v), false)) {
         // small cases
         compressedBits += out->writeBit(true);
         uint64_t xorResult = Double::doubleToLongBits(v) ^ Double::doubleToLongBits(preValue);

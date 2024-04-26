@@ -11,9 +11,8 @@ private:
     const int BLOCK_SIZE = 1000;
     LZ4F_compressionContext_t compression_context;
     size_t rc;
-    bool first = true;
     Array<char> compress_frame = Array<char>(static_cast<int>(LZ4F_compressBound(BLOCK_SIZE * sizeof(double), nullptr)));
-    size_t pos = 0;
+    size_t written_bytes = 0;
 
 public:
     LZ4Compressor();
@@ -25,6 +24,8 @@ public:
     void close();
 
     Array<char> getBytes();
+
+    long getCompressedSizeInBits();
 };
 
 #endif // LZ4_COMPRESSOR_H
