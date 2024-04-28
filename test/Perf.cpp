@@ -439,14 +439,14 @@ TEST(Perf, LZ4) {
         }
         std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
 
-        LZ4Compressor lz_4_compressor;
-        LZ4Decompressor lz_4_decompressor;
         int blockCount = 0;
         long compressBits = 0;
         std::vector<double> originalData;
         auto total_compression_duration = std::chrono::microseconds::zero();
         auto total_decompression_duration = std::chrono::microseconds::zero();
         while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+            LZ4Compressor lz_4_compressor;
+            LZ4Decompressor lz_4_decompressor;
             ++blockCount;
             auto compression_start = std::chrono::steady_clock::now();
             for (const auto &item: originalData) {
