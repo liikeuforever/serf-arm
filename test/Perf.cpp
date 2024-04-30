@@ -16,6 +16,8 @@
 #include "deflate/DeflateDecompressor.h"
 #include "lz4/LZ4Compressor.h"
 #include "lz4/LZ4Decompressor.h"
+#include "fpc/FpcCompressor.h"
+#include "fpc/FpcDecompressor.h"
 
 class PerfRecord {
 private:
@@ -397,7 +399,7 @@ TEST(Perf, Deflate) {
         }
 
         std::string method = "Deflate";
-        auto perfRecord = exprTable.find(ExprConf(method, fileName, -1));
+        auto perfRecord = exprTable.find(ExprConf(method, fileName, 0));
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
@@ -409,7 +411,7 @@ TEST(Perf, Deflate) {
             newPerfRecord.addCompressedSize(compressBits);
             newPerfRecord.increaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
-            exprTable.insert(std::make_pair(ExprConf(method, fileName, -1), newPerfRecord));
+            exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
 
         dataSetInputStream.close();
@@ -465,7 +467,7 @@ TEST(Perf, LZ4) {
         }
 
         std::string method = "LZ4";
-        auto perfRecord = exprTable.find(ExprConf(method, fileName, -1));
+        auto perfRecord = exprTable.find(ExprConf(method, fileName, 0));
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
@@ -477,13 +479,82 @@ TEST(Perf, LZ4) {
             newPerfRecord.addCompressedSize(compressBits);
             newPerfRecord.increaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
-            exprTable.insert(std::make_pair(ExprConf(method, fileName, -1), newPerfRecord));
+            exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
 
         dataSetInputStream.close();
     }
 
     std::ofstream resultOut("result_lz4.csv");
+    resultOut << "Method,DataSet,CompressionTime,CompressionRatio,DecompressionTime" << std::endl;
+    for (const auto &item: exprTable) {
+        auto exprConf = item.first;
+        auto perfRecord = item.second;
+
+        resultOut << exprConf.method_ << "," << exprConf.dataSet_ << ","
+                  << perfRecord.getCompressionTime().count() << "," << perfRecord.getCompressionRatio() << ","
+                  << perfRecord.getDecompressionTime().count() << std::endl;
+    }
+
+    resultOut.flush();
+    resultOut.close();
+}
+
+TEST(Perf, FPC) {
+    std::vector<std::string> dataSetList = scanDataSet();
+    for (const auto &dataSet: dataSetList) {
+        std::ifstream dataSetInputStream(dataSet);
+        if (!dataSetInputStream.is_open()) {
+            fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
+        }
+        std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
+
+        int blockCount = 0;
+        long compressBits = 0;
+        std::vector<double> originalData;
+        auto total_compression_duration = std::chrono::microseconds::zero();
+        auto total_decompression_duration = std::chrono::microseconds::zero();
+        while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+            FpcCompressor fpc_compressor(5, BLOCK_SIZE);
+            FpcDecompressor fpc_decompressor(5, BLOCK_SIZE);
+            ++blockCount;
+            auto compression_start = std::chrono::steady_clock::now();
+            for (const auto &item: originalData) {
+                fpc_compressor.addValue(item);
+            }
+            fpc_compressor.close();
+            auto compression_end = std::chrono::steady_clock::now();
+            compressBits += fpc_compressor.getCompressedSizeInBits();
+            std::vector<char> result = fpc_compressor.getBytes();
+            fpc_decompressor.setBytes(result.data(), result.size());
+            auto decompression_start = std::chrono::steady_clock::now();
+            std::vector<double> decompressed = fpc_decompressor.decompress();
+            auto decompression_end = std::chrono::steady_clock::now();
+
+            total_compression_duration += std::chrono::duration_cast<std::chrono::microseconds>(compression_end - compression_start);
+            total_decompression_duration += std::chrono::duration_cast<std::chrono::microseconds>(decompression_end - decompression_start);
+        }
+
+        std::string method = "FPC";
+        auto perfRecord = exprTable.find(ExprConf(method, fileName, 0));
+        if (perfRecord != exprTable.end()) {
+            perfRecord->second.setBlockCount(blockCount);
+            perfRecord->second.addCompressedSize(compressBits);
+            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.increaseDecompressionTime(total_decompression_duration);
+        } else {
+            auto newPerfRecord = PerfRecord();
+            newPerfRecord.setBlockCount(blockCount);
+            newPerfRecord.addCompressedSize(compressBits);
+            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.increaseDecompressionTime(total_decompression_duration);
+            exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
+        }
+
+        dataSetInputStream.close();
+    }
+
+    std::ofstream resultOut("result_fpc.csv");
     resultOut << "Method,DataSet,CompressionTime,CompressionRatio,DecompressionTime" << std::endl;
     for (const auto &item: exprTable) {
         auto exprConf = item.first;

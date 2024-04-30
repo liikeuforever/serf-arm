@@ -34,6 +34,7 @@ void LZ4Compressor::close() {
     if (LZ4F_isError(rc)) {
         throw std::runtime_error(LZ4F_getErrorName(rc));
     }
+    written_bytes += rc;
 }
 
 Array<char> LZ4Compressor::getBytes() {
