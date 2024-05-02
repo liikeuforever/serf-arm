@@ -1,26 +1,66 @@
 #include "ChimpDecompressor.h"
 
-std::vector<double> ChimpDecompressor::decompress(const Array<uint8_t> &bs) {
-    input_bit_stream->setBuffer(bs);
-    uint32_t double_count = input_bit_stream->readInt(32);
-    std::vector<double> values(double_count);
-    storedValues[0] = input_bit_stream->readLong(64);
-    values.push_back(Double::longBitsToDouble(storedValues[0]));
-    for (int i = 1; i < double_count; ++i) {
-        uint32_t flag = input_bit_stream->readInt(2);
-        uint32_t tmp, fill, index, significantBits;
-        switch (flag) {
-            case 3:
-                tmp = input_bit_stream->readInt(3);
-                storedLeadingZeros = leadingRep[tmp];
-                delta = input_bit_stream->readLong(64 - storedLeadingZeros);
-                values.push_back(values[i - 1]);
-                break;
-            case 2:
-                break;
-            case 1:
-                break;
-        }
+ChimpDecompressor::ChimpDecompressor(const Array<uint8_t> &bs, int previousValues) {
+    input_bit_stream_ = std::make_unique<InputBitStream>();
+    input_bit_stream_->setBuffer(bs);
+    previousValues_ = previousValues;
+    previousValuesLog2_ = (int) (std::log(previousValues_) / std::log(2));
+    initialFill_ = previousValuesLog2_ + 9;
+    storedValues_ = Array<uint64_t>(previousValues);
+}
+
+std::vector<double> ChimpDecompressor::decompress() {
+    std::vector<double> values;
+    double cur_value;
+    while (!std::isnan(cur_value = nextValue())) {
+        values.emplace_back(cur_value);
     }
     return values;
+}
+
+double ChimpDecompressor::nextValue() {
+    if (first_) {
+        first_ = false;
+        stored_val_ = input_bit_stream_->readLong(64);
+        storedValues_[current_] = stored_val_;
+    } else {
+        int flag = input_bit_stream_->readInt(2);
+        uint64_t value;
+        if (flag == 3) {
+            storedLeadingZeros_ = leadingRep_[input_bit_stream_->readInt(3)];
+            value = input_bit_stream_->readLong(64 - storedLeadingZeros_);
+            value = stored_val_ ^ value;
+            stored_val_ = value;
+            current_ = (current_ + 1) % previousValues_;
+            storedValues_[current_] = stored_val_;
+        } else if (flag == 2) {
+            value = input_bit_stream_->readLong(64 - storedLeadingZeros_);
+            value = stored_val_ ^ value;
+            stored_val_ = value;
+            current_ = (current_ + 1) % previousValues_;
+            storedValues_[current_] = stored_val_;
+        } else if (flag == 1) {
+            int fill = initialFill_;
+            int temp = input_bit_stream_->readInt(fill);
+            int index = temp >> (fill -= previousValuesLog2_) & (1 << previousValuesLog2_) - 1;
+            storedLeadingZeros_ = leadingRep_[temp >> (fill -= 3) & (1 << 3) - 1];
+            int significant_bits = temp >> (fill -= 6) & (1 << 6) - 1;
+            stored_val_ = storedValues_[index];
+            if (significant_bits == 0) {
+                significant_bits = 64;
+            }
+            storedTrailingZeros_ = 64 - significant_bits - storedLeadingZeros_;
+            value = input_bit_stream_->readLong(64 - storedLeadingZeros_ - storedTrailingZeros_);
+            value <<= storedTrailingZeros_;
+            value = stored_val_ ^ value;
+            stored_val_ = value;
+            current_ = (current_ + 1) % previousValues_;
+            storedValues_[current_] = stored_val_;
+        } else {
+            stored_val_ = storedValues_[(int) input_bit_stream_->readLong(previousValuesLog2_)];
+            current_ = (current_ + 1) % previousValues_;
+            storedValues_[current_] = stored_val_;
+        }
+    }
+    return Double::longBitsToDouble(stored_val_);
 }

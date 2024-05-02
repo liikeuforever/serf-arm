@@ -11,27 +11,35 @@
 #include "serf/utils/Double.h"
 
 class ChimpDecompressor {
-private:
-    constexpr static const int16_t leadingRep[] = {0, 8, 12, 16, 18, 20, 22, 24};
-
-    int storedLeadingZeros = std::numeric_limits<int>::max();
-
-    int storedTrailingZeros = std::numeric_limits<int>::max();
-
-    int32_t previousValues = 128;
-
-    int32_t previousValuesLog2 = 31 - __builtin_clz(128);
-
-    int32_t initialFill = previousValuesLog2 + 9;
-
-    std::unique_ptr<uint64_t []> storedValues = std::make_unique<uint64_t []>(128);
-
-    uint64_t delta;
-
-    std::unique_ptr<InputBitStream> input_bit_stream;
-
 public:
-    std::vector<double> decompress(const Array<uint8_t> &bs);
+    explicit ChimpDecompressor(const Array<uint8_t> &bs, int previousValues);
+
+    std::vector<double> decompress();
+
+private:
+    constexpr static const int16_t leadingRep_[] = {0, 8, 12, 16, 18, 20, 22, 24};
+
+    int storedLeadingZeros_ = std::numeric_limits<int>::max();
+
+    int storedTrailingZeros_ = 0;
+
+    uint64_t stored_val_ = 0;
+
+    int previousValues_;
+
+    int previousValuesLog2_;
+
+    int initialFill_;
+
+    Array<uint64_t> storedValues_ = Array<uint64_t>(0);
+
+    std::unique_ptr<InputBitStream> input_bit_stream_;
+
+    int current_ = 0;
+
+    bool first_ = true;
+
+    double nextValue();
 };
 
 #endif //CHIMP_DECOMPRESSOR_H
