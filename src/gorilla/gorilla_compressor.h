@@ -2,8 +2,12 @@
 #define GORILLA_COMPRESSOR_H
 
 
+#include <cmath>
+#include <limits>
 #include <memory>
 #include "serf/utils/OutputBitStream.h"
+#include "serf/utils/Array.h"
+#include "serf/utils/Double.h"
 
 class GorillaCompressor {
 public:
@@ -13,10 +17,24 @@ public:
 
     void close();
 
-    void getBytes();
+    Array<uint8_t> get_compress_pack();
+
+    long get_compress_size_in_bits();
 
 private:
     std::unique_ptr<OutputBitStream> output_bit_stream_;
+
+    Array<uint8_t> compress_pack_ = Array<uint8_t>(0);
+
+    long compress_size_in_bits_ = 0;
+
+    bool first_ = true;
+
+    uint64_t pr_value_ = 0;
+
+    int pr_lead_ = std::numeric_limits<int>::max();
+
+    int pr_trail_ = 0;
 };
 
 
