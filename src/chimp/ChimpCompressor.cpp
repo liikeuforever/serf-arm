@@ -7,8 +7,8 @@ ChimpCompressor::ChimpCompressor(int previousValues) {
     previousValuesLog2_ = (int) (std::log(previousValues_) / std::log(2));
     threshold_ = 6 + previousValuesLog2_;
     setLsb_ = (int) std::pow(2, threshold_ + 1) - 1;
-    indices_ = Array<int>((int) std::pow(2, threshold_ + 1));
-    storedValues_ = Array<uint64_t>(previousValues_);
+    indices_ = std::make_unique<int []>((int) std::pow(2, threshold_ + 1));
+    storedValues_ = std::make_unique<uint64_t []>(previousValues_);
     flagZeroSize_ = previousValuesLog2_ + 2;
     flagOneSize_ = previousValuesLog2_ + 11;
 }
@@ -31,6 +31,7 @@ void ChimpCompressor::addValue(double v) {
             trailingZeros = __builtin_ctzll(tempXor);
             if (trailingZeros > threshold_) {
                 previousIndex = curIndex % previousValues_;
+                xored_value = tempXor;
             } else {
                 previousIndex = index_ % previousValues_;
                 xored_value = storedValues_[previousIndex] ^ value;

@@ -63,9 +63,9 @@ private:
 
     int setLsb_;
 
-    Array<int> indices_ = Array<int>(0);
+    std::unique_ptr<int []> indices_;
 
-    Array<uint64_t> storedValues_ = Array<uint64_t>(0);
+    std::unique_ptr<uint64_t []> storedValues_;
 
     int flagZeroSize_;
 
