@@ -56,7 +56,7 @@ private:
 
 class ElfDecompressor : public AbstractElfDecompressor {
 public:
-    ElfDecompressor(const Array<uint8_t>& bytes) {
+    explicit ElfDecompressor(const Array<uint8_t>& bytes) {
         xor_decompressor_ = std::make_unique<ElfXORDecompressor>(bytes);
     }
 
