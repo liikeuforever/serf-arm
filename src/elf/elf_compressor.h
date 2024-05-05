@@ -23,7 +23,7 @@ public:
             v_prime_long = v_long;
         } else if (std::isnan(v)) {
             size_ += writeInt(2, 2);
-            v_prime_long = 0x7ff8000000000000L;
+            v_prime_long = Double::doubleToLongBits(Double::NaN);
         } else {
             Array<int> alpha_and_beta_star = ElfUtils::getAlphaAndBetaStar(v, lastBetaStar_);
             int e = ((int) (v_long >> 52)) & 0x7ff;
