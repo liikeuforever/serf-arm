@@ -21,9 +21,9 @@ public:
         if (v == 0.0 || std::isinf(v)) {
             size_ += writeInt(2, 2);
             v_prime_long = v_long;
-        } else if (std::isnan(v)) {
-            size_ += writeInt(2, 2);
-            v_prime_long = Double::doubleToLongBits(Double::NaN);
+//        } else if (std::isnan(v)) {
+//            size_ += writeInt(2, 2);
+//            v_prime_long = Double::doubleToLongBits(Double::NaN);
         } else {
             Array<int> alpha_and_beta_star = ElfUtils::getAlphaAndBetaStar(v, lastBetaStar_);
             int e = ((int) (v_long >> 52)) & 0x7ff;
@@ -133,7 +133,7 @@ private:
         stored_val_ = value;
         int trailing_zeros = __builtin_ctzll(value);
         output_bit_stream_->writeInt(trailing_zeros, 7);
-        if (trailing_zeros < 64) {
+        if (value != 0) {
             output_bit_stream_->writeLong(stored_val_ >> (trailing_zeros + 1), 63 - trailing_zeros);
             size_ += 70 - trailing_zeros;
             return 70 - trailing_zeros;
