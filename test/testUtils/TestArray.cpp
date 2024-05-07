@@ -45,3 +45,13 @@ TEST(TestArray, TestModify) {
     EXPECT_EQ(arr[1], 5);
     EXPECT_EQ(arr[2], 6);
 }
+
+TEST(TestArray, TestRangeFor) {
+    Array<int> arr = {1, 2, 3};
+    for (auto &item: arr) {
+        item = 4;
+    }
+    EXPECT_EQ(arr[0], 4);
+    EXPECT_EQ(arr[1], 4);
+    EXPECT_EQ(arr[2], 4);
+}

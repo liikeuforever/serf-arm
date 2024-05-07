@@ -35,6 +35,14 @@ public:
     T &operator [] (int index) const {
         return this->_data[index];
     }
+
+    T *begin() const {
+        return _data.get();
+    }
+
+    T *end() const {
+        return _data.get() + length;
+    }
 };
 
 #endif //SERF_ARRAY_H
