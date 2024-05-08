@@ -1,12 +1,12 @@
 #ifndef ALP_COMPRESSOR_HPP
 #define ALP_COMPRESSOR_HPP
 
-#include "alp/encode.hpp"
-#include "alp/rd.hpp"
-#include "alp/state.hpp"
-#include "alp/storer.hpp"
-#include "alp/utils.hpp"
-#include "fastlanes/ffor.hpp"
+#include "encode.hpp"
+#include "rd.hpp"
+#include "state.hpp"
+#include "storer.hpp"
+#include "utils.hpp"
+#include "../fastlanes/ffor.hpp"
 
 namespace alp {
 

@@ -1,9 +1,9 @@
 #ifndef ALP_DECOMPRESSOR_HPP
 #define ALP_DECOMPRESSOR_HPP
 
-#include "alp/storer.hpp"
-#include "alp/utils.hpp"
-#include "fastlanes/unffor.hpp"
+#include "storer.hpp"
+#include "utils.hpp"
+#include "../fastlanes/unffor.hpp"
 
 namespace alp {
 
