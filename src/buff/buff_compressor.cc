@@ -203,5 +203,11 @@ void BuffCompressor::sparseEncode(Array<Array<uint8_t>> &cols) {
 
 void BuffCompressor::serialize(SparseResult sr) {
     size_ += output_bit_stream_->writeInt(sr.frequent_value_, 8);
-
+    for (int i = 0; i < batch_size_ / 8; ++i) {
+        output_bit_stream_->writeInt(sr.bitmap_[i], 8);
+    }
+    output_bit_stream_->writeInt(sr.bitmap_[batch_size_ / 8], batch_size_ % 8);
+    for (int i = 0; i < sr.outliers_count_; ++i) {
+        size_ += output_bit_stream_->writeInt(sr.outliers_[i], 8);
+    }
 }

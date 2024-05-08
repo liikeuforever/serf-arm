@@ -2,6 +2,7 @@
 #define SPARSE_RESULT_H
 
 
+#include <vector>
 #include <cstdint>
 
 #include "serf/utils/Array.h"
