@@ -4,8 +4,8 @@
 
 #include "elf.h"
 #include "defs.h"
-#include "BitStream/BitWriter.h"
-#include "BitStream/BitReader.h"
+#include "machete/BitStream/BitWriter.h"
+#include "machete/BitStream/BitReader.h"
 
 class AbstractElfDecompressor {
 private:
