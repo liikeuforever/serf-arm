@@ -22,13 +22,13 @@ public:
     static std::string toStringWithPrecision(double val, int precision);
     SparseResult findMajority(Array<uint8_t> nums);
     Array<uint8_t> get_out();
-    void compress(std::vector<double> values);
-    void wholeWidthLongCompress(std::vector<double> values);
+    void compress(Array<double> values);
+    void wholeWidthLongCompress(Array<double> values);
     void close();
     long get_size();
-    void headSample(std::vector<double> dbs);
-    Array<Array<uint8_t>> encode(std::vector<double dbs);
-    void sparseEncode(Array<Array<uint8_t>> cols);
+    void headSample(Array<double> dbs);
+    Array<Array<uint8_t>> encode(Array<double> dbs);
+    void sparseEncode(Array<Array<uint8_t>> &cols);
     void serialize(SparseResult sr);
 
 private:

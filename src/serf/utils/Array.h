@@ -8,9 +8,11 @@ template<typename T>
 class Array {
 public:
     int length;
-    std::unique_ptr<T []> _data = nullptr;
+    std::unique_ptr<T []> _data;
 
 public:
+    Array<T> () = default;
+
     explicit Array<T> (int length): length(length) {
         this->_data = std::make_unique<T []>(this->length);
     }

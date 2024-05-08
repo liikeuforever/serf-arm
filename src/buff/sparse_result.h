@@ -10,10 +10,12 @@ class SparseResult {
 public:
     bool flag_;
     uint8_t frequent_value_;
-    Array<uint8_t> bitmap_ = Array<uint8_t>(0);
-    Array<bool> is_frequent_value_ = Array<bool>(0);
-    Array<uint8_t> outliers_ = Array<uint8_t>(0);
+    Array<uint8_t> bitmap_;
+    Array<bool> is_frequent_value_;
+    Array<uint8_t> outliers_;
     int outliers_count_ = 0;
+
+    SparseResult() = default;
 
     explicit SparseResult(int batch_size);
 
