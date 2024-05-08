@@ -1,9 +1,9 @@
-message(STATUS "[Elf] Source Code Dir: " ${CMAKE_CURRENT_SOURCE_DIR})
+message(STATUS "[Elf] Source Code Dir: " .)
 
-include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(../../src)
 
 # Scan and collect all source code file
-file(GLOB_RECURSE LIB_SRC *.cpp *.c)
+file(GLOB_RECURSE LIB_SRC *.cpp *.cc *.c)
 foreach(F ${LIB_SRC})
     message(STATUS "[Elf] Collected source code file: " ${F})
 endforeach(F)
@@ -11,3 +11,5 @@ endforeach(F)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 add_library(elf SHARED ${LIB_SRC})
+
+target_link_libraries(elf serf)

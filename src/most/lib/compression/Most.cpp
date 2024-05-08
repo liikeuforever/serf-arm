@@ -19,7 +19,7 @@ void Most::Compress(TVPair* input, uint32_t length, char* output) {
   int splitter = -1;
   slope_t lowerSlope = std::numeric_limits<float>::lowest();
   slope_t upperSlope = std::numeric_limits<float>::max();
-  while (next < length) {
+  while (next < (int) length) {
     slope_t curLowerSlope = 0; // TODO
     curLowerSlope.Inc();
     slope_t curUpperSlope = 0; // TODO
@@ -40,7 +40,7 @@ void Most::Compress(TVPair* input, uint32_t length, char* output) {
       splitter = next;
       next ++;
     } else { // too many splitters
-      if (splitter - start >= mMinSegLen) { // new segment
+      if (splitter - start >= (int) mMinSegLen) { // new segment
         *(mostOutput->GetSegment(mostOutput->mSegCnt)) = {
             .mStart = 0, // TODO
             .mSlope = 0, // TODO
