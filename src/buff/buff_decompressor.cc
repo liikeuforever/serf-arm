@@ -1,3 +1,5 @@
+#include <sstream>
+#include <iomanip>
 #include "buff_decompressor.h"
 
 BuffDecompressor::BuffDecompressor(Array<uint8_t> bs) {
@@ -116,7 +118,12 @@ Array<double> BuffDecompressor::mergeDoubles() {
         long bits = (sign << 63) | (exp << 52) | mantissa;
         double db = Double::longBitsToDouble(bits);
 
+        std::ostringstream convert_stream;
+        convert_stream << std::fixed << std::setprecision(max_prec_) << db;
+        db = std::stod(convert_stream.str());
 
+        if (db == 0 && sign == 1) db = -db;
+        dbs[i] = db;
     }
     return dbs;
 }

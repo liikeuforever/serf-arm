@@ -13,6 +13,10 @@ public:
 public:
     Array<T> () = default;
 
+    ~Array() {
+        _data.release();
+    }
+
     explicit Array<T> (int length): length(length) {
         this->_data = std::make_unique<T []>(this->length);
     }

@@ -39,7 +39,7 @@ private:
     std::unique_ptr<OutputBitStream> output_bit_stream_;
     long size_;
     long lower_bound_;
-    int max_prec_;
+    int max_prec_ = 0;
     int dec_width_;
     int int_width_;
     int whole_width_;
