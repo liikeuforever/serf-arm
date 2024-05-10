@@ -35,8 +35,8 @@ Array<double> BuffDecompressor::decompress() {
     if (whole_width_ % 8 != 0) {
         column_count_++;
     }
-    cols_ = Array<Array<uint8_t>>(batch_size_);
-    for (auto &item: cols_) item = Array<uint8_t>(column_count_);
+    cols_ = Array<Array<uint8_t>>(column_count_);
+    for (auto &item: cols_) item = Array<uint8_t>(batch_size_);
     sparseDecode();
     return mergeDoubles();
 }
