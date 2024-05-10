@@ -10,7 +10,7 @@
 class SparseResult {
 public:
     bool flag_;
-    uint8_t frequent_value_;
+    uint8_t frequent_value_ = 0;
     Array<uint8_t> bitmap_;
     Array<bool> is_frequent_value_;
     Array<uint8_t> outliers_;

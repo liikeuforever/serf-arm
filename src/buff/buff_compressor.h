@@ -22,12 +22,12 @@ public:
     static std::string toStringWithPrecision(double val, int precision);
     SparseResult findMajority(Array<uint8_t> nums);
     Array<uint8_t> get_out();
-    void compress(Array<double> values);
+    void compress(const Array<double> &values);
     void wholeWidthLongCompress(Array<double> values);
     void close();
     long get_size();
-    void headSample(Array<double> dbs);
-    Array<Array<uint8_t>> encode(Array<double> dbs);
+    void headSample(const Array<double> &dbs);
+    Array<Array<uint8_t>> encode(const Array<double> &dbs);
     void sparseEncode(Array<Array<uint8_t>> &cols);
     void serialize(SparseResult sr);
 
@@ -39,7 +39,7 @@ private:
     std::unique_ptr<OutputBitStream> output_bit_stream_;
     long size_;
     long lower_bound_;
-    int max_prec_ = 0;
+    int max_prec_ = -1;
     int dec_width_;
     int int_width_;
     int whole_width_;

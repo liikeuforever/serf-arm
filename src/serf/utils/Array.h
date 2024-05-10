@@ -3,43 +3,41 @@
 
 #include <initializer_list>
 #include <memory>
+#include <stdexcept>
 
 template<typename T>
 class Array {
 public:
-    int length;
-    std::unique_ptr<T []> _data;
+    int length = 0;
+    std::unique_ptr<T []> _data = nullptr;
 
 public:
     Array<T> () = default;
 
-    ~Array() {
-        _data.release();
-    }
-
     explicit Array<T> (int length): length(length) {
-        this->_data = std::make_unique<T []>(this->length);
+        _data = std::make_unique<T []>(this->length);
     }
 
     Array<T> (std::initializer_list<T> list): length(list.size()) {
         this->_data = std::make_unique<T []>(this->length);
-        std::copy(list.begin(), list.end(), _data.get());
+        std::copy(list.begin(), list.end(), this->begin());
     }
 
     Array<T> (const Array<T> &other): length(other.length) {
         this->_data = std::make_unique<T []>(this->length);
-        std::copy(other._data.get(), other._data.get() + other.length, _data.get());
+        std::copy(other.begin(), other.end(), this->begin());
     }
 
     Array<T> &operator = (const Array<T> &right) {
-        this->_data.reset(new T[right.length]);
-        std::copy(right._data.get(), right._data.get() + right.length, _data.get());
         this->length = right.length;
+        this->_data = std::make_unique<T []>(right.length);
+        std::copy(right.begin(), right.end(), this->begin());
         return *this;
     }
 
     T &operator [] (int index) const {
-        return this->_data[index];
+        if (0 <= index && index < length) return this->_data[index];
+        else throw std::runtime_error("$Array$(Invalid Index)(" + std::to_string(index) + ")");
     }
 
     T *begin() const {

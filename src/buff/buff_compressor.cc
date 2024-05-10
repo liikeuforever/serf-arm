@@ -2,7 +2,7 @@
 
 BuffCompressor::BuffCompressor(int batch_size) {
     batch_size_ = batch_size;
-    output_bit_stream_ = std::make_unique<OutputBitStream>(100000);
+    output_bit_stream_ = std::make_unique<OutputBitStream>(10000);
     size_ = 0;
 }
 
@@ -24,7 +24,7 @@ std::string BuffCompressor::toStringWithPrecision(double val, int precision) {
 
 int BuffCompressor::getDecimalPlace(double v) {
     if (v == 0.0) return 0;
-    std::string str_double = toStringWithPrecision(v, 16);
+    std::string str_double = std::to_string(v);
     int index_of_decimal_point = (int) str_double.find('.');
     int index_of_last_zero = (int) str_double.find('0');
     return index_of_last_zero - index_of_decimal_point - 1;
@@ -36,7 +36,7 @@ SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
     int count = 0;
 
     for (const auto &num: nums) {
-        if (count = 0) {
+        if (count == 0) {
             candidate = num;
             count = 1;
         } else if (num == candidate) {
@@ -87,14 +87,14 @@ void BuffCompressor::wholeWidthLongCompress(Array<double> values) {
 }
 
 void BuffCompressor::close() {
-    size_ += output_bit_stream_->writeInt(0, 8);
+    output_bit_stream_->flush();
 }
 
 long BuffCompressor::get_size() {
     return size_;
 }
 
-void BuffCompressor::compress(Array<double> values) {
+void BuffCompressor::compress(const Array<double> &values) {
     headSample(values);
     Array<Array<uint8_t>> cols = encode(values);
     size_ += output_bit_stream_->writeLong(lower_bound_, 64);
@@ -109,7 +109,7 @@ void BuffCompressor::compress(Array<double> values) {
     close();
 }
 
-void BuffCompressor::headSample(Array<double> dbs) {
+void BuffCompressor::headSample(const Array<double> &dbs) {
     lower_bound_ = std::numeric_limits<long>::max();
     long upper_bound = std::numeric_limits<long>::min();
     for (const auto &db: dbs) {
@@ -141,10 +141,10 @@ void BuffCompressor::headSample(Array<double> dbs) {
     }
 }
 
-Array<Array<uint8_t>> BuffCompressor::encode(Array<double> dbs) {
-    Array<Array<uint8_t>> cols(dbs.length);
+Array<Array<uint8_t>> BuffCompressor::encode(const Array<double> &dbs) {
+    Array<Array<uint8_t>> cols(column_count_);
     for (auto &col: cols) {
-        col = Array<uint8_t>(column_count_);
+        col = Array<uint8_t>(dbs.length);
     }
     int db_cnt = 0;
     for (const auto &db: dbs) {
@@ -195,7 +195,7 @@ void BuffCompressor::sparseEncode(Array<Array<uint8_t>> &cols) {
         } else {
             size_ += output_bit_stream_->writeBit(false);
             for (int j = 0; j < batch_size_; ++j) {
-                size_ += output_bit_stream_->writeInt(cols[i][j], 8L);
+                size_ += output_bit_stream_->writeInt(cols[i][j], 8);
             }
         }
     }

@@ -101,8 +101,8 @@ Array<double> BuffDecompressor::mergeDoubles() {
 
         int64_t offset = (int_width_ != 0) ? (bit_pack << 65 - whole_width_ >> 64 - int_width_) : 0;
         int64_t integer = lower_bound_ + offset;
-        int64_t decimal = bit_pack << (64 - dec_width_) >> (64 - dec_width_);
-        int64_t modified_decimal = decimal << (dec_width_ - getWidthNeeded(decimal));
+        uint64_t decimal = bit_pack << (64 - dec_width_) >> (64 - dec_width_);
+        uint64_t modified_decimal = decimal << (dec_width_ - getWidthNeeded(decimal));
         int64_t exp = integer != 0 ? (getWidthNeeded(std::abs(integer)) + 1022) : 1023 - (dec_width_ - getWidthNeeded(decimal) + 1);
         int64_t exp_value = exp - 1023;
         int tmp = 53 - dec_width_ - getWidthNeeded(std::abs(integer));
@@ -113,7 +113,7 @@ Array<double> BuffDecompressor::mergeDoubles() {
                 ? (decimal << (tmp))
                 : (decimal >> std::abs(tmp)));
 
-        long mantissa = implicit_mantissa & 0x000FFFFFFFFFFFFFL;
+        uint64_t mantissa = implicit_mantissa & 0x000FFFFFFFFFFFFFL;
         long sign = bit_pack >> (whole_width_ - 1);
         long bits = (sign << 63) | (exp << 52) | mantissa;
         double db = Double::longBitsToDouble(bits);
