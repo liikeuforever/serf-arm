@@ -16,10 +16,8 @@
 
 class BuffCompressor {
 public:
-    explicit BuffCompressor(int batch_size);
+    explicit BuffCompressor(int batch_size, int max_prec);
     static int getWidthNeeded(uint64_t number);
-    static int getDecimalPlace(double v);
-    static std::string toStringWithPrecision(double val, int precision);
     SparseResult findMajority(Array<uint8_t> nums);
     Array<uint8_t> get_out();
     void compress(const Array<double> &values);

@@ -1,7 +1,8 @@
 #include "buff_compressor.h"
 
-BuffCompressor::BuffCompressor(int batch_size) {
+BuffCompressor::BuffCompressor(int batch_size, int max_prec) {
     batch_size_ = batch_size;
+    max_prec_ = max_prec;
     output_bit_stream_ = std::make_unique<OutputBitStream>(10000);
     size_ = 0;
 }
@@ -14,20 +15,6 @@ int BuffCompressor::getWidthNeeded(uint64_t number) {
         number = number >> 1;
     }
     return bit_count;
-}
-
-std::string BuffCompressor::toStringWithPrecision(double val, int precision) {
-    std::ostringstream stringBuffer;
-    stringBuffer << std::setprecision(precision) << std::fixed << val;
-    return stringBuffer.str();
-}
-
-int BuffCompressor::getDecimalPlace(double v) {
-    if (v == 0.0) return 0;
-    std::string str_double = std::to_string(v);
-    int index_of_decimal_point = (int) str_double.find('.');
-    int index_of_last_zero = (int) str_double.find('0');
-    return index_of_last_zero - index_of_decimal_point - 1;
 }
 
 SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
@@ -118,10 +105,6 @@ void BuffCompressor::headSample(const Array<double> &dbs) {
         int64_t exp = (int64_t) (bits >> 52 & 0x7FF) - 1023;
         uint64_t mantissa = bits & 0x000FFFFFFFFFFFFFL;
         uint64_t implicit_mantissa = mantissa | (1L << 52);
-        int prec = getDecimalPlace(db);
-        if (prec > max_prec_) {
-            max_prec_ = prec;
-        }
         uint64_t integer = exp < 0 ? 0 : (implicit_mantissa >> (52 - exp));
         int64_t integer_value = (sign == 0) ? integer : -integer;
         if (integer_value > upper_bound) {
