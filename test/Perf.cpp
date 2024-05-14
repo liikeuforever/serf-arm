@@ -26,14 +26,8 @@
 #include "gorilla/gorilla_decompressor.h"
 
 class PerfRecord {
-private:
-    std::chrono::microseconds compressionTime = std::chrono::microseconds::zero();
-    std::chrono::microseconds decompressionTime = std::chrono::microseconds::zero();
-    long compressedSizeInBits = 0;
-    int blockCount = 0;
-
 public:
-    void increaseCompressionTime(std::chrono::microseconds &duration) {
+    void IncreaseCompressionTime(std::chrono::microseconds &duration) {
         compressionTime += duration;
     }
 
@@ -64,6 +58,13 @@ public:
     double getCompressionRatio() const {
         return (double) compressedSizeInBits / (double) (blockCount * 1000 * 64L);
     }
+
+private:
+    std::chrono::microseconds compressionTime = std::chrono::microseconds::zero();
+    std::chrono::microseconds decompressionTime = std::chrono::microseconds::zero();
+    long compressedSizeInBits = 0;
+    int blockCount = 0;
+    std::string param_
 };
 
 class ExprConf {
@@ -197,13 +198,13 @@ TEST(Perf, SerfXOR) {
             if (perfRecord != exprTable.end()) {
                 perfRecord->second.setBlockCount(blockCount);
                 perfRecord->second.addCompressedSize(compressBits);
-                perfRecord->second.increaseCompressionTime(total_compression_duration);
+                perfRecord->second.IncreaseCompressionTime(total_compression_duration);
                 perfRecord->second.increaseDecompressionTime(total_decompression_duration);
             } else {
                 auto newPerfRecord = PerfRecord();
                 newPerfRecord.setBlockCount(blockCount);
                 newPerfRecord.addCompressedSize(compressBits);
-                newPerfRecord.increaseCompressionTime(total_compression_duration);
+                newPerfRecord.IncreaseCompressionTime(total_compression_duration);
                 newPerfRecord.increaseDecompressionTime(total_decompression_duration);
                 exprTable.insert(std::make_pair(ExprConf(method, fileName, max_diff), newPerfRecord));
             }
@@ -304,13 +305,13 @@ TEST(Perf, SerfQt) {
             if (perfRecord != exprTable.end()) {
                 perfRecord->second.setBlockCount(blockCount);
                 perfRecord->second.addCompressedSize(compressBits);
-                perfRecord->second.increaseCompressionTime(total_compression_duration);
+                perfRecord->second.IncreaseCompressionTime(total_compression_duration);
                 perfRecord->second.increaseDecompressionTime(total_decompression_duration);
             } else {
                 auto newPerfRecord = PerfRecord();
                 newPerfRecord.setBlockCount(blockCount);
                 newPerfRecord.addCompressedSize(compressBits);
-                newPerfRecord.increaseCompressionTime(total_compression_duration);
+                newPerfRecord.IncreaseCompressionTime(total_compression_duration);
                 newPerfRecord.increaseDecompressionTime(total_decompression_duration);
                 exprTable.insert(std::make_pair(ExprConf(method, fileName, max_diff), newPerfRecord));
             }
@@ -409,13 +410,13 @@ TEST(Perf, Deflate) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
@@ -477,13 +478,13 @@ TEST(Perf, LZ4) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
@@ -546,13 +547,13 @@ TEST(Perf, FPC) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
@@ -613,13 +614,13 @@ TEST(Perf, ALP) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
@@ -680,13 +681,13 @@ TEST(Perf, Chimp) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
@@ -745,13 +746,13 @@ TEST(Perf, Elf) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
@@ -812,13 +813,13 @@ TEST(Perf, Gorilla) {
         if (perfRecord != exprTable.end()) {
             perfRecord->second.setBlockCount(blockCount);
             perfRecord->second.addCompressedSize(compressBits);
-            perfRecord->second.increaseCompressionTime(total_compression_duration);
+            perfRecord->second.IncreaseCompressionTime(total_compression_duration);
             perfRecord->second.increaseDecompressionTime(total_decompression_duration);
         } else {
             auto newPerfRecord = PerfRecord();
             newPerfRecord.setBlockCount(blockCount);
             newPerfRecord.addCompressedSize(compressBits);
-            newPerfRecord.increaseCompressionTime(total_compression_duration);
+            newPerfRecord.IncreaseCompressionTime(total_compression_duration);
             newPerfRecord.increaseDecompressionTime(total_decompression_duration);
             exprTable.insert(std::make_pair(ExprConf(method, fileName, 0), newPerfRecord));
         }
