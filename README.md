@@ -8,7 +8,7 @@
 ```
 Streaming error-bound compressor.
 
-## How to generate project buildsystem
+## How to generate project build-system
 `cmake -DCMAKE_BUILD_TYPE=release -B build`
 
 ## How to build Serf and test
@@ -16,9 +16,20 @@ Streaming error-bound compressor.
 
 ## Baseline
 
+- ALP
+- Buff
+- Chimp128
+- Deflate
+- Elf
 - FPC
+- Gorilla
 - LZ4
-- Deflate (Zlib)
+- LZ77
+- LZW
+- Machete
+- MOST
+- Serf
+- SZ1.0
 
 ## Python interface
 Install pybind11 using pip.
