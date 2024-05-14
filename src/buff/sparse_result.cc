@@ -11,6 +11,6 @@ void SparseResult::set_frequent_value(int frequent_value) {
     frequent_value_ = (uint8_t) frequent_value;
 }
 
-Array<uint8_t> SparseResult::get_outliers() {
+Array<uint8_t> &SparseResult::get_outliers() {
     return outliers_;
 }

@@ -45,7 +45,7 @@ SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
         }
         if (i + 1 == nums.length && (i + 1) % 8 != 0) {
             // Here this line of code differs from that in Java
-            result.bitmap_[index] = (uint8_t) (result.bitmap_[index] << ((i % 8) + 1));
+            result.bitmap_[index] = (uint8_t) (result.bitmap_[index] << (i % 8 + 1));
         }
     }
 
@@ -169,9 +169,8 @@ Array<Array<uint8_t>> BuffCompressor::encode(const Array<double> &dbs) {
 }
 
 void BuffCompressor::sparseEncode(Array<Array<uint8_t>> &cols) {
-    SparseResult result;
     for (int i = 0; i < column_count_; ++i) {
-        result = findMajority(cols[i]);
+        SparseResult result = findMajority(cols[i]);
         if (result.flag_) {
             size_ += output_bit_stream_->writeBit(true);
             serialize(result);
@@ -187,9 +186,9 @@ void BuffCompressor::sparseEncode(Array<Array<uint8_t>> &cols) {
 void BuffCompressor::serialize(SparseResult sr) {
     size_ += output_bit_stream_->writeInt(sr.frequent_value_, 8);
     for (int i = 0; i < batch_size_ / 8; ++i) {
-        output_bit_stream_->writeInt(sr.bitmap_[i], 8);
+        size_ += output_bit_stream_->writeInt(sr.bitmap_[i], 8);
     }
-    output_bit_stream_->writeInt(sr.bitmap_[batch_size_ / 8], batch_size_ % 8);
+    size_ += output_bit_stream_->writeInt(sr.bitmap_[batch_size_ / 8], batch_size_ % 8);
     for (int i = 0; i < sr.outliers_count_; ++i) {
         size_ += output_bit_stream_->writeInt(sr.outliers_[i], 8);
     }

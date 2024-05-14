@@ -10,23 +10,7 @@
 const static int kBlockSize = 1000;
 const static std::string kDataSetDir = "../../test/dataSet";
 
-const static std::unordered_map<std::string, int> kFileToMaxPrecision = {
-        {"Basel-wind.csv",     8},
-        {"City-temp.csv",      1},
-        {"PM10-dust.csv",      3},
-        {"Stocks-DE.csv",      3},
-        {"Basel-temp.csv",     10},
-        {"init.csv",           6},
-        {"Air-pressure.csv",   5},
-        {"Wind-Speed.csv",     2},
-        {"Bitcoin-price.csv",  4},
-        {"Stocks-UK.csv",      2},
-        {"Stocks-USA.csv",     2},
-        {"Dew-point-temp.csv", 2},
-        {"Air-sensor.csv",     17},
-        {"Bird-migration.csv", 5},
-        {"IR-bio-temp.csv",    2},
-};
+int block_max_precision;
 
 /**
  * @brief Scan all data set files in kDataSetDir.
@@ -54,12 +38,24 @@ std::vector<std::string> ScanDataSet() {
 std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
     std::vector<double> return_block;
     int read_double_count = 0;
-    double buffer;
+    std::string double_value_raw_string;
+    size_t max_precision = 0;
+    size_t cur_precision;
     while (!file_input_stream_ref.eof() && read_double_count < kBlockSize) {
-        file_input_stream_ref >> buffer;
+        std::getline(file_input_stream_ref, double_value_raw_string);
+        if (double_value_raw_string.empty()) continue;
+        if (double_value_raw_string.find('.') == std::string::npos) {
+            cur_precision = 1;
+            max_precision = std::max(max_precision, cur_precision);
+        } else {
+            cur_precision = double_value_raw_string.size() - double_value_raw_string.find('.') - 1;
+            max_precision = std::max(max_precision, cur_precision);
+        }
+        double buffer = std::stod(double_value_raw_string);
         return_block.emplace_back(buffer);
         ++read_double_count;
     }
+    block_max_precision = (int) max_precision;
     return return_block;
 }
 
@@ -78,15 +74,16 @@ TEST(TestBuff, CorrectnessTest) {
             for (int i = 0; i < kBlockSize; ++i) {
                 input[i] = original_data[i];
             }
-            BuffCompressor compressor(kBlockSize, kFileToMaxPrecision.find(file_name)->second);
+            BuffCompressor compressor(kBlockSize, block_max_precision);
             compressor.compress(input);
+            compressor.close();
             Array<uint8_t> compress_pack = compressor.get_out();
             BuffDecompressor decompressor(compress_pack);
             Array<double> output = decompressor.decompress();
+            EXPECT_EQ(original_data.size(), output.length);
             for (int i = 0; i < kBlockSize; ++i) {
-//                EXPECT_FLOAT_EQ(originalData[i], output[i]);
+                EXPECT_FLOAT_EQ(original_data[i], output[i]);
                 if (original_data[i] - output[i] != 0) {
-                    std::cout << data_set << std::endl;
                     exit(-1);
                 }
             }

@@ -27,7 +27,7 @@ Array<double> BuffDecompressor::decompress() {
     if (whole_width_ >= 64) {
         Array<double> result(batch_size_);
         for (auto &item: result) {
-            item = Double::longBitsToDouble(input_bit_stream_->readLong(63));
+            item = Double::longBitsToDouble(input_bit_stream_->readLong(64));
         }
         return result;
     }
@@ -71,8 +71,8 @@ void BuffDecompressor::sparseDecode() {
             SparseResult result = deserialize();
             int index, offset, vec_count = 0;
             for (int j = 0; j < batch_size_; ++j) {
-                index = i / 8;
-                offset = i % 8;
+                index = j / 8;
+                offset = j % 8;
                 if ((result.bitmap_[index] & (1 << (7 - offset))) == 0) {
                     cols_[i][j] = result.frequent_value_;
                 } else {

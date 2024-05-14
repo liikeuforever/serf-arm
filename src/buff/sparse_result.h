@@ -16,13 +16,11 @@ public:
     Array<uint8_t> outliers_;
     int outliers_count_ = 0;
 
-    SparseResult() = default;
-
     explicit SparseResult(int batch_size);
 
     void set_frequent_value(int frequent_value);
 
-    Array<uint8_t> get_outliers();
+    Array<uint8_t> &get_outliers();
 };
 
 
