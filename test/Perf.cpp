@@ -178,12 +178,12 @@ TEST(Perf, SerfXOR) {
                 ++blockCount;
                 auto compression_start = std::chrono::steady_clock::now();
                 for (const auto &item: originalData) {
-                    xor_compressor.addValue(item);
+                    xor_compressor.AddValue(item);
                 }
-                xor_compressor.close();
+                xor_compressor.Close();
                 auto compression_end = std::chrono::steady_clock::now();
-                compressBits += xor_compressor.getCompressedSizeInBits();
-                Array<uint8_t> result = xor_compressor.getBytes();
+                compressBits += xor_compressor.compressed_size_in_bits();
+                Array<uint8_t> result = xor_compressor.compressed_bytes();
                 auto decompression_start = std::chrono::steady_clock::now();
                 std::vector<double> decompressed = xor_decompressor.decompress(result);
                 auto decompression_end = std::chrono::steady_clock::now();

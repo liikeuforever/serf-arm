@@ -183,10 +183,10 @@ TEST(TestSerfXOR, CorrectnessTest) {
             std::vector<double> originalData;
             while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
                 for (const auto &item: originalData) {
-                    xor_compressor.addValue(item);
+                    xor_compressor.AddValue(item);
                 }
-                xor_compressor.close();
-                Array<uint8_t> result = xor_compressor.getBytes();
+                xor_compressor.Close();
+                Array<uint8_t> result = xor_compressor.compressed_bytes();
                 std::vector<double> decompressed = xor_decompressor.decompress(result);
                 EXPECT_EQ(originalData.size(), decompressed.size());
                 for (int i = 0; i < BLOCK_SIZE; ++i) {

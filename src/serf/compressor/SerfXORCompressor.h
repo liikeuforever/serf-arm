@@ -11,24 +11,34 @@
 #include "serf/utils/Array.h"
 
 class SerfXORCompressor {
+public:
+    SerfXORCompressor(int capacity, double max_diff, long adjust_digit);
+
+    void AddValue(double v);
+
+    long compressed_size_in_bits() const;
+
+    Array<uint8_t> compressed_bytes();
+
+    void Close();
+
 private:
-    const double maxDiff;
-    const long adjustD;
+    const double max_diff_;
+    const long adjust_digit_;
+    uint64_t stored_val_ = Double::doubleToLongBits(2);
 
-    uint64_t storedVal = Double::doubleToLongBits(2);
+    std::unique_ptr<OutputBitStream> output_buffer_;
+    Array<uint8_t> compressed_bytes_ = Array<uint8_t>();
 
-    std::unique_ptr<OutputBitStream> out;
-    Array<uint8_t> outBuffer = Array<uint8_t >(0);
+    long compressed_size_in_bits_;
+    long stored_compressed_size_in_bits_ = 0;
+    int number_of_values_ = 0;
+    double stored_compression_ratio_ = 0;
 
-    long compressedSizeInBits;
-    long storedCompressedSizeInBits = 0;
-    int numberOfValues = 0;
-    double storedCompressionRatio = 0;
+    int equal_vote_ = 0;
+    bool equal_win_ = false;
 
-    int equalVote = 0;
-    bool equalWin = false;
-
-    Array<int> leadingRepresentation = {
+    Array<int> leading_representation_ = {
             0, 0, 0, 0, 0, 0, 0, 0,
             1, 1, 1, 1, 2, 2, 2, 2,
             3, 3, 4, 4, 5, 5, 6, 6,
@@ -38,7 +48,7 @@ private:
             7, 7, 7, 7, 7, 7, 7, 7,
             7, 7, 7, 7, 7, 7, 7, 7
     };
-    Array<int> leadingRound = {
+    Array<int> leading_round_ = {
             0, 0, 0, 0, 0, 0, 0, 0,
             8, 8, 8, 8, 12, 12, 12, 12,
             16, 16, 18, 18, 20, 20, 22, 22,
@@ -48,7 +58,7 @@ private:
             24, 24, 24, 24, 24, 24, 24, 24,
             24, 24, 24, 24, 24, 24, 24, 24
     };
-    Array<int> trailingRepresentation = {
+    Array<int> trailing_representation_ = {
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 1, 1,
@@ -58,7 +68,7 @@ private:
             7, 7, 7, 7, 7, 7, 7, 7,
             7, 7, 7, 7, 7, 7, 7, 7,
     };
-    Array<int> trailingRound = {
+    Array<int> trailing_round_ = {
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 22, 22,
@@ -68,28 +78,16 @@ private:
             46, 46, 46, 46, 46, 46, 46, 46,
             46, 46, 46, 46, 46, 46, 46, 46,
     };
-    int leadingBitsPerValue = 3;
-    int trailingBitsPerValue = 3;
-    Array<int> leadDistribution = Array<int>(64);
-    Array<int> trailDistribution = Array<int>(64);
-    int storedLeadingZeros = std::numeric_limits<int>::max();
-    int storedTrailingZeros = std::numeric_limits<int>::max();
 
-public:
-    SerfXORCompressor(int capacity, double maxDiff, long adjustD);
+    int leading_bits_per_value_ = 3;
+    int trailing_bits_per_value_ = 3;
+    Array<int> lead_distribution_ = Array<int>(64);
+    Array<int> trail_distribution_ = Array<int>(64);
+    int stored_leading_zeros_ = std::numeric_limits<int>::max();
+    int stored_trailing_zeros_ = std::numeric_limits<int>::max();
 
-    void addValue(double v);
-
-    long getCompressedSizeInBits() const;
-
-    Array<uint8_t> getBytes();
-
-    void close();
-
-private:
-    int compressValue(uint64_t value);
-
-    int updateFlagAndPositionsIfNeeded();
+    int CompressValue(uint64_t value);
+    int UpdateFlagAndPositionsIfNeeded();
 };
 
-#endif //SERF_XOR_COMPRESSOR_H
+#endif // SERF_XOR_COMPRESSOR_H
