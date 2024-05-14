@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <utility>
 #include <sstream>
 #include <vector>
 #include <unordered_map>
@@ -22,73 +21,6 @@
 #include "serf/decompressor/NetSerfQtDecompressor.h"
 #include "serf/compressor32/SerfQtCompressor32.h"
 #include "serf/decompressor32/SerfQtDecompressor32.h"
-
-class PerfRecord {
-private:
-    std::chrono::microseconds compressionTime = std::chrono::microseconds::zero();
-    std::chrono::microseconds decompressionTime = std::chrono::microseconds::zero();
-    long compressedSizeInBits = 0;
-    int blockCount = 0;
-
-public:
-    void increaseCompressionTime(std::chrono::microseconds &duration) {
-        compressionTime += duration;
-    }
-
-    auto getCompressionTime() {
-        return compressionTime.count();
-    }
-
-    void increaseDecompressionTime(std::chrono::microseconds &duration) {
-        decompressionTime += duration;
-    }
-
-    auto getDecompressionTime() {
-        return decompressionTime.count();
-    }
-
-    void addCompressedSize(long size) {
-        compressedSizeInBits += size;
-    }
-
-    void setBlockCount(int blockCount_) {
-        blockCount = blockCount_;
-    }
-
-    int getBlockCount() const {
-        return blockCount;
-    }
-
-    double getCompressionRatio() const {
-        return (double) compressedSizeInBits / (double) (blockCount * 1000 * 64L);
-    }
-};
-
-class ExprConf {
-public:
-    const std::string method_;
-    const std::string dataSet_;
-    std::string maxDiff_;
-
-public:
-    ExprConf() = delete;
-
-    ExprConf(std::string method, std::string dataSet, double maxDiff) : method_(std::move(method)), dataSet_(std::move(dataSet)) {
-        std::ostringstream stringBuffer;
-        stringBuffer << std::setprecision(8) << std::fixed << maxDiff;
-        maxDiff_ = stringBuffer.str();
-    }
-
-    bool operator == (const ExprConf &otherConf) const {
-        return method_ == otherConf.method_ && dataSet_ == otherConf.dataSet_ && maxDiff_ == otherConf.maxDiff_;
-    }
-};
-
-struct ExprConfHash {
-    std::size_t operator()(const ExprConf &conf) const {
-        return std::hash<std::string>()(conf.method_ + conf.dataSet_ + conf.maxDiff_);
-    }
-};
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -111,8 +43,6 @@ const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D{
 };
 constexpr static double MAX_DIFF[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 constexpr static float MAX_DIFF_32[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-
-std::unordered_map<ExprConf, PerfRecord, ExprConfHash> exprTable;
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.
