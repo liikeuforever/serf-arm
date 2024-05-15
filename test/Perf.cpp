@@ -32,7 +32,7 @@
 #include "sz/sz/include/sz.h"
 
 
-const static size_t kBlockSize = 50;
+const static size_t kBlockSize = 1000;
 const static size_t kDoubleSize = 64;
 const static std::string kExportExprTablePrefix = "../../test/";
 const static std::string kExportExprTableFileName = "perf_table.csv";
@@ -873,15 +873,15 @@ TEST(Perf, All) {
             expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
                                              PerfSerfXOR(data_set_input_stream, max_diff, data_set)));
             ResetFileStream(data_set_input_stream);
-            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
-                                             PerfSerfQt(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
-                                             PerfMachete(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(
-                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
+//            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
+//                                             PerfSerfQt(data_set_input_stream, max_diff)));
+//            ResetFileStream(data_set_input_stream);
+//            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
+//                                             PerfMachete(data_set_input_stream, max_diff)));
+//            ResetFileStream(data_set_input_stream);
+//            expr_table.insert(
+//                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
+//            ResetFileStream(data_set_input_stream);
         }
 
         // Lossless
@@ -909,5 +909,6 @@ TEST(Perf, All) {
 
     // Export all performance data
 //    ExportTotalExprTable();
-    ExportExprTableWithCompressionRatioNoSpecificDataset();
+//    ExportExprTableWithCompressionRatioNoSpecificDataset();
+    ExportExprTableWithCompressionTimeNoSpecificDataset();
 }
