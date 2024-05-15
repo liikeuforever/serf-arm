@@ -32,7 +32,7 @@
 #include "sz/sz/include/sz.h"
 
 
-const static size_t kBlockSize = 1000;
+const static size_t kBlockSize = 50;
 const static size_t kDoubleSize = 64;
 const static std::string kExportExprTablePrefix = "../../test/";
 const static std::string kExportExprTableFileName = "perf_table.csv";
@@ -71,8 +71,8 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
         {"Stocks-USA.csv",     243},
         {"Wind-Speed.csv",     2}
 };
-constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-
+constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
 static std::string double_to_string_with_precision(double val, size_t precision) {
     std::ostringstream stringBuffer;
@@ -89,7 +89,7 @@ public:
         compression_time_ += duration;
     }
 
-    auto compression_time() {
+    auto &compression_time() {
         return compression_time_;
     }
 
@@ -101,12 +101,16 @@ public:
         decompression_time_ += duration;
     }
 
-    auto decompression_time() {
+    auto &decompression_time() {
         return decompression_time_;
     }
 
     auto AvgDecompressionTimePerBlock() {
         return (double) decompression_time_.count() / block_count_;
+    }
+
+    long compressed_size_in_bits() {
+        return compressed_size_in_bits_;
     }
 
     void AddCompressedSize(long size) {
@@ -173,7 +177,7 @@ private:
 
 std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> expr_table;
 
-void ExportExprTable() {
+void ExportTotalExprTable() {
     std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
     if (!expr_table_output_stream.is_open()) {
         std::cerr << "Failed to export performance data." << std::endl;
@@ -191,6 +195,126 @@ void ExportExprTable() {
                                  << record.block_count() << ","
                                  << record.CalCompressionRatio() << "," << record.AvgCompressionTimePerBlock() << ","
                                  << record.AvgDecompressionTimePerBlock() << std::endl;
+    }
+    // Go!!
+    expr_table_output_stream.flush();
+    expr_table_output_stream.close();
+}
+
+void ExportExprTableWithCompressionRatio() {
+    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+    if (!expr_table_output_stream.is_open()) {
+        std::cerr << "Failed to export performance data." << std::endl;
+        exit(-1);
+    }
+    // Write header
+    expr_table_output_stream
+            << "Method,DataSet,MaxDiff,CompressionRatio"
+            << std::endl;
+    // Write record
+    for (const auto &conf_record: expr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                                 << record.CalCompressionRatio() << std::endl;
+    }
+    // Go!!
+    expr_table_output_stream.flush();
+    expr_table_output_stream.close();
+}
+
+void ExportExprTableWithCompressionRatioNoSpecificDataset() {
+    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+    if (!expr_table_output_stream.is_open()) {
+        std::cerr << "Failed to export performance data." << std::endl;
+        exit(-1);
+    }
+    // Write header
+    expr_table_output_stream
+            << "Method,MaxDiff,CompressionRatio"
+            << std::endl;
+    // Aggregate data and write
+    std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
+    for (const auto &conf_record: expr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
+        auto find_result = aggr_table.find(aggr_key);
+        if (find_result != aggr_table.end()) {
+            auto &selected_record = find_result->second;
+            selected_record.set_block_count(selected_record.block_count() + record.block_count());
+            selected_record.AddCompressedSize(record.compressed_size_in_bits());
+        } else {
+            PerfRecord new_record;
+            new_record.set_block_count(record.block_count());
+            new_record.AddCompressedSize(record.compressed_size_in_bits());
+            aggr_table.insert(std::make_pair(aggr_key, new_record));
+        }
+    }
+    for (const auto &conf_record: aggr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << record.CalCompressionRatio() << std::endl;
+    }
+    // Go!!
+    expr_table_output_stream.flush();
+    expr_table_output_stream.close();
+}
+
+void ExportExprTableWithCompressionTime() {
+    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+    if (!expr_table_output_stream.is_open()) {
+        std::cerr << "Failed to export performance data." << std::endl;
+        exit(-1);
+    }
+    // Write header
+    expr_table_output_stream
+            << "Method,DataSet,MaxDiff,CompressionTime(Total)"
+            << std::endl;
+    // Write record
+    for (const auto &conf_record: expr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                                 << record.compression_time().count() << std::endl;
+    }
+    // Go!!
+    expr_table_output_stream.flush();
+    expr_table_output_stream.close();
+}
+
+void ExportExprTableWithCompressionTimeNoSpecificDataset() {
+    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+    if (!expr_table_output_stream.is_open()) {
+        std::cerr << "Failed to export performance data." << std::endl;
+        exit(-1);
+    }
+    // Write header
+    expr_table_output_stream
+            << "Method,MaxDiff,CompressionTime(AvgPerBlock)"
+            << std::endl;
+    // Aggregate data and write
+    std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
+    for (const auto &conf_record: expr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
+        auto find_result = aggr_table.find(aggr_key);
+        if (find_result != aggr_table.end()) {
+            auto &selected_record = find_result->second;
+            selected_record.set_block_count(selected_record.block_count() + record.block_count());
+            selected_record.IncreaseCompressionTime(record.compression_time());
+        } else {
+            PerfRecord new_record;
+            new_record.set_block_count(record.block_count());
+            new_record.IncreaseCompressionTime(record.compression_time());
+            aggr_table.insert(std::make_pair(aggr_key, new_record));
+        }
+    }
+    for (const auto &conf_record: aggr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << record.AvgCompressionTimePerBlock() << std::endl;
     }
     // Go!!
     expr_table_output_stream.flush();
@@ -745,7 +869,7 @@ TEST(Perf, All) {
         }
 
         // Lossy
-        for (const auto &max_diff: kMaxDiff) {
+        for (const auto &max_diff: kMaxDiffList) {
             expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
                                              PerfSerfXOR(data_set_input_stream, max_diff, data_set)));
             ResetFileStream(data_set_input_stream);
@@ -784,5 +908,6 @@ TEST(Perf, All) {
     }
 
     // Export all performance data
-    ExportExprTable();
+//    ExportTotalExprTable();
+    ExportExprTableWithCompressionRatioNoSpecificDataset();
 }
