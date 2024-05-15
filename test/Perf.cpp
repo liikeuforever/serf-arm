@@ -27,6 +27,7 @@
 #include "buff/buff_compressor.h"
 #include "buff/buff_decompressor.h"
 #include "lz77/fastlz.h"
+#include "lzw/src/LZW.h"
 #include "machete/machete.h"
 #include "sz/sz/include/sz.h"
 
@@ -195,12 +196,6 @@ void ExportExprTable() {
     expr_table_output_stream.close();
 }
 
-
-/**
- * @brief Read a block of double from the file input stream, whose size is equal to kBlockSize
- * @param file_input_stream_ref Input steam where this function reads
- * @return A vector of doubles, whose size may be less than BLOCK_SIZE
- */
 std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
     std::vector<double> ret;
     int entry_count = 0;
@@ -235,6 +230,19 @@ std::vector<double> ReadBlockWithPrecisionInfo(std::ifstream &file_input_stream_
     }
     *precision = (int) max_precision;
     return return_block;
+}
+
+std::vector<std::string> ReadRawBlock(std::ifstream &file_input_stream_ref) {
+    std::vector<std::string> ret;
+    int read_string_count = 0;
+    std::string buffer;
+    while (!file_input_stream_ref.eof() && read_string_count < kBlockSize) {
+        std::getline(file_input_stream_ref, buffer);
+        if (buffer.empty()) continue;
+        ret.emplace_back(buffer);
+        ++read_string_count;
+    }
+    return ret;
 }
 
 void ResetFileStream(std::ifstream &data_set_input_stream_ref) {
@@ -689,6 +697,39 @@ PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff) {
         perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
 
         delete[] decompression_output;
+    }
+
+    perf_record.set_block_count(block_count);
+    return perf_record;
+}
+
+PerfRecord PerfLZW(std::ifstream &data_set_input_stream_ref) {
+    PerfRecord perf_record;
+
+    int block_count = 0;
+    std::vector<std::string> original_data;
+    while ((original_data = ReadRawBlock(data_set_input_stream_ref)).size() == kBlockSize) {
+        std::string input_string;
+        for (const auto &item: original_data) input_string += (item + " ");
+        LZW *lzw = LZW::instance();
+        ++block_count;
+        auto compression_start_time = std::chrono::steady_clock::now();
+        auto [compression_result, compression_result_code] = lzw->Compress(input_string);
+        EXPECT_EQ(compression_result_code, LZWResultCode::LZW_OK);
+        auto compression_end_time = std::chrono::steady_clock::now();
+        perf_record.AddCompressedSize(compression_result.size() * 8);
+        auto decompression_start_time = std::chrono::steady_clock::now();
+        auto [decompression_result, decompression_result_code] = lzw->Decompress(compression_result);
+        EXPECT_EQ(decompression_result_code, LZWResultCode::LZW_OK);
+        auto decompression_end_time = std::chrono::steady_clock::now();
+
+        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+                compression_end_time - compression_start_time);
+        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+                decompression_end_time - decompression_start_time);
+
+        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
     }
 
     perf_record.set_block_count(block_count);
