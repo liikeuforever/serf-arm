@@ -321,6 +321,66 @@ void ExportExprTableWithCompressionTimeNoSpecificDataset() {
     expr_table_output_stream.close();
 }
 
+void ExportExprTableWithDecompressionTime() {
+    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+    if (!expr_table_output_stream.is_open()) {
+        std::cerr << "Failed to export performance data." << std::endl;
+        exit(-1);
+    }
+    // Write header
+    expr_table_output_stream
+            << "Method,DataSet,MaxDiff,DecompressionTime(Total)"
+            << std::endl;
+    // Write record
+    for (const auto &conf_record: expr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                                 << record.decompression_time().count() << std::endl;
+    }
+    // Go!!
+    expr_table_output_stream.flush();
+    expr_table_output_stream.close();
+}
+
+void ExportExprTableWithDecompressionTimeNoSpecificDataset() {
+    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+    if (!expr_table_output_stream.is_open()) {
+        std::cerr << "Failed to export performance data." << std::endl;
+        exit(-1);
+    }
+    // Write header
+    expr_table_output_stream
+            << "Method,MaxDiff,DecompressionTime(AvgPerBlock)"
+            << std::endl;
+    // Aggregate data and write
+    std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
+    for (const auto &conf_record: expr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
+        auto find_result = aggr_table.find(aggr_key);
+        if (find_result != aggr_table.end()) {
+            auto &selected_record = find_result->second;
+            selected_record.set_block_count(selected_record.block_count() + record.block_count());
+            selected_record.IncreaseDecompressionTime(record.decompression_time());
+        } else {
+            PerfRecord new_record;
+            new_record.set_block_count(record.block_count());
+            new_record.IncreaseDecompressionTime(record.decompression_time());
+            aggr_table.insert(std::make_pair(aggr_key, new_record));
+        }
+    }
+    for (const auto &conf_record: aggr_table) {
+        auto conf = conf_record.first;
+        auto record = conf_record.second;
+        expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << record.AvgDecompressionTimePerBlock() << std::endl;
+    }
+    // Go!!
+    expr_table_output_stream.flush();
+    expr_table_output_stream.close();
+}
+
 std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
     std::vector<double> ret;
     int entry_count = 0;
@@ -910,5 +970,6 @@ TEST(Perf, All) {
     // Export all performance data
 //    ExportTotalExprTable();
 //    ExportExprTableWithCompressionRatioNoSpecificDataset();
-    ExportExprTableWithCompressionTimeNoSpecificDataset();
+//    ExportExprTableWithCompressionTimeNoSpecificDataset();
+    ExportExprTableWithDecompressionTimeNoSpecificDataset();
 }

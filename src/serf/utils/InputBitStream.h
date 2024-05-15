@@ -35,7 +35,7 @@ public:
 
     uint32_t readBit();
 
-    void setBuffer(Array<uint8_t> newBuffer);
+    void setBuffer(const Array<uint8_t> &newBuffer);
 
     void setBuffer(const std::vector<uint8_t> &newBuffer);
 };
