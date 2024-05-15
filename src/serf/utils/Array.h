@@ -36,8 +36,7 @@ public:
     }
 
     T &operator [] (int index) const {
-        if (0 <= index && index < length) return this->_data[index];
-        else throw std::runtime_error("$Array$(Invalid Index)(" + std::to_string(index) + ")");
+        return _data[index];
     }
 
     T *begin() const {
