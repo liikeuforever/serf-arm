@@ -181,13 +181,14 @@ void ExportExprTable() {
     }
     // Write header
     expr_table_output_stream
-            << "Method,DataSet,MaxDiff,CompressionRatio,CompressionTime(AvgPerBlock),DecompressionTime(AvgPerBlock)"
+            << "Method,DataSet,MaxDiff,BlockCount,CompressionRatio,CompressionTime(AvgPerBlock),DecompressionTime(AvgPerBlock)"
             << std::endl;
     // Write record
     for (const auto &conf_record: expr_table) {
         auto conf = conf_record.first;
         auto record = conf_record.second;
         expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                                 << record.block_count() << ","
                                  << record.CalCompressionRatio() << "," << record.AvgCompressionTimePerBlock() << ","
                                  << record.AvgDecompressionTimePerBlock() << std::endl;
     }
@@ -760,24 +761,24 @@ TEST(Perf, All) {
         }
 
         // Lossless
-        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, 0), PerfDeflate(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Elf", data_set, 0), PerfElf(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("FPC", data_set, 0), PerfFPC(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, 0), PerfGorilla(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, 0), PerfLZ4(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, 0), PerfLZ77(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, 0), PerfDeflate(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("Elf", data_set, 0), PerfElf(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("FPC", data_set, 0), PerfFPC(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, 0), PerfGorilla(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, 0), PerfLZ4(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, 0), PerfLZ77(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
 
         data_set_input_stream.close();
     }
