@@ -110,7 +110,7 @@ int SerfXORCompressor::CompressValue(uint64_t value) {
 int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
     int len;
     equal_win_ = equal_vote_ > 0;
-    double this_compression_ratio = ((double)compressed_size_in_bits_ * 1.0) / (number_of_values_ * 64);
+    double this_compression_ratio = (double) compressed_size_in_bits_ / (number_of_values_ * 64);
     if (stored_compression_ratio_ < this_compression_ratio) {
         // update positions
         Array<int> lead_positions = PostOfficeSolver::initRoundAndRepresentation(lead_distribution_, leading_representation_,
@@ -128,9 +128,7 @@ int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
     equal_vote_ = 0;
     stored_compression_ratio_ = this_compression_ratio;
     number_of_values_ = 0;
-    for (int i = 0; i < 64; ++i) {
-        lead_distribution_[i] = 0;
-        trail_distribution_[i] = 0;
-    }
+    __builtin_memset(lead_distribution_._data.get(), 0, 64 * sizeof(int));
+    __builtin_memset(trail_distribution_._data.get(), 0, 64 * sizeof(int));
     return len;
 }

@@ -163,8 +163,6 @@ PostOfficeSolver::buildPostOffice(Array<int> &arr, int num, int nonZerosCount, A
 
 int PostOfficeSolver::writePositions(Array<int> &positions, OutputBitStream *out) {
     int thisSize = out->writeInt(static_cast<int>(positions.length), 5);
-    for (int i = 0; i < positions.length; i++) {
-        thisSize += out->writeInt(positions[i], 6);
-    }
+    for (const auto &position: positions) thisSize += out->writeInt(position, 6);
     return thisSize;
 }
