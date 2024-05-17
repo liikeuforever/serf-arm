@@ -141,17 +141,16 @@ TEST(TestSerfQt, CorrectnessTest) {
                 fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
             }
 
-            SerfQtCompressor qt_compressor(max_diff);
-            SerfQtDecompressor qt_decompressor(max_diff);
-
             std::vector<double> originalData;
             while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+                SerfQtCompressor qt_compressor(BLOCK_SIZE, max_diff);
                 for (const auto &item: originalData) {
-                    qt_compressor.addValue(item);
+                    qt_compressor.AddValue(item);
                 }
-                qt_compressor.close();
-                Array<uint8_t> result = qt_compressor.getBytes();
-                std::vector<double> decompressed = qt_decompressor.decompress(result);
+                qt_compressor.Close();
+                Array<uint8_t> result = qt_compressor.GetBytes();
+                SerfQtDecompressor qt_decompressor(result);
+                std::vector<double> decompressed = qt_decompressor.Decompress();
                 EXPECT_EQ(originalData.size(), decompressed.size());
                 for (int i = 0; i < BLOCK_SIZE; ++i) {
                     if (std::abs(originalData[i] - decompressed[i]) > max_diff) {

@@ -10,18 +10,22 @@
 #include "serf/utils/EliasDeltaCodec.h"
 
 class SerfQtDecompressor {
-private:
-    const double maxDiff;
-    const std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();
-    double preValue;
-
 public:
-    explicit SerfQtDecompressor(double maxDiff): maxDiff(maxDiff) {}
+    explicit SerfQtDecompressor(const Array<uint8_t>& bs) {
+        input_bit_stream_->setBuffer(bs);
+        block_size_ = input_bit_stream_->readInt(16);
+        max_diff_ = Double::longBitsToDouble(input_bit_stream_->readLong(64));
+    }
 
-    std::vector<double> decompress(const Array<uint8_t>& bs);
+    std::vector<double> Decompress();
 
 private:
-    double nextValue();
+    int block_size_;
+    double max_diff_;
+    std::unique_ptr<InputBitStream> input_bit_stream_ = std::make_unique<InputBitStream>();
+    double pre_value_;
+
+    double NextValue();
 };
 
 #endif //SERF_QT_DECOMPRESSOR_H

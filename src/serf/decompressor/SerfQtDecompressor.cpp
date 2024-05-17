@@ -1,30 +1,20 @@
 #include "SerfQtDecompressor.h"
 
-std::vector<double> SerfQtDecompressor::decompress(const Array<uint8_t>& bs) {
-    preValue = 2;
-    in->setBuffer(bs);
+std::vector<double> SerfQtDecompressor::Decompress() {
+    pre_value_ = 2;
     std::vector<double> decompressedValueList;
-    double value;
-    while (!std::isnan(value = nextValue())) {
+    while (block_size_--) {
+        double value = NextValue();
         decompressedValueList.emplace_back(value);
     }
     return decompressedValueList;
 }
 
-double SerfQtDecompressor::nextValue() {
+double SerfQtDecompressor::NextValue() {
     double returnValue;
-    int exceptionFlag = static_cast<int>(in->readInt(1));
-    if (exceptionFlag == 0) {
-        int64_t decodeValue = ZigZagCodec::decode(EliasDeltaCodec::decode(*in) - 1);
-        double recoverValue = preValue + 2 * maxDiff * static_cast<double>(decodeValue);
-        preValue = recoverValue;
-        returnValue = recoverValue;
-    } else {
-        int leadingZeroCount = static_cast<int>(in->readInt(5));
-        uint64_t leftBits = in->readLong(64 - leadingZeroCount);
-        double recoverValue = Double::longBitsToDouble(leftBits ^ Double::doubleToLongBits(preValue));
-        preValue = recoverValue;
-        returnValue = recoverValue;
-    }
+    int64_t decodeValue = ZigZagCodec::decode(EliasDeltaCodec::decode(*input_bit_stream_) - 1);
+    double recoverValue = pre_value_ + 2 * max_diff_ * static_cast<double>(decodeValue);
+    pre_value_ = recoverValue;
+    returnValue = recoverValue;
     return returnValue;
 }
