@@ -9,10 +9,7 @@ void SerfQtCompressor::AddValue(double v) {
 
 Array<uint8_t> SerfQtCompressor::GetBytes() {
     Array<uint8_t> result(static_cast<int>(std::ceil(static_cast<double>(stored_compressed_size_in_bits_) / 8.0)));
-    uint8_t *ptr = output_bit_stream_->getBuffer();
-    for (int i = 0; i < result.length; ++i) {
-        result[i] = ptr[i];
-    }
+    __builtin_memcpy(result._data.get(), output_bit_stream_->getBuffer(), result.length);
     output_bit_stream_->refresh();
     return result;
 }

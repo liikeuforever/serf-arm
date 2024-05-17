@@ -34,10 +34,7 @@ void SerfXORCompressor::Close() {
     compressed_size_in_bits_ += CompressValue(Double::doubleToLongBits(Double::NaN));
     output_buffer_->flush();
     compressed_bytes_ = Array<uint8_t>(std::ceil((double) compressed_size_in_bits_ / 8.0));
-    uint8_t *buffer = output_buffer_->getBuffer();
-    for (int i = 0; i < std::ceil(compressed_size_in_bits_ / 8.0); ++i) {
-        compressed_bytes_[i] = buffer[i];
-    }
+    __builtin_memcpy(compressed_bytes_._data.get(), output_buffer_->getBuffer(), compressed_bytes_.length);
     output_buffer_->refresh();
     stored_compressed_size_in_bits_ = compressed_size_in_bits_;
     compressed_size_in_bits_ = UpdateFlagAndPositionsIfNeeded();
