@@ -3,7 +3,7 @@
 void SerfQtCompressor::AddValue(double v) {
     double q = std::round((v - pre_value_) / (2 * max_diff_));
     double recoverValue = pre_value_ + 2 * max_diff_ * q;
-    compressed_size_in_bits_ += EliasDeltaCodec::encode(ZigZagCodec::encode(static_cast<int64_t>(q)) + 1, *output_bit_stream_);
+    compressed_size_in_bits_ += EliasDeltaCodec::encode(ZigZagCodec::encode(static_cast<int64_t>(q)) + 1, output_bit_stream_.get());
     pre_value_ = recoverValue;
 }
 

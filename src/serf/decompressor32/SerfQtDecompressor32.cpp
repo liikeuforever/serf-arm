@@ -17,7 +17,7 @@ float SerfQtDecompressor32::nextValue() {
     float returnValue;
     int exceptionFlag = in->readInt(1);
     if (exceptionFlag == 0) {
-        long decodeValue = ZigZagCodec::decode(EliasDeltaCodec::decode(*in) - 1);
+        long decodeValue = ZigZagCodec::decode(EliasDeltaCodec::decode(in.get()) - 1);
         float recoverValue = preValue + 2 * maxDiff * decodeValue;
         preValue = recoverValue;
         returnValue = recoverValue;

@@ -11,6 +11,12 @@
 #include "serf/utils/EliasDeltaCodec.h"
 #include "serf/utils/ZigZagCodec.h"
 
+/*
+ * +------------+-----------------+---------------+
+ * |16bits - len|64bits - max_diff|Encoded Content|
+ * +------------+-----------------+---------------+
+ */
+
 class SerfQtCompressor {
 public:
     SerfQtCompressor(int block_size, double max_diff): max_diff_(max_diff * 0.999) {

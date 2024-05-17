@@ -25,9 +25,9 @@ private:
     };
 
 public:
-    static int encode(int64_t number, OutputBitStream &outputBitStream);
+    static int encode(int64_t number, OutputBitStream *outputBitStream);
 
-    static int64_t decode(InputBitStream &inputBitStream);
+    static int64_t decode(InputBitStream *inputBitStream);
 };
 
 #endif //SERF_ELIAS_DELTA_CODEC_H
