@@ -32,7 +32,7 @@
 #include "sz/sz/include/sz.h"
 
 
-const static size_t kBlockSize = 1000;
+const static size_t kBlockSize = 50;
 const static size_t kDoubleSize = 64;
 const static std::string kExportExprTablePrefix = "../../test/";
 const static std::string kExportExprTableFileName = "perf_table.csv";
@@ -71,8 +71,8 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
         {"Stocks-USA.csv",     243},
         {"Wind-Speed.csv",     2}
 };
-constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-//constexpr static double kMaxDiffList[] = {1.0E-4};
+//constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+constexpr static double kMaxDiffList[] = {1.0E-4};
 //constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
 static std::string double_to_string_with_precision(double val, size_t precision) {
@@ -934,15 +934,15 @@ TEST(Perf, All) {
             expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
                                              PerfSerfXOR(data_set_input_stream, max_diff, data_set)));
             ResetFileStream(data_set_input_stream);
-            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
-                                             PerfSerfQt(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
-                                             PerfMachete(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(
-                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
+//            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
+//                                             PerfSerfQt(data_set_input_stream, max_diff)));
+//            ResetFileStream(data_set_input_stream);
+//            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
+//                                             PerfMachete(data_set_input_stream, max_diff)));
+//            ResetFileStream(data_set_input_stream);
+//            expr_table.insert(
+//                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
+//            ResetFileStream(data_set_input_stream);
         }
 
         // Lossless
