@@ -8,7 +8,7 @@ NetSerfXORCompressor::NetSerfXORCompressor(double maxDiff, long adjustD):maxDiff
 Array<uint8_t> NetSerfXORCompressor::compress(double v) {
     uint64_t thisVal;
     // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
-    if (std::abs(Double::longBitsToDouble(storedVal) - adjustD - v) > maxDiff) {
+    if (std::abs(Double::LongBitsToDouble(storedVal) - adjustD - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
         double adjustValue = v + adjustD;
         thisVal = Serf64Utils::findAppLong(adjustValue - maxDiff, adjustValue + maxDiff, v, storedVal, maxDiff, adjustD);

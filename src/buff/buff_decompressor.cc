@@ -27,7 +27,7 @@ Array<double> BuffDecompressor::decompress() {
     if (whole_width_ >= 64) {
         Array<double> result(batch_size_);
         for (auto &item: result) {
-            item = Double::longBitsToDouble(input_bit_stream_->readLong(64));
+            item = Double::LongBitsToDouble(input_bit_stream_->readLong(64));
         }
         return result;
     }
@@ -116,7 +116,7 @@ Array<double> BuffDecompressor::mergeDoubles() {
         uint64_t mantissa = implicit_mantissa & 0x000FFFFFFFFFFFFFL;
         long sign = bit_pack >> (whole_width_ - 1);
         long bits = (sign << 63) | (exp << 52) | mantissa;
-        double db = Double::longBitsToDouble(bits);
+        double db = Double::LongBitsToDouble(bits);
 
         std::ostringstream convert_stream;
         convert_stream << std::fixed << std::setprecision(max_prec_) << db;

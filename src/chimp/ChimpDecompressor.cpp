@@ -62,5 +62,5 @@ double ChimpDecompressor::nextValue() {
             storedValues_[current_] = stored_val_;
         }
     }
-    return Double::longBitsToDouble(stored_val_);
+    return Double::LongBitsToDouble(stored_val_);
 }

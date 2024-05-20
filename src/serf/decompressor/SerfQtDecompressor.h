@@ -14,7 +14,7 @@ public:
     explicit SerfQtDecompressor(const Array<uint8_t>& bs) {
         input_bit_stream_->setBuffer(bs);
         block_size_ = input_bit_stream_->readInt(16);
-        max_diff_ = Double::longBitsToDouble(input_bit_stream_->readLong(64));
+        max_diff_ = Double::LongBitsToDouble(input_bit_stream_->readLong(64));
     }
 
     std::vector<double> Decompress();

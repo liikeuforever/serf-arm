@@ -29,5 +29,5 @@ double GorillaDecompressor::nextValue() {
         }
         // else the same
     }
-    return Double::longBitsToDouble(pr_value_);
+    return Double::LongBitsToDouble(pr_value_);
 }

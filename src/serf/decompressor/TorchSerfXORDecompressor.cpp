@@ -2,12 +2,12 @@
 
 double TorchSerfXORDecompressor::decompress(const Array<uint8_t>& input) {
     in->setBuffer(input);
-    return Double::longBitsToDouble(readValue()) - adjustD;
+    return Double::LongBitsToDouble(readValue()) - adjustD;
 }
 
 double TorchSerfXORDecompressor::decompress(const std::vector<uint8_t> &input) {
     in->setBuffer(input);
-    return Double::longBitsToDouble(readValue()) - adjustD;
+    return Double::LongBitsToDouble(readValue()) - adjustD;
 }
 
 uint64_t TorchSerfXORDecompressor::readValue() {

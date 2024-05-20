@@ -12,7 +12,7 @@ double NetSerfQtDecompressor::decompress(Array<uint8_t> &bs) {
     } else {
         int leadingZeroCount = in->readInt(5);
         long leftBits = in->readLong(64 - leadingZeroCount);
-        preValue = Double::longBitsToDouble(leftBits ^ Double::DoubleToLongBits(preValue));
+        preValue = Double::LongBitsToDouble(leftBits ^ Double::DoubleToLongBits(preValue));
     }
     return preValue;
 }

@@ -33,7 +33,7 @@ uint64_t Serf64Utils::findAppLong(double minDouble, double maxDouble, uint64_t s
         append = rear | front;
         if (append >= min && append <= max) {
             resultLong = append ^ sign;
-            diff = Double::longBitsToDouble(resultLong) - adjustD - original;
+            diff = Double::LongBitsToDouble(resultLong) - adjustD - original;
             if (diff >= -maxDiff && diff <= maxDiff) {
                 return resultLong;
             }
@@ -42,7 +42,7 @@ uint64_t Serf64Utils::findAppLong(double minDouble, double maxDouble, uint64_t s
         append = (append + bw[shift]) & 0x7fffffffffffffffL; // may be overflow
         if (append <= max) {    // append must be greater than min
             resultLong = append ^ sign;
-            diff = Double::longBitsToDouble(resultLong) - adjustD - original;
+            diff = Double::LongBitsToDouble(resultLong) - adjustD - original;
             if (diff >= -maxDiff && diff <= maxDiff) {
                 return resultLong;
             }

@@ -12,7 +12,7 @@ public:
         return *reinterpret_cast<uint64_t *>(&value);
     }
 
-    static inline double longBitsToDouble(uint64_t bits) {
+    static inline double LongBitsToDouble(uint64_t bits) {
         return *reinterpret_cast<double *>(&bits);
     }
 };

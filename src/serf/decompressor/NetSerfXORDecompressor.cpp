@@ -4,7 +4,7 @@ NetSerfXORDecompressor::NetSerfXORDecompressor(long adjustD): adjustD(adjustD) {
 
 double NetSerfXORDecompressor::decompress(Array<uint8_t> &bs) {
     in->setBuffer(bs);
-    return Double::longBitsToDouble(readValue()) - adjustD;
+    return Double::LongBitsToDouble(readValue()) - adjustD;
 }
 
 uint64_t NetSerfXORDecompressor::readValue() {

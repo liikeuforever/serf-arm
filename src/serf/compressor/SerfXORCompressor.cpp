@@ -8,7 +8,7 @@ SerfXORCompressor::SerfXORCompressor(int capacity, double max_diff, long adjust_
 void SerfXORCompressor::AddValue(double v) {
     uint64_t this_val;
     // note we cannot let > max_diff_, because kNan - v > max_diff_ is always false
-    if (__builtin_expect(std::abs(Double::longBitsToDouble(stored_val_) - adjust_digit_ - v) > max_diff_, false)) {
+    if (__builtin_expect(std::abs(Double::LongBitsToDouble(stored_val_) - adjust_digit_ - v) > max_diff_, false)) {
         // in our implementation, we do not consider special cases and overflow case
         double adjust_value = v + adjust_digit_;
         this_val = Serf64Utils::findAppLong(adjust_value - max_diff_, adjust_value + max_diff_, v, stored_val_, max_diff_, adjust_digit_);
