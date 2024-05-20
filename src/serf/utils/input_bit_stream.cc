@@ -18,7 +18,7 @@ void InputBitStream::Forward(size_t len) {
     bit_in_buffer_ -= len;
     buffer_ <<= len;
     if (bit_in_buffer_ < 32) {
-        if (cursor_ < len) {
+        if (cursor_ < data_.length()) {
             auto next = (uint64_t) data_[cursor_];
             buffer_ |= (next << (32 - bit_in_buffer_));
             bit_in_buffer_ += 32;
