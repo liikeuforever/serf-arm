@@ -32,7 +32,7 @@ Array<uint8_t> SerfQtCompressor32::getBytes() {
 }
 
 void SerfQtCompressor32::close() {
-    addValue(Float::NaN);
+    addValue(Float::kNan);
     out->flush();
     preValue = 2;
     storedCompressedBits = compressedBits;

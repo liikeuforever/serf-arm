@@ -32,7 +32,7 @@ Array<uint8_t> SerfXORCompressor32::getBytes() {
 }
 
 void SerfXORCompressor32::close() {
-    compressedSizeInBits += compressValue(Float::FloatToIntBits(Float::NaN));
+    compressedSizeInBits += compressValue(Float::FloatToIntBits(Float::kNan));
     out->flush();
     outBuffer = Array<uint8_t> (std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
     uint8_t *buffer = out->getBuffer();
