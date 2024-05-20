@@ -18,8 +18,8 @@ uint64_t Serf64Utils::findAppLong(double min, double max, double v, uint64_t las
 
 uint64_t Serf64Utils::findAppLong(double minDouble, double maxDouble, uint64_t sign, double original, uint64_t lastLong,
                                   double maxDiff, double adjustD) {
-    uint64_t min = Double::doubleToLongBits(minDouble) & 0x7fffffffffffffffULL; // may be negative zero
-    uint64_t max = Double::doubleToLongBits(maxDouble);
+    uint64_t min = Double::DoubleToLongBits(minDouble) & 0x7fffffffffffffffULL; // may be negative zero
+    uint64_t max = Double::DoubleToLongBits(maxDouble);
     int leadingZeros = __builtin_clzll(min ^ max);
     int64_t frontMask = 0xffffffffffffffff << (64 - leadingZeros);
     int shift = 64 - leadingZeros;
@@ -53,6 +53,6 @@ uint64_t Serf64Utils::findAppLong(double minDouble, double maxDouble, uint64_t s
         --shift;
     }
 
-    return Double::doubleToLongBits(
+    return Double::DoubleToLongBits(
             original + adjustD);    // we do not find a satisfied value, so we return the original value
 }

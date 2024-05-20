@@ -5,7 +5,7 @@ GorillaCompressor::GorillaCompressor(int capacity) {
 }
 
 void GorillaCompressor::addValue(double v) {
-    uint64_t raw_binary = Double::doubleToLongBits(v);
+    uint64_t raw_binary = Double::DoubleToLongBits(v);
     if (first_) {
         first_ = false;
         compress_size_in_bits_ += output_bit_stream_->writeLong(raw_binary, 64);

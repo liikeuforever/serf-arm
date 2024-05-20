@@ -8,7 +8,7 @@ class Double {
 public:
     static constexpr double kNan = std::numeric_limits<double>::quiet_NaN();
 
-    static inline uint64_t doubleToLongBits(double value) {
+    static inline uint64_t DoubleToLongBits(double value) {
         return *reinterpret_cast<uint64_t *>(&value);
     }
 

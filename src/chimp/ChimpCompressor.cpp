@@ -14,7 +14,7 @@ ChimpCompressor::ChimpCompressor(int previousValues) {
 }
 
 void ChimpCompressor::addValue(double v) {
-    uint64_t value = Double::doubleToLongBits(v);
+    uint64_t value = Double::DoubleToLongBits(v);
     if (first_) {
         first_ = false;
         storedValues_[current_] = value;

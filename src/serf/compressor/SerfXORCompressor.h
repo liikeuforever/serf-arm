@@ -25,7 +25,7 @@ public:
 private:
     const double max_diff_;
     const long adjust_digit_;
-    uint64_t stored_val_ = Double::doubleToLongBits(2);
+    uint64_t stored_val_ = Double::DoubleToLongBits(2);
 
     std::unique_ptr<OutputBitStream> output_buffer_;
     Array<uint8_t> compressed_bytes_ = Array<uint8_t>();

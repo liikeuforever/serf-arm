@@ -14,7 +14,7 @@ private:
     const int BLOCK_SIZE = 1000;
     const long adjustD;
 
-    uint64_t storedVal = Double::doubleToLongBits(2);
+    uint64_t storedVal = Double::DoubleToLongBits(2);
     int storedLeadingZeros = std::numeric_limits<int>::max();
     int storedTrailingZeros = std::numeric_limits<int>::max();
     std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();

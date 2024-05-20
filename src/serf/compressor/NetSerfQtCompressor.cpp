@@ -8,7 +8,7 @@ Array<uint8_t> NetSerfQtCompressor::compress(double v) {
     double recoverValue = preValue + 2 * maxDiff * q;
     if (std::abs(recoverValue - v) > maxDiff) {
         writtenBitsCount += out->writeBit(true);
-        uint64_t xorResult = Double::doubleToLongBits(v) ^ Double::doubleToLongBits(preValue);
+        uint64_t xorResult = Double::DoubleToLongBits(v) ^ Double::DoubleToLongBits(preValue);
         int leadingZeroCount = std::min(__builtin_clzll(xorResult), 31);
         writtenBitsCount += out->writeInt(leadingZeroCount, 5);
         writtenBitsCount += out->writeLong(xorResult, 64 - leadingZeroCount);

@@ -69,7 +69,7 @@ Array<uint8_t> BuffCompressor::get_out() {
 
 void BuffCompressor::wholeWidthLongCompress(Array<double> values) {
     for (const auto &value: values) {
-        size_ += output_bit_stream_->writeLong(Double::doubleToLongBits(value), 64);
+        size_ += output_bit_stream_->writeLong(Double::DoubleToLongBits(value), 64);
     }
 }
 
@@ -100,7 +100,7 @@ void BuffCompressor::headSample(const Array<double> &dbs) {
     lower_bound_ = std::numeric_limits<long>::max();
     long upper_bound = std::numeric_limits<long>::min();
     for (const auto &db: dbs) {
-        uint64_t bits = Double::doubleToLongBits(db);
+        uint64_t bits = Double::DoubleToLongBits(db);
         uint64_t sign = bits >> 63;
         int64_t exp = (int64_t) (bits >> 52 & 0x7FF) - 1023;
         uint64_t mantissa = bits & 0x000FFFFFFFFFFFFFL;
@@ -131,7 +131,7 @@ Array<Array<uint8_t>> BuffCompressor::encode(const Array<double> &dbs) {
     }
     int db_cnt = 0;
     for (const auto &db: dbs) {
-        uint64_t bits = Double::doubleToLongBits(db);
+        uint64_t bits = Double::DoubleToLongBits(db);
         uint64_t sign = bits >> 63;
         int64_t exp = (int64_t) (bits >> 52 & 0x7FF) - 1023;
         uint64_t mantissa = bits & 0x000FFFFFFFFFFFFFL;

@@ -16,7 +16,7 @@ private:
     const double maxDiff;
     const long adjustD;
 
-    uint64_t storedVal = Double::doubleToLongBits(2);
+    uint64_t storedVal = Double::DoubleToLongBits(2);
     std::unique_ptr<OutputBitStream> out;
 
     int compressedSizeInBits = 0;

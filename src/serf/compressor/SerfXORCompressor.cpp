@@ -31,7 +31,7 @@ Array<uint8_t> SerfXORCompressor::compressed_bytes() {
 }
 
 void SerfXORCompressor::Close() {
-    compressed_size_in_bits_ += CompressValue(Double::doubleToLongBits(Double::kNan));
+    compressed_size_in_bits_ += CompressValue(Double::DoubleToLongBits(Double::kNan));
     output_buffer_->flush();
     compressed_bytes_ = Array<uint8_t>(std::ceil((double) compressed_size_in_bits_ / 8.0));
     __builtin_memcpy(compressed_bytes_.begin(), output_buffer_->getBuffer(), compressed_bytes_.length());
