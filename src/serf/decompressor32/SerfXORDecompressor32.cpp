@@ -1,7 +1,7 @@
 #include "SerfXORDecompressor32.h"
 
 std::vector<float> SerfXORDecompressor32::decompress(const Array<uint8_t> &bs) {
-    in->setBuffer(bs);
+    in->SetBuffer(bs);
     updateFlagAndPositionsIfNeeded();
     std::vector<float> values;
     uint32_t value;
@@ -17,36 +17,38 @@ uint32_t SerfXORDecompressor32::readValue() {
     int centerBits;
 
     if (equalWin) {
-        if (in->readInt(1) == 0) {
-            if (in->readInt(1) != 1) {
+        if (in->ReadInt(1) == 0) {
+            if (in->ReadInt(1) != 1) {
                 // case 00
-                int leadAndTrail = static_cast<int>(in->readInt(leadingBitsPerValue + trailingBitsPerValue));
+                int leadAndTrail = static_cast<int>(in->ReadInt(
+                        leadingBitsPerValue + trailingBitsPerValue));
                 int lead = leadAndTrail >> trailingBitsPerValue;
                 int trail = ~(0xffff << trailingBitsPerValue) & leadAndTrail;
                 storedLeadingZeros = leadingRepresentation[lead];
                 storedTrailingZeros = trailingRepresentation[trail];
             }
             centerBits = 32 - storedLeadingZeros - storedTrailingZeros;
-            value = in->readInt(centerBits) << storedTrailingZeros;
+            value = in->ReadInt(centerBits) << storedTrailingZeros;
             value = storedVal ^ value;
         }
     } else {
-        if (in->readInt(1) == 1) {
+        if (in->ReadInt(1) == 1) {
             // case 1
             centerBits = 32 - storedLeadingZeros - storedTrailingZeros;
 
-            value = in->readInt(centerBits) << storedTrailingZeros;
+            value = in->ReadInt(centerBits) << storedTrailingZeros;
             value = storedVal ^ value;
-        } else if (in->readInt(1) == 0) {
+        } else if (in->ReadInt(1) == 0) {
             // case 00
-            int leadAndTrail = static_cast<int>(in->readInt(leadingBitsPerValue + trailingBitsPerValue));
+            int leadAndTrail = static_cast<int>(in->ReadInt(
+                    leadingBitsPerValue + trailingBitsPerValue));
             int lead = leadAndTrail >> trailingBitsPerValue;
             int trail = ~(0xffff << trailingBitsPerValue) & leadAndTrail;
             storedLeadingZeros = leadingRepresentation[lead];
             storedTrailingZeros = trailingRepresentation[trail];
             centerBits = 32 - storedLeadingZeros - storedTrailingZeros;
 
-            value = in->readInt(centerBits) << storedTrailingZeros;
+            value = in->ReadInt(centerBits) << storedTrailingZeros;
             value = storedVal ^ value;
         }
     }
@@ -54,33 +56,33 @@ uint32_t SerfXORDecompressor32::readValue() {
 }
 
 void SerfXORDecompressor32::updateFlagAndPositionsIfNeeded() {
-    equalWin = in->readBit() == 1;
-    if (in->readBit() == 1) {
+    equalWin = in->ReadBit() == 1;
+    if (in->ReadBit() == 1) {
         updateLeadingRepresentation();
         updateTrailingRepresentation();
     }
 }
 
 void SerfXORDecompressor32::updateLeadingRepresentation() {
-    int num = static_cast<int>(in->readInt(4));
+    int num = static_cast<int>(in->ReadInt(4));
     if (num == 0) {
         num = 16;
     }
     leadingBitsPerValue = PostOfficeSolver32::positionLength2Bits[num];
     leadingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
-        leadingRepresentation[i] = static_cast<int>(in->readInt(5));
+        leadingRepresentation[i] = static_cast<int>(in->ReadInt(5));
     }
 }
 
 void SerfXORDecompressor32::updateTrailingRepresentation() {
-    int num = static_cast<int>(in->readInt(4));
+    int num = static_cast<int>(in->ReadInt(4));
     if (num == 0) {
         num = 16;
     }
     trailingBitsPerValue = PostOfficeSolver32::positionLength2Bits[num];
     trailingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
-        trailingRepresentation[i] = static_cast<int>(in->readInt(5));
+        trailingRepresentation[i] = static_cast<int>(in->ReadInt(5));
     }
 }

@@ -7,7 +7,7 @@
 #include <memory>
 #include <cmath>
 
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/double.h"
 #include "elf/elf_utils.h"
 

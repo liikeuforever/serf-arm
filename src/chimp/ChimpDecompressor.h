@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "serf/utils/array.h"
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/double.h"
 
 class ChimpDecompressor {

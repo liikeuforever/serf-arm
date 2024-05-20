@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 
 #define SIZE 32768
 

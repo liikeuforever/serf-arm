@@ -5,16 +5,16 @@
 #include <vector>
 
 #include "serf/utils/double.h"
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/ZigZagCodec.h"
 #include "serf/utils/elias_delta_codec.h"
 
 class SerfQtDecompressor {
 public:
     explicit SerfQtDecompressor(const Array<uint8_t>& bs) {
-        input_bit_stream_->setBuffer(bs);
-        block_size_ = input_bit_stream_->readInt(16);
-        max_diff_ = Double::LongBitsToDouble(input_bit_stream_->readLong(64));
+        input_bit_stream_->SetBuffer(bs);
+        block_size_ = input_bit_stream_->ReadInt(16);
+        max_diff_ = Double::LongBitsToDouble(input_bit_stream_->ReadLong(64));
     }
 
     std::vector<double> Decompress();

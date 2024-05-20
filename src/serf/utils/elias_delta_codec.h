@@ -4,10 +4,10 @@
 #include <cmath>
 
 #include "serf/utils/OutputBitStream.h"
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/double.h"
 
-class elias_delta_codec {
+class EliasDeltaCodec {
  public:
     static int Encode(int64_t number, OutputBitStream *output_bit_stream_ptr);
 

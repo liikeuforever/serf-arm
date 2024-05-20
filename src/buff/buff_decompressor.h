@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/double.h"
 #include "buff/sparse_result.h"
 

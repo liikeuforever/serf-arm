@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/OutputBitStream.h"
 
 TEST(TestInputBitStream, BasicTest) {
     uint8_t test_data = 0b1011000;
     InputBitStream input_bit_stream = InputBitStream(&test_data, 1);
-    uint32_t output_data = input_bit_stream.readInt(8);
+    uint32_t output_data = input_bit_stream.ReadInt(8);
     EXPECT_EQ(test_data, output_data);
 }
 

@@ -1,7 +1,7 @@
 #include "serf/utils/elias_delta_codec.h"
 
-int elias_delta_codec::Encode(int64_t number,
-                              OutputBitStream *output_bit_stream_ptr) {
+int EliasDeltaCodec::Encode(int64_t number,
+                            OutputBitStream *output_bit_stream_ptr) {
     int compressed_size_in_bits = 0;
     int32_t len;
     int32_t length_of_len;
@@ -39,15 +39,15 @@ int elias_delta_codec::Encode(int64_t number,
     return compressed_size_in_bits;
 }
 
-int64_t elias_delta_codec::Decode(InputBitStream *input_bit_stream_ptr) {
+int64_t EliasDeltaCodec::Decode(InputBitStream *input_bit_stream_ptr) {
     uint64_t num = 1;
     int32_t len = 1;
     int32_t length_of_len = 0;
-    while (input_bit_stream_ptr->readBit() == 0)
+    while (input_bit_stream_ptr->ReadBit() == 0)
         length_of_len++;
     len <<= length_of_len;
-    len |= static_cast<int32_t>(input_bit_stream_ptr->readInt(length_of_len));
+    len |= static_cast<int32_t>(input_bit_stream_ptr->ReadInt(length_of_len));
     num <<= (len - 1);
-    num |= input_bit_stream_ptr->readLong(len - 1);
+    num |= input_bit_stream_ptr->ReadLong(len - 1);
     return *reinterpret_cast<int64_t *>(&num);
 }

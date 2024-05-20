@@ -4,7 +4,7 @@
 
 BuffDecompressor::BuffDecompressor(Array<uint8_t> bs) {
     input_bit_stream_ = std::make_unique<InputBitStream>();
-    input_bit_stream_->setBuffer(bs);
+    input_bit_stream_->SetBuffer(bs);
 }
 
 int BuffDecompressor::getWidthNeeded(uint64_t number) {
@@ -18,16 +18,16 @@ int BuffDecompressor::getWidthNeeded(uint64_t number) {
 }
 
 Array<double> BuffDecompressor::decompress() {
-    lower_bound_ = input_bit_stream_->readLong(64);
-    batch_size_ = input_bit_stream_->readInt(32);
-    max_prec_ = input_bit_stream_->readInt(32);
-    int_width_ = input_bit_stream_->readInt(32);
+    lower_bound_ = input_bit_stream_->ReadLong(64);
+    batch_size_ = input_bit_stream_->ReadInt(32);
+    max_prec_ = input_bit_stream_->ReadInt(32);
+    int_width_ = input_bit_stream_->ReadInt(32);
     dec_width_ = precision_map_[max_prec_];
     whole_width_ = dec_width_ + int_width_ + 1;
     if (whole_width_ >= 64) {
         Array<double> result(batch_size_);
         for (auto &item: result) {
-            item = Double::LongBitsToDouble(input_bit_stream_->readLong(64));
+            item = Double::LongBitsToDouble(input_bit_stream_->ReadLong(64));
         }
         return result;
     }
@@ -43,11 +43,12 @@ Array<double> BuffDecompressor::decompress() {
 
 SparseResult BuffDecompressor::deserialize() {
     SparseResult result(batch_size_);
-    result.set_frequent_value(input_bit_stream_->readInt(8));
+    result.set_frequent_value(input_bit_stream_->ReadInt(8));
     for (int i = 0; i < batch_size_ / 8; ++i) {
-        result.bitmap_[i] = input_bit_stream_->readInt(8);
+        result.bitmap_[i] = input_bit_stream_->ReadInt(8);
     }
-    result.bitmap_[batch_size_ / 8] = input_bit_stream_->readInt(batch_size_ % 8);
+    result.bitmap_[batch_size_ / 8] = input_bit_stream_->ReadInt(
+            batch_size_ % 8);
     int count = 0;
     for (const auto &b: result.bitmap_) {
         for (int i = 0; i < 8; ++i) {
@@ -55,7 +56,7 @@ SparseResult BuffDecompressor::deserialize() {
         }
     }
     for (int i = 0; i < count; ++i) {
-        result.get_outliers()[i] = (uint8_t) input_bit_stream_->readInt(8);
+        result.get_outliers()[i] = (uint8_t) input_bit_stream_->ReadInt(8);
     }
 
     return result;
@@ -63,9 +64,9 @@ SparseResult BuffDecompressor::deserialize() {
 
 void BuffDecompressor::sparseDecode() {
     for (int i = 0; i < column_count_; ++i) {
-        if (input_bit_stream_->readBit() == 0) {
+        if (input_bit_stream_->ReadBit() == 0) {
             for (int j = 0; j < batch_size_; ++j) {
-                cols_[i][j] = input_bit_stream_->readInt(8);
+                cols_[i][j] = input_bit_stream_->ReadInt(8);
             }
         } else {
             SparseResult result = deserialize();

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/ZigZagCodec.h"
 #include "serf/utils/elias_delta_codec.h"
 

@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "serf/utils/InputBitStream.h"
+#include "serf/utils/input_bit_stream.h"
 #include "serf/utils/double.h"
 #include "serf/utils/array.h"
 #include "serf/utils/Serf64Utils.h"

@@ -41,13 +41,13 @@ void FpcDecompressor::setBytes(char *data, size_t data_size) {
 std::vector<double> FpcDecompressor::decompress() {
     in = ((intot + 1));
     for (i = 0; i < intot; i++) {
-        code = inStream.readInt(4);
+        code = inStream.ReadInt(4);
         bcode = code & 0x7;
 
         if (bcode >= 4)
-            val = inStream.readLong(8 * (bcode + 1));
+            val = inStream.ReadLong(8 * (bcode + 1));
         else if (bcode > 0)
-            val = inStream.readLong(8 * bcode);
+            val = inStream.ReadLong(8 * bcode);
         else
             val = 0;
 

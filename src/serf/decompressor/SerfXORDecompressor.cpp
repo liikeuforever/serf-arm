@@ -2,7 +2,7 @@
 #include "serf/utils/PostOfficeSolver.h"
 
 std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {
-    in->setBuffer(bs);
+    in->SetBuffer(bs);
     updateFlagAndPositionsIfNeeded();
     std::vector<double> values;
     uint64_t value;
@@ -18,36 +18,38 @@ uint64_t SerfXORDecompressor::readValue() {
     int centerBits;
 
     if (equalWin) {
-        if (in->readInt(1) == 0) {
-            if (in->readInt(1) != 1) {
+        if (in->ReadInt(1) == 0) {
+            if (in->ReadInt(1) != 1) {
                 // case 00
-                int leadAndTrail = static_cast<int>(in->readInt(leadingBitsPerValue + trailingBitsPerValue));
+                int leadAndTrail = static_cast<int>(in->ReadInt(
+                        leadingBitsPerValue + trailingBitsPerValue));
                 int lead = leadAndTrail >> trailingBitsPerValue;
                 int trail = ~(0xffffffff << trailingBitsPerValue) & leadAndTrail;
                 storedLeadingZeros = leadingRepresentation[lead];
                 storedTrailingZeros = trailingRepresentation[trail];
             }
             centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
-            value = in->readLong(centerBits) << storedTrailingZeros;
+            value = in->ReadLong(centerBits) << storedTrailingZeros;
             value = storedVal ^ value;
         }
     } else {
-        if (in->readInt(1) == 1) {
+        if (in->ReadInt(1) == 1) {
             // case 1
             centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
 
-            value = in->readLong(centerBits) << storedTrailingZeros;
+            value = in->ReadLong(centerBits) << storedTrailingZeros;
             value = storedVal ^ value;
-        } else if (in->readInt(1) == 0) {
+        } else if (in->ReadInt(1) == 0) {
             // case 00
-            int leadAndTrail = static_cast<int>(in->readInt(leadingBitsPerValue + trailingBitsPerValue));
+            int leadAndTrail = static_cast<int>(in->ReadInt(
+                    leadingBitsPerValue + trailingBitsPerValue));
             int lead = leadAndTrail >> trailingBitsPerValue;
             int trail = ~(0xffffffff << trailingBitsPerValue) & leadAndTrail;
             storedLeadingZeros = leadingRepresentation[lead];
             storedTrailingZeros = trailingRepresentation[trail];
             centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
 
-            value = in->readLong(centerBits) << storedTrailingZeros;
+            value = in->ReadLong(centerBits) << storedTrailingZeros;
             value = storedVal ^ value;
         }
     }
@@ -55,33 +57,33 @@ uint64_t SerfXORDecompressor::readValue() {
 }
 
 void SerfXORDecompressor::updateFlagAndPositionsIfNeeded() {
-    equalWin = in->readBit() == 1;
-    if (in->readBit() == 1) {
+    equalWin = in->ReadBit() == 1;
+    if (in->ReadBit() == 1) {
         updateLeadingRepresentation();
         updateTrailingRepresentation();
     }
 }
 
 void SerfXORDecompressor::updateLeadingRepresentation() {
-    int num = static_cast<int>(in->readInt(5));
+    int num = static_cast<int>(in->ReadInt(5));
     if (num == 0) {
         num = 32;
     }
     leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
     leadingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
-        leadingRepresentation[i] = static_cast<int>(in->readInt(6));
+        leadingRepresentation[i] = static_cast<int>(in->ReadInt(6));
     }
 }
 
 void SerfXORDecompressor::updateTrailingRepresentation() {
-    int num = static_cast<int>(in->readInt(5));
+    int num = static_cast<int>(in->ReadInt(5));
     if (num == 0) {
         num = 32;
     }
     trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
     trailingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
-        trailingRepresentation[i] = static_cast<int>(in->readInt(6));
+        trailingRepresentation[i] = static_cast<int>(in->ReadInt(6));
     }
 }
