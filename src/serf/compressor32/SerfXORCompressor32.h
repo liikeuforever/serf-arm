@@ -6,13 +6,13 @@
 #include <memory>
 
 #include "serf/utils/OutputBitStream.h"
-#include "serf/utils/Float.h"
+#include "serf/utils/float.h"
 #include "serf/utils/array.h"
 
 class SerfXORCompressor32 {
 private:
     const float maxDiff;
-    uint32_t storedVal = Float::floatToIntBits(2);
+    uint32_t storedVal = Float::FloatToIntBits(2);
 
     long compressedSizeInBits;
     long storedCompressedSizeInBits = 0;

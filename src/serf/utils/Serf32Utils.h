@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "serf/utils/Float.h"
+#include "serf/utils/float.h"
 
 class Serf32Utils {
 public:

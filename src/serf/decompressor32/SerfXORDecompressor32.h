@@ -7,12 +7,12 @@
 
 #include "serf/utils/Serf32Utils.h"
 #include "serf/utils/PostOfficeSolver32.h"
-#include "serf/utils/Float.h"
+#include "serf/utils/float.h"
 #include "serf/utils/InputBitStream.h"
 
 class SerfXORDecompressor32 {
 private:
-    uint32_t storedVal = Float::floatToIntBits(2);
+    uint32_t storedVal = Float::FloatToIntBits(2);
     int storedLeadingZeros = std::numeric_limits<int>::max();
     int storedTrailingZeros = std::numeric_limits<int>::max();
     std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();

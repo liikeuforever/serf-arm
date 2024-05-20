@@ -8,7 +8,8 @@ void SerfQtCompressor32::addValue(float v) {
     if (std::abs(recoverValue - v) > maxDiff || std::isnan(v)) {
         // small cases
         compressedBits += out->writeBit(true);
-        uint32_t xorResult = Float::floatToIntBits(v) ^ Float::floatToIntBits(preValue);
+        uint32_t xorResult = Float::FloatToIntBits(v) ^
+                             Float::FloatToIntBits(preValue);
         int leadingZeroCount = std::min(__builtin_clz(xorResult), 15);
         compressedBits += out->writeInt(leadingZeroCount, 4);
         compressedBits += out->writeInt(xorResult, 32 - leadingZeroCount);

@@ -10,7 +10,7 @@ SerfXORCompressor32::SerfXORCompressor32(int capacity, float maxDiff): maxDiff(m
 void SerfXORCompressor32::addValue(float v) {
     uint32_t thisVal;
     // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
-    if (std::abs(Float::intBitsToFloat(storedVal) - v) > maxDiff) {
+    if (std::abs(Float::IntBitsToFloat(storedVal) - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
         thisVal = Serf32Utils::findAppInt(v - maxDiff, v + maxDiff, v, storedVal, maxDiff);
     } else {
@@ -32,7 +32,7 @@ Array<uint8_t> SerfXORCompressor32::getBytes() {
 }
 
 void SerfXORCompressor32::close() {
-    compressedSizeInBits += compressValue(Float::floatToIntBits(Float::NaN));
+    compressedSizeInBits += compressValue(Float::FloatToIntBits(Float::NaN));
     out->flush();
     outBuffer = Array<uint8_t> (std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
     uint8_t *buffer = out->getBuffer();

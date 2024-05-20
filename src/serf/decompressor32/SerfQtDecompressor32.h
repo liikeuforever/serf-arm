@@ -6,7 +6,7 @@
 
 #include "serf/utils/ZigZagCodec.h"
 #include "serf/utils/elias_delta_codec.h"
-#include "serf/utils/Float.h"
+#include "serf/utils/float.h"
 #include "serf/utils/InputBitStream.h"
 
 class SerfQtDecompressor32 {

@@ -24,7 +24,8 @@ float SerfQtDecompressor32::nextValue() {
     } else {
         int leadingZeroCount = in->readInt(4);
         uint32_t leftBits = in->readInt(32 - leadingZeroCount);
-        float recoverValue = Float::intBitsToFloat(leftBits ^ Float::floatToIntBits(preValue));
+        float recoverValue = Float::IntBitsToFloat(
+                leftBits ^ Float::FloatToIntBits(preValue));
         preValue = recoverValue;
         returnValue = recoverValue;
     }

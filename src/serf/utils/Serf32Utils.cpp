@@ -17,8 +17,8 @@ uint32_t Serf32Utils::findAppInt(float min, float max, float v, uint32_t lastInt
 }
 
 uint32_t Serf32Utils::findAppInt(float minFloat, float maxFloat, uint32_t sign, float original, uint32_t lastInt, float maxDiff) {
-    uint32_t min = Float::floatToIntBits(minFloat) & 0x7fffffff; // may be negative zero
-    uint32_t max = Float::floatToIntBits(maxFloat);
+    uint32_t min = Float::FloatToIntBits(minFloat) & 0x7fffffff; // may be negative zero
+    uint32_t max = Float::FloatToIntBits(maxFloat);
     int leadingZeros = __builtin_clz(min ^ max);
     uint32_t frontMask = 0xffffffff << (32 - leadingZeros);
     int shift = 32 - leadingZeros;
@@ -32,7 +32,7 @@ uint32_t Serf32Utils::findAppInt(float minFloat, float maxFloat, uint32_t sign, 
         append = rear | front;
         if (append >= min && append <= max) {
             resultInt = append ^ sign;
-            diff = Float::intBitsToFloat(resultInt) - original;
+            diff = Float::IntBitsToFloat(resultInt) - original;
             if (diff >= -maxDiff && diff <= maxDiff) {
                 return resultInt;
             }
@@ -41,7 +41,7 @@ uint32_t Serf32Utils::findAppInt(float minFloat, float maxFloat, uint32_t sign, 
         append = (append + bw[shift]) & 0x7fffffff; // may be overflow
         if (append <= max) {    // append must be greater than min
             resultInt = append ^ sign;
-            diff = Float::intBitsToFloat(resultInt) - original;
+            diff = Float::IntBitsToFloat(resultInt) - original;
             if (diff >= -maxDiff && diff <= maxDiff) {
                 return resultInt;
             }
@@ -52,5 +52,5 @@ uint32_t Serf32Utils::findAppInt(float minFloat, float maxFloat, uint32_t sign, 
         --shift;
     }
 
-    return Float::floatToIntBits(original);    // we do not find a satisfied value, so we return the original value
+    return Float::FloatToIntBits(original);    // we do not find a satisfied value, so we return the original value
 }
