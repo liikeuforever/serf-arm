@@ -8,7 +8,7 @@
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/array.h"
 #include "serf/utils/double.h"
-#include "serf/utils/EliasDeltaCodec.h"
+#include "serf/utils/elias_delta_codec.h"
 #include "serf/utils/ZigZagCodec.h"
 
 /*

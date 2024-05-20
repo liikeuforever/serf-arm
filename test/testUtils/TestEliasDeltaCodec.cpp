@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 #include <bitset>
 
-#include "serf/utils/EliasDeltaCodec.h"
+#include "serf/utils/elias_delta_codec.h"
 
 TEST(TestEliasDeltaCodec, RangeTest) {
     OutputBitStream output_bit_stream(10);
     InputBitStream input_bit_stream = InputBitStream();
 
     for (int64_t i = 1; i <= 10000000; ++i) {
-        int bitCount = EliasDeltaCodec::encode(i, output_bit_stream);
+        int bitCount = elias_delta_codec::Encode(i, output_bit_stream);
         output_bit_stream.flush();
 
         uint8_t *data_ptr = output_bit_stream.getBuffer();
@@ -20,6 +20,6 @@ TEST(TestEliasDeltaCodec, RangeTest) {
         input_bit_stream.setBuffer(encoded);
         output_bit_stream.refresh();
 
-        EXPECT_EQ(i, EliasDeltaCodec::decode(input_bit_stream));
+        EXPECT_EQ(i, elias_delta_codec::Decode(input_bit_stream));
     }
 }

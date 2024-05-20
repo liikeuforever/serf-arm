@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "serf/utils/ZigZagCodec.h"
-#include "serf/utils/EliasDeltaCodec.h"
+#include "serf/utils/elias_delta_codec.h"
 #include "serf/utils/Float.h"
 #include "serf/utils/InputBitStream.h"
 

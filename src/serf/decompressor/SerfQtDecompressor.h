@@ -7,7 +7,7 @@
 #include "serf/utils/double.h"
 #include "serf/utils/InputBitStream.h"
 #include "serf/utils/ZigZagCodec.h"
-#include "serf/utils/EliasDeltaCodec.h"
+#include "serf/utils/elias_delta_codec.h"
 
 class SerfQtDecompressor {
 public:

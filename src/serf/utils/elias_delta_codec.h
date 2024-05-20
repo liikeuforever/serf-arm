@@ -7,9 +7,14 @@
 #include "serf/utils/InputBitStream.h"
 #include "serf/utils/double.h"
 
-class EliasDeltaCodec {
-private:
-    constexpr static double logTable[12] = {
+class elias_delta_codec {
+ public:
+    static int Encode(int64_t number, OutputBitStream *output_bit_stream_ptr);
+
+    static int64_t Decode(InputBitStream *input_bit_stream_ptr);
+
+ private:
+    constexpr static double kLogTable[12] = {
             Double::kNan,
             0,
             0.6931471805599453,
@@ -23,11 +28,6 @@ private:
             2.302585092994046,
             2.3978952727983707
     };
-
-public:
-    static int encode(int64_t number, OutputBitStream *outputBitStream);
-
-    static int64_t decode(InputBitStream *inputBitStream);
 };
 
-#endif //SERF_ELIAS_DELTA_CODEC_H
+#endif  // SERF_ELIAS_DELTA_CODEC_H
