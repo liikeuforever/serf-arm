@@ -80,10 +80,10 @@ uint32_t InputBitStream::readBit() {
 }
 
 void InputBitStream::setBuffer(const Array<uint8_t> &newBuffer) {
-    len = std::ceil((double) newBuffer.length / sizeof(uint32_t));
+    len = std::ceil((double) newBuffer.length() / sizeof(uint32_t));
     data = new uint32_t [len];
     mem_start_addr = data;
-    __builtin_memcpy(data, newBuffer._data.get(), newBuffer.length);
+    __builtin_memcpy(data, newBuffer.begin(), newBuffer.length());
     for (int i = 0; i < len; ++i) {
         data[i] = be32toh(data[i]);
     }

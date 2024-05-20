@@ -21,7 +21,7 @@ Array<uint8_t> NetSerfQtCompressor::compress(double v) {
     out->flush();
     uint8_t *data_ptr = out->getBuffer();
     Array<uint8_t> result(std::ceil(writtenBitsCount / 8.0));
-    for (int i = 0; i < result.length; ++i) {
+    for (int i = 0; i < result.length(); ++i) {
         result[i] = data_ptr[i];
     }
     out->refresh();

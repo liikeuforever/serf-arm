@@ -30,7 +30,7 @@ Array<uint8_t> TorchSerfXORCompressor::addValue(uint64_t value) {
     out->flush();
     uint8_t *data_ptr = out->getBuffer();
     Array<uint8_t> result(std::ceil(static_cast<double>(thisSize) / 8.0));
-    for (int i = 0; i < result.length; ++i) {
+    for (int i = 0; i < result.length(); ++i) {
         result[i] = data_ptr[i];
     }
     out->refresh();
@@ -117,10 +117,10 @@ int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
         // update positions
         Array<int> leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation,
                                                                                 leadingRound);
-        leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.length];
+        leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.length()];
         Array<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation,
                                                                                  trailingRound);
-        trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length];
+        trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length()];
         len = static_cast<int>(out->writeInt(equalWin ? 3 : 1, 2))
               + PostOfficeSolver::writePositions(leadPositions, out.get())
               + PostOfficeSolver::writePositions(trailPositions, out.get());

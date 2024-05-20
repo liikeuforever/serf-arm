@@ -9,7 +9,7 @@ DeflateCompressor::DeflateCompressor() {
         throw std::runtime_error("[Deflate Error]: Failed to init.");
     }
     strm.avail_out = BLOCK_SIZE * static_cast<int>(sizeof(double));
-    strm.next_out = compress_pack._data.get();
+    strm.next_out = compress_pack.begin();
 }
 
 DeflateCompressor::~DeflateCompressor() {

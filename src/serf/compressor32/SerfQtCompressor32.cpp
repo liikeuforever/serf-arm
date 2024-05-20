@@ -23,7 +23,7 @@ void SerfQtCompressor32::addValue(float v) {
 Array<uint8_t> SerfQtCompressor32::getBytes() {
     uint8_t *data_ptr = out->getBuffer();
     Array<uint8_t> compressedBytes(std::ceil(storedCompressedBits / 8.0));
-    for (int i = 0; i < compressedBytes.length; ++i) {
+    for (int i = 0; i < compressedBytes.length(); ++i) {
         compressedBytes[i] = data_ptr[i];
     }
     out->refresh();

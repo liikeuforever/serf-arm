@@ -19,11 +19,7 @@
 
 class SerfQtCompressor {
 public:
-    SerfQtCompressor(int block_size, double max_diff): max_diff_(max_diff * 0.999) {
-        output_bit_stream_ = std::make_unique<OutputBitStream>(2 * block_size * 8);
-        compressed_size_in_bits_ += output_bit_stream_->writeInt(block_size, 16);
-        compressed_size_in_bits_ += output_bit_stream_->writeLong(Double::doubleToLongBits(max_diff_), 64);
-    }
+    SerfQtCompressor(int block_size, double max_diff);
 
     void AddValue(double v);
 
@@ -38,7 +34,7 @@ private:
     std::unique_ptr<OutputBitStream> output_bit_stream_;
     double pre_value_ = 2;
     long compressed_size_in_bits_ = 0;
-    long stored_compressed_size_in_bits_;
+    long stored_compressed_size_in_bits_ = 0;
 };
 
 #endif //SERF_QT_COMPRESSOR_H

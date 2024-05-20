@@ -34,7 +34,7 @@ SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
     }
 
     count = 0;
-    for (int i = 0; i < nums.length; ++i) {
+    for (int i = 0; i < nums.length(); ++i) {
         int index = i / 8;
         result.bitmap_[index] = (uint8_t) (result.bitmap_[index] << 1);
         if (nums[i] == candidate) {
@@ -43,13 +43,13 @@ SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
             result.bitmap_[index] = (uint8_t) (result.bitmap_[index] | 0b1);
             result.outliers_[result.outliers_count_++] = nums[i];
         }
-        if (i + 1 == nums.length && (i + 1) % 8 != 0) {
+        if (i + 1 == nums.length() && (i + 1) % 8 != 0) {
             // Here this line of code differs from that in Java
             result.bitmap_[index] = (uint8_t) (result.bitmap_[index] << (i % 8 + 1));
         }
     }
 
-    if (count >= nums.length * 0.9) {
+    if (count >= nums.length() * 0.9) {
         result.flag_ = true;
         result.frequent_value_ = candidate;
     } else {
@@ -61,7 +61,7 @@ SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
 Array<uint8_t> BuffCompressor::get_out() {
     uint8_t *data_ptr = output_bit_stream_->getBuffer();
     Array<uint8_t> out = Array<uint8_t>(std::ceil(size_ / 8.0));
-    for (int i = 0; i < out.length; ++i) {
+    for (int i = 0; i < out.length(); ++i) {
         out[i] = data_ptr[i];
     }
     return out;
@@ -127,7 +127,7 @@ void BuffCompressor::headSample(const Array<double> &dbs) {
 Array<Array<uint8_t>> BuffCompressor::encode(const Array<double> &dbs) {
     Array<Array<uint8_t>> cols(column_count_);
     for (auto &col: cols) {
-        col = Array<uint8_t>(dbs.length);
+        col = Array<uint8_t>(dbs.length());
     }
     int db_cnt = 0;
     for (const auto &db: dbs) {

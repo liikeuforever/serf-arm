@@ -1,8 +1,8 @@
 #include "serf/utils/PostOfficeSolver.h"
 
 Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> &distribution, Array<int> &representation, Array<int> &round) {
-    Array<int> preNonZerosCount(distribution.length);   // 当前及前面的非零个数（包括当前）
-    Array<int> postNonZerosCount(distribution.length);  // 当前后面的非零个数（不包括当前）
+    Array<int> preNonZerosCount(distribution.length());   // 当前及前面的非零个数（包括当前）
+    Array<int> postNonZerosCount(distribution.length());  // 当前后面的非零个数（不包括当前）
     Array<int> totalCountAndNonZerosCount = calTotalCountAndNonZerosCounts(distribution, preNonZerosCount,
                                                                                  postNonZerosCount);
 
@@ -28,8 +28,8 @@ Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> &distribution
     representation[0] = 0;
     round[0] = 0;
     int i = 1;
-    for (int j = 1; j < distribution.length; ++j) {
-        if (i < positions.length && j == positions[i]) {
+    for (int j = 1; j < distribution.length(); ++j) {
+        if (i < positions.length() && j == positions[i]) {
             representation[j] = representation[j - 1] + 1;
             round[j] = j;
             ++i;
@@ -43,10 +43,10 @@ Array<int> PostOfficeSolver::initRoundAndRepresentation(Array<int> &distribution
 }
 
 Array<int> PostOfficeSolver::calTotalCountAndNonZerosCounts(Array<int> &arr, Array<int> &outPreNonZerosCount, Array<int> &outPostNonZerosCount) {
-    int nonZerosCount = arr.length;
+    int nonZerosCount = arr.length();
     int totalCount = arr[0];
     outPreNonZerosCount[0] = 1;            // 第一个视为非零
-    for (int i = 1; i < arr.length; ++i) {
+    for (int i = 1; i < arr.length(); ++i) {
         totalCount += arr[i];
         if (arr[i] == 0) {
             --nonZerosCount;
@@ -55,7 +55,7 @@ Array<int> PostOfficeSolver::calTotalCountAndNonZerosCounts(Array<int> &arr, Arr
             outPreNonZerosCount[i] = outPreNonZerosCount[i - 1] + 1;
         }
     }
-    for (int i = 0; i < arr.length; ++i) {
+    for (int i = 0; i < arr.length(); ++i) {
         outPostNonZerosCount[i] = nonZerosCount - outPreNonZerosCount[i];
     }
     return Array<int>{totalCount, nonZerosCount};
@@ -66,18 +66,18 @@ PostOfficeSolver::buildPostOffice(Array<int> &arr, int num, int nonZerosCount, A
     int originalNum = num;
     num = std::min(num, nonZerosCount);
 
-    int dp[arr.length][num];      // 状态矩阵。d[i][j]表示，只考虑前i个居民点，且第i个位置是第j个邮局的总距离，i >= j，
+    int dp[arr.length()][num];      // 状态矩阵。d[i][j]表示，只考虑前i个居民点，且第i个位置是第j个邮局的总距离，i >= j，
     // 下标从0开始。注意，并非是所有居民点的总距离，因为没有考虑第j个邮局之后的居民点的距离
-    int pre[arr.length][num];     // 对应于dp[i][j]，表示让dp[i][j]最小时，第j-1个邮局所在的位置信息
+    int pre[arr.length()][num];     // 对应于dp[i][j]，表示让dp[i][j]最小时，第j-1个邮局所在的位置信息
 
     dp[0][0] = 0;                       // 第0个位置是第0个邮局，此时状态为0
     pre[0][0] = -1;                     // 让dp[0][0]最小时，第-1个邮局所在的位置信息为-1
 
-    for (int i = 1; i < arr.length; ++i) {
+    for (int i = 1; i < arr.length(); ++i) {
         if (arr[i] == 0) {
             continue;
         }
-        for (int j = std::max(1, num + i - arr.length); j <= i && j < num; ++j) {
+        for (int j = std::max(1, num + i - arr.length()); j <= i && j < num; ++j) {
             // arr.length - i < num - j，表示i后面的居民数（arr.length - i）不足以构建剩下的num - j个邮局
             if (i > 1 && j == 1) {
                 dp[i][j] = 0;
@@ -116,7 +116,7 @@ PostOfficeSolver::buildPostOffice(Array<int> &arr, int num, int nonZerosCount, A
     }
     int tempTotalAppCost = std::numeric_limits<int>::max();
     int tempBestLast = std::numeric_limits<int>::max();
-    for (int i = num - 1; i < arr.length; ++i) {
+    for (int i = num - 1; i < arr.length(); ++i) {
         if (num - 1 == 0 && i > 0) {
             break;
         }
@@ -124,7 +124,7 @@ PostOfficeSolver::buildPostOffice(Array<int> &arr, int num, int nonZerosCount, A
             continue;
         }
         int sum = dp[i][num - 1];
-        for (int j = i + 1; j < arr.length; ++j) {
+        for (int j = i + 1; j < arr.length(); ++j) {
             sum += arr[j] * (j - i);
         }
         if (tempTotalAppCost > sum) {
@@ -162,7 +162,7 @@ PostOfficeSolver::buildPostOffice(Array<int> &arr, int num, int nonZerosCount, A
 }
 
 int PostOfficeSolver::writePositions(Array<int> &positions, OutputBitStream *out) {
-    int thisSize = out->writeInt(static_cast<int>(positions.length), 5);
+    int thisSize = out->writeInt(static_cast<int>(positions.length()), 5);
     for (const auto &position: positions) thisSize += out->writeInt(position, 6);
     return thisSize;
 }

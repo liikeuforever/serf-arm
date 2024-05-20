@@ -34,7 +34,7 @@ void SerfXORCompressor::Close() {
     compressed_size_in_bits_ += CompressValue(Double::doubleToLongBits(Double::NaN));
     output_buffer_->flush();
     compressed_bytes_ = Array<uint8_t>(std::ceil((double) compressed_size_in_bits_ / 8.0));
-    __builtin_memcpy(compressed_bytes_._data.get(), output_buffer_->getBuffer(), compressed_bytes_.length);
+    __builtin_memcpy(compressed_bytes_.begin(), output_buffer_->getBuffer(), compressed_bytes_.length());
     output_buffer_->refresh();
     stored_compressed_size_in_bits_ = compressed_size_in_bits_;
     compressed_size_in_bits_ = UpdateFlagAndPositionsIfNeeded();
@@ -115,10 +115,10 @@ int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
         // update positions
         Array<int> lead_positions = PostOfficeSolver::initRoundAndRepresentation(lead_distribution_, leading_representation_,
                                                                                  leading_round_);
-        leading_bits_per_value_ = PostOfficeSolver::positionLength2Bits[lead_positions.length];
+        leading_bits_per_value_ = PostOfficeSolver::positionLength2Bits[lead_positions.length()];
         Array<int> trail_positions = PostOfficeSolver::initRoundAndRepresentation(trail_distribution_, trailing_representation_,
                                                                                   trailing_round_);
-        trailing_bits_per_value_ = PostOfficeSolver::positionLength2Bits[trail_positions.length];
+        trailing_bits_per_value_ = PostOfficeSolver::positionLength2Bits[trail_positions.length()];
         len = output_buffer_->writeInt(equal_win_ ? 3 : 1, 2)
               + PostOfficeSolver::writePositions(lead_positions, output_buffer_.get())
               + PostOfficeSolver::writePositions(trail_positions, output_buffer_.get());
@@ -128,7 +128,7 @@ int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
     equal_vote_ = 0;
     stored_compression_ratio_ = this_compression_ratio;
     number_of_values_ = 0;
-    __builtin_memset(lead_distribution_._data.get(), 0, 64 * sizeof(int));
-    __builtin_memset(trail_distribution_._data.get(), 0, 64 * sizeof(int));
+    __builtin_memset(lead_distribution_.begin(), 0, 64 * sizeof(int));
+    __builtin_memset(trail_distribution_.begin(), 0, 64 * sizeof(int));
     return len;
 }

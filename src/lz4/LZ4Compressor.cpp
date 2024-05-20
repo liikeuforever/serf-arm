@@ -6,7 +6,7 @@ LZ4Compressor::LZ4Compressor() {
         throw std::runtime_error(LZ4F_getErrorName(error_code));
     }
 
-    rc = LZ4F_compressBegin(compression_context, compress_frame._data.get(), compress_frame.length, nullptr);
+    rc = LZ4F_compressBegin(compression_context, compress_frame.begin(), compress_frame.length(), nullptr);
     if (LZ4F_isError(rc)) {
         throw std::runtime_error(LZ4F_getErrorName(rc));
     }
@@ -21,7 +21,7 @@ LZ4Compressor::~LZ4Compressor() {
 }
 
 void LZ4Compressor::addValue(double v) {
-    rc = LZ4F_compressUpdate(compression_context, compress_frame._data.get() + written_bytes, compress_frame.length - written_bytes, &v,
+    rc = LZ4F_compressUpdate(compression_context, compress_frame.begin() + written_bytes, compress_frame.length() - written_bytes, &v,
                              sizeof(double), nullptr);
     if (LZ4F_isError(rc)) {
         throw std::runtime_error(LZ4F_getErrorName(rc));
@@ -30,7 +30,7 @@ void LZ4Compressor::addValue(double v) {
 }
 
 void LZ4Compressor::close() {
-    rc = LZ4F_compressEnd(compression_context, compress_frame._data.get() + written_bytes, compress_frame.length - written_bytes, nullptr);
+    rc = LZ4F_compressEnd(compression_context, compress_frame.begin() + written_bytes, compress_frame.length() - written_bytes, nullptr);
     if (LZ4F_isError(rc)) {
         throw std::runtime_error(LZ4F_getErrorName(rc));
     }

@@ -117,9 +117,9 @@ int SerfXORCompressor32::updateFlagAndPositionsIfNeeded() {
     if (storedCompressionRatio < thisCompressionRatio) {
         // update positions
         Array<int> leadPositions = PostOfficeSolver32::initRoundAndRepresentation(leadDistribution, leadingRepresentation, leadingRound);
-        leadingBitsPerValue = PostOfficeSolver32::positionLength2Bits[leadPositions.length];
+        leadingBitsPerValue = PostOfficeSolver32::positionLength2Bits[leadPositions.length()];
         Array<int> trailPositions = PostOfficeSolver32::initRoundAndRepresentation(trailDistribution, trailingRepresentation, trailingRound);
-        trailingBitsPerValue = PostOfficeSolver32::positionLength2Bits[trailPositions.length];
+        trailingBitsPerValue = PostOfficeSolver32::positionLength2Bits[trailPositions.length()];
         len = static_cast<int>(out->writeInt(equalWin ? 3 : 1, 2))
               + PostOfficeSolver32::writePositions(leadPositions, out.get())
               + PostOfficeSolver32::writePositions(trailPositions, out.get());

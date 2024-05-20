@@ -15,8 +15,8 @@ DeflateDecompressor::~DeflateDecompressor() {
 }
 
 std::vector<double> DeflateDecompressor::decompress(const Array<unsigned char> &bs) {
-    strm.avail_in = bs.length;
-    strm.next_in = bs._data.get();
+    strm.avail_in = bs.length();
+    strm.next_in = bs.begin();
     std::vector<double> result;
     double decompress;
     while (true) {
