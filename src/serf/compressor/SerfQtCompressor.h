@@ -6,7 +6,7 @@
 #include <memory>
 
 #include "serf/utils/OutputBitStream.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 #include "serf/utils/Double.h"
 #include "serf/utils/EliasDeltaCodec.h"
 #include "serf/utils/ZigZagCodec.h"

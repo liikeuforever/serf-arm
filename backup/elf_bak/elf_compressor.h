@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "serf/utils/Double.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 #include "serf/utils/OutputBitStream.h"
 #include "elf/elf_utils.h"
 

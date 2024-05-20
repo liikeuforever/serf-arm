@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 #include "deflate/deflate.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class DeflateCompressor {
 private:

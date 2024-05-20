@@ -8,7 +8,7 @@
 
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/Double.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class ChimpCompressor {
 public:

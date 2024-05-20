@@ -1,7 +1,7 @@
 #ifndef SERF_POST_OFFICE_RESULT_H
 #define SERF_POST_OFFICE_RESULT_H
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class PostOfficeResult {
 private:

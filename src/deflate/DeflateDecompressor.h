@@ -6,7 +6,7 @@
 #include <cmath>
 
 #include "deflate/deflate.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class DeflateDecompressor {
 private:

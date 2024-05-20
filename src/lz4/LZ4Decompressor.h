@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "lz4/lz4frame.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class LZ4Decompressor {
 private:

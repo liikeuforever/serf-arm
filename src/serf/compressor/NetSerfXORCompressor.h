@@ -5,7 +5,7 @@
 #include <memory>
 #include <cstdint>
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 #include "serf/utils/Double.h"
 #include "serf/utils/Serf64Utils.h"
 #include "serf/utils/OutputBitStream.h"

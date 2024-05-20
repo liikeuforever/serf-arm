@@ -7,7 +7,7 @@
 
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/Float.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class SerfXORCompressor32 {
 private:

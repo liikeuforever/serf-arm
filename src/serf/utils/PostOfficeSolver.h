@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "serf/utils/PostOfficeResult.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 #include "serf/utils/OutputBitStream.h"
 
 class PostOfficeSolver {

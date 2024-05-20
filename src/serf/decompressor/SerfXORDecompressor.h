@@ -7,7 +7,7 @@
 
 #include "serf/utils/InputBitStream.h"
 #include "serf/utils/Double.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 #include "serf/utils/Serf64Utils.h"
 
 class SerfXORDecompressor {

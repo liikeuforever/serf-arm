@@ -8,7 +8,7 @@
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/Serf64Utils.h"
 #include "serf/utils/PostOfficeSolver.h"
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class SerfXORCompressor {
 public:

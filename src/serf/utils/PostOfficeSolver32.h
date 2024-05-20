@@ -3,7 +3,7 @@
 
 #include <limits>
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/PostOfficeResult.h"
 

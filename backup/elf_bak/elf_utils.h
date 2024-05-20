@@ -6,7 +6,7 @@
 #include <cassert>
 #include <limits>
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 namespace ElfUtils {
     static constexpr int f_[] = {0, 4, 7, 10, 14, 17, 20, 24, 27, 30, 34, 37, 40, 44, 47, 50, 54, 57, 60, 64, 67};

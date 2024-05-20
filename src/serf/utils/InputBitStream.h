@@ -7,7 +7,7 @@
 #include <cmath>
 #include <endian.h>
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class InputBitStream {
 private:

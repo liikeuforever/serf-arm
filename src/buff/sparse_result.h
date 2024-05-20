@@ -5,7 +5,7 @@
 #include <vector>
 #include <cstdint>
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 class SparseResult {
 public:

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "serf/utils/Array.h"
+#include "serf/utils/array.h"
 
 TEST(TestArray, TestCon) {
     Array<int> arr(10);
