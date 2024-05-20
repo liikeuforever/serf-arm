@@ -9,7 +9,7 @@ SerfXORCompressor32::SerfXORCompressor32(int capacity, float maxDiff): maxDiff(m
 
 void SerfXORCompressor32::addValue(float v) {
     uint32_t thisVal;
-    // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
+    // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
     if (std::abs(Float::intBitsToFloat(storedVal) - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
         thisVal = Serf32Utils::findAppInt(v - maxDiff, v + maxDiff, v, storedVal, maxDiff);

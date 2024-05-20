@@ -10,7 +10,7 @@
 class EliasDeltaCodec {
 private:
     constexpr static double logTable[12] = {
-            Double::NaN,
+            Double::kNan,
             0,
             0.6931471805599453,
             1.0986122886681098,

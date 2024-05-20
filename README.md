@@ -27,9 +27,10 @@ Streaming error-bound compressor.
 - LZ77
 - LZW
 - Machete
-- MOST
-- Serf
-- SZ1.0
+- SZ2.0
 
 ## Python interface
 Install pybind11 using pip.
+
+## Code Format Check
+You should use cpplint to check your code before contributing your code to this project.

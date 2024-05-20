@@ -7,7 +7,7 @@ SerfXORCompressor::SerfXORCompressor(int capacity, double max_diff, long adjust_
 
 void SerfXORCompressor::AddValue(double v) {
     uint64_t this_val;
-    // note we cannot let > max_diff_, because NaN - v > max_diff_ is always false
+    // note we cannot let > max_diff_, because kNan - v > max_diff_ is always false
     if (__builtin_expect(std::abs(Double::longBitsToDouble(stored_val_) - adjust_digit_ - v) > max_diff_, false)) {
         // in our implementation, we do not consider special cases and overflow case
         double adjust_value = v + adjust_digit_;
@@ -31,7 +31,7 @@ Array<uint8_t> SerfXORCompressor::compressed_bytes() {
 }
 
 void SerfXORCompressor::Close() {
-    compressed_size_in_bits_ += CompressValue(Double::doubleToLongBits(Double::NaN));
+    compressed_size_in_bits_ += CompressValue(Double::doubleToLongBits(Double::kNan));
     output_buffer_->flush();
     compressed_bytes_ = Array<uint8_t>(std::ceil((double) compressed_size_in_bits_ / 8.0));
     __builtin_memcpy(compressed_bytes_.begin(), output_buffer_->getBuffer(), compressed_bytes_.length());

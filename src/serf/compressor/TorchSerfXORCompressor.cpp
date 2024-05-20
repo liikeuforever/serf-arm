@@ -6,7 +6,7 @@ TorchSerfXORCompressor::TorchSerfXORCompressor(double maxDiff, long adjustD): ma
 
 Array<uint8_t> TorchSerfXORCompressor::compress(double v) {
     uint64_t thisVal;
-    // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
+    // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
     if (std::abs(Double::longBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
         double adjustValue = v + static_cast<double>(adjustD);
@@ -139,7 +139,7 @@ int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
 
 std::vector<uint8_t> TorchSerfXORCompressor::compress_vector(double v) {
     uint64_t thisVal;
-    // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
+    // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
     if (std::abs(Double::longBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
         double adjustValue = v + static_cast<double>(adjustD);
