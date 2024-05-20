@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cmath>
 
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/Serf64Utils.h"
 #include "serf/utils/PostOfficeSolver.h"

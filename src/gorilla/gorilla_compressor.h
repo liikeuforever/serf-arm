@@ -7,7 +7,7 @@
 #include <memory>
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/array.h"
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 
 class GorillaCompressor {
 public:

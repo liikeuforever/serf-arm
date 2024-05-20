@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "serf/utils/InputBitStream.h"
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 #include "buff/sparse_result.h"
 
 class BuffDecompressor {

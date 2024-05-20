@@ -8,7 +8,7 @@
 #include <cmath>
 
 #include "serf/utils/InputBitStream.h"
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 #include "elf/elf_utils.h"
 
 class AbstractElfDecompressor {

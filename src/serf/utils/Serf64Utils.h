@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 
 class Serf64Utils {
 public:

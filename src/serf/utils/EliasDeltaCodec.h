@@ -5,7 +5,7 @@
 
 #include "serf/utils/OutputBitStream.h"
 #include "serf/utils/InputBitStream.h"
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 
 class EliasDeltaCodec {
 private:

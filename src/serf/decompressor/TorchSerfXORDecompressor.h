@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-#include "serf/utils/Double.h"
+#include "serf/utils/double.h"
 #include "serf/utils/array.h"
 #include "serf/utils/InputBitStream.h"
 #include "serf/utils/PostOfficeSolver.h"
