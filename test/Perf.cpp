@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <chrono>
 
-#include "serf/compressor/SerfXORCompressor.h"
+#include "serf/compressor/serf_xor_compressor.h"
 #include "serf/decompressor/SerfXORDecompressor.h"
 #include "serf/compressor/SerfQtCompressor.h"
 #include "serf/decompressor/SerfQtDecompressor.h"
