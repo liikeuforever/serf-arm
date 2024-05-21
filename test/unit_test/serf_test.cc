@@ -182,7 +182,7 @@ TEST(TestNetSerfXOR, CorrectnessTest) {
             double originalData;
             while (!dataSetInputStream.eof()) {
                 dataSetInputStream >> originalData;
-                Array<uint8_t> result = xor_compressor.compress(originalData);
+                Array<uint8_t> result = xor_compressor.Compress(originalData);
                 double decompressed = xor_decompressor.decompress(result);
                 if (std::abs(originalData - decompressed) > max_diff) {
                     GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
