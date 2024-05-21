@@ -1,4 +1,4 @@
-#include "NetSerfXORDecompressor.h"
+#include "net_serf_xor_decompressor.h"
 
 NetSerfXORDecompressor::NetSerfXORDecompressor(long adjustD): adjustD(adjustD) {}
 

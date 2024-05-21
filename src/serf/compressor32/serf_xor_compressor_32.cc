@@ -1,4 +1,4 @@
-#include "SerfXORCompressor32.h"
+#include "serf_xor_compressor_32.h"
 #include "serf/utils/serf_utils_32.h"
 #include "serf/utils/post_office_solver_32.h"
 

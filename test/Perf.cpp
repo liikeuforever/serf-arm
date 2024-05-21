@@ -9,9 +9,9 @@
 #include <chrono>
 
 #include "serf/compressor/serf_xor_compressor.h"
-#include "serf/decompressor/SerfXORDecompressor.h"
-#include "serf/compressor/SerfQtCompressor.h"
-#include "serf/decompressor/SerfQtDecompressor.h"
+#include "serf/decompressor/serf_xor_decompressor.h"
+#include "serf/compressor/serf_qt_compressor.h"
+#include "serf/decompressor/serf_qt_decompressor.h"
 #include "deflate/DeflateCompressor.h"
 #include "deflate/DeflateDecompressor.h"
 #include "lz4/LZ4Compressor.h"

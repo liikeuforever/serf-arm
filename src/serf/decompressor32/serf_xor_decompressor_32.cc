@@ -1,4 +1,4 @@
-#include "SerfXORDecompressor32.h"
+#include "serf_xor_decompressor_32.h"
 
 std::vector<float> SerfXORDecompressor32::decompress(const Array<uint8_t> &bs) {
     in->SetBuffer(bs);

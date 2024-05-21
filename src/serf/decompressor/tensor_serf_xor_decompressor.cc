@@ -1,16 +1,16 @@
-#include "TorchSerfXORDecompressor.h"
+#include "tensor_serf_xor_decompressor.h"
 
-double TorchSerfXORDecompressor::decompress(const Array<uint8_t>& input) {
+double TensorSerfXORDecompressor::decompress(const Array<uint8_t>& input) {
     in->SetBuffer(input);
     return Double::LongBitsToDouble(readValue()) - adjustD;
 }
 
-double TorchSerfXORDecompressor::decompress(const std::vector<uint8_t> &input) {
+double TensorSerfXORDecompressor::decompress(const std::vector<uint8_t> &input) {
     in->SetBuffer(input);
     return Double::LongBitsToDouble(readValue()) - adjustD;
 }
 
-uint64_t TorchSerfXORDecompressor::readValue() {
+uint64_t TensorSerfXORDecompressor::readValue() {
     if (numberOfValues >= BLOCK_SIZE) {
         updateFlagAndPositionsIfNeeded();
     }
@@ -19,7 +19,7 @@ uint64_t TorchSerfXORDecompressor::readValue() {
     return storedVal;
 }
 
-void TorchSerfXORDecompressor::nextValue() {
+void TensorSerfXORDecompressor::nextValue() {
     uint64_t value;
     int centerBits;
 
@@ -64,7 +64,7 @@ void TorchSerfXORDecompressor::nextValue() {
     }
 }
 
-void TorchSerfXORDecompressor::updateFlagAndPositionsIfNeeded() {
+void TensorSerfXORDecompressor::updateFlagAndPositionsIfNeeded() {
     equalWin = in->ReadBit() == 1;
     if (in->ReadBit() == 1) {
         updateLeadingRepresentation();
@@ -73,7 +73,7 @@ void TorchSerfXORDecompressor::updateFlagAndPositionsIfNeeded() {
     numberOfValues = 0;
 }
 
-void TorchSerfXORDecompressor::updateLeadingRepresentation() {
+void TensorSerfXORDecompressor::updateLeadingRepresentation() {
     int num = static_cast<int>(in->ReadInt(5));
     if (num == 0) {
         num = 32;
@@ -85,7 +85,7 @@ void TorchSerfXORDecompressor::updateLeadingRepresentation() {
     }
 }
 
-void TorchSerfXORDecompressor::updateTrailingRepresentation() {
+void TensorSerfXORDecompressor::updateTrailingRepresentation() {
     int num = static_cast<int>(in->ReadInt(5));
     if (num == 0) {
         num = 32;

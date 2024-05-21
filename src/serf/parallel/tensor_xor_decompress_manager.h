@@ -5,15 +5,15 @@
 #include <thread>
 #include <omp.h>
 
-#include "serf/decompressor/TorchSerfXORDecompressor.h"
+#include "serf/decompressor/tensor_serf_xor_decompressor.h"
 
-class TensorXORDecompressTransaction {
+class TensorXORDecompressManager {
 private:
     int decompressor_array_len;
-    TorchSerfXORDecompressor **decompressor_array;
+    TensorSerfXORDecompressor **decompressor_array;
 
 public:
-    TensorXORDecompressTransaction(int d1, int d2, int d3, int d4);
+    TensorXORDecompressManager(int d1, int d2, int d3, int d4);
 
     std::vector<double> decompress_tensor(std::vector<std::vector<uint8_t>> compress_pack);
 };

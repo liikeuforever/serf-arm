@@ -1,4 +1,4 @@
-#include "SerfXORDecompressor.h"
+#include "serf_xor_decompressor.h"
 #include "serf/utils/post_office_solver.h"
 
 std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {

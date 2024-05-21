@@ -11,7 +11,7 @@
 #include "serf/utils/input_bit_stream.h"
 #include "serf/utils/post_office_solver.h"
 
-class TorchSerfXORDecompressor {
+class TensorSerfXORDecompressor {
 private:
     static const int BLOCK_SIZE = 1000;
     uint64_t storedVal = Double::DoubleToLongBits(2);
@@ -27,7 +27,7 @@ private:
     const long adjustD;
 
 public:
-    explicit TorchSerfXORDecompressor(long adjustD): adjustD(adjustD) {}
+    explicit TensorSerfXORDecompressor(long adjustD): adjustD(adjustD) {}
 
     double decompress(const Array<uint8_t>& input);
 

@@ -1,4 +1,4 @@
-#include "SerfQtCompressor32.h"
+#include "serf_qt_compressor_32.h"
 
 SerfQtCompressor32::SerfQtCompressor32(float maxDiff): maxDiff(maxDiff) {}
 

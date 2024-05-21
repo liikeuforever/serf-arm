@@ -1,4 +1,4 @@
-#include "SerfQtDecompressor.h"
+#include "serf_qt_decompressor.h"
 
 std::vector<double> SerfQtDecompressor::Decompress() {
     pre_value_ = 2;

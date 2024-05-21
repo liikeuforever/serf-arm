@@ -1,4 +1,4 @@
-#include "NetSerfXORCompressor.h"
+#include "net_serf_xor_compressor.h"
 #include "serf/utils/post_office_solver.h"
 
 NetSerfXORCompressor::NetSerfXORCompressor(double maxDiff, long adjustD):maxDiff(maxDiff), adjustD(adjustD) {

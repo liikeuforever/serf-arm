@@ -1,10 +1,10 @@
-#include "TorchSerfXORCompressor.h"
+#include "tensor_serf_xor_compressor.h"
 
-TorchSerfXORCompressor::TorchSerfXORCompressor(double maxDiff, long adjustD): maxDiff(maxDiff), adjustD(adjustD) {
+TensorSerfXORCompressor::TensorSerfXORCompressor(double maxDiff, long adjustD): maxDiff(maxDiff), adjustD(adjustD) {
     this->out = std::make_unique<OutputBitStream>(5 * 8);
 }
 
-Array<uint8_t> TorchSerfXORCompressor::compress(double v) {
+Array<uint8_t> TensorSerfXORCompressor::compress(double v) {
     uint64_t thisVal;
     // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
     if (std::abs(Double::LongBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
@@ -22,7 +22,7 @@ Array<uint8_t> TorchSerfXORCompressor::compress(double v) {
     return result;
 }
 
-Array<uint8_t> TorchSerfXORCompressor::addValue(uint64_t value) {
+Array<uint8_t> TensorSerfXORCompressor::addValue(uint64_t value) {
     int thisSize = 0;
     if (numberOfValues >= BLOCK_SIZE) {
         thisSize += updateFlagAndPositionsIfNeeded();
@@ -36,7 +36,7 @@ Array<uint8_t> TorchSerfXORCompressor::addValue(uint64_t value) {
     return result;
 }
 
-int TorchSerfXORCompressor::compressValue(uint64_t value) {
+int TensorSerfXORCompressor::compressValue(uint64_t value) {
     int thisSize = 0;
     uint64_t xorResult = storedVal ^ value;
 
@@ -114,7 +114,7 @@ int TorchSerfXORCompressor::compressValue(uint64_t value) {
     return thisSize;
 }
 
-int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
+int TensorSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     int len;
     equalWin = equalVote > 0;
     double thisCompressionRatio = static_cast<double>(compressedSizeInBits) / (numberOfValues * 64.0);
@@ -144,7 +144,7 @@ int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     return len;
 }
 
-std::vector<uint8_t> TorchSerfXORCompressor::compress_vector(double v) {
+std::vector<uint8_t> TensorSerfXORCompressor::compress_vector(double v) {
     uint64_t thisVal;
     // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
     if (std::abs(Double::LongBitsToDouble(storedVal) - static_cast<double>(adjustD) - v) > maxDiff) {
@@ -162,7 +162,7 @@ std::vector<uint8_t> TorchSerfXORCompressor::compress_vector(double v) {
     return result;
 }
 
-std::vector<uint8_t> TorchSerfXORCompressor::addValue_vector(uint64_t value) {
+std::vector<uint8_t> TensorSerfXORCompressor::addValue_vector(uint64_t value) {
     int thisSize = 0;
     if (numberOfValues >= BLOCK_SIZE) {
         thisSize += updateFlagAndPositionsIfNeeded();

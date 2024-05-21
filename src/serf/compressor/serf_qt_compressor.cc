@@ -1,4 +1,4 @@
-#include "SerfQtCompressor.h"
+#include "serf_qt_compressor.h"
 
 SerfQtCompressor::SerfQtCompressor(int block_size, double max_diff) : max_diff_(max_diff * 0.999){
     output_bit_stream_ = std::make_unique<OutputBitStream>(2 * block_size * 8);

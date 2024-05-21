@@ -8,19 +8,19 @@
 #include <chrono>
 
 #include "serf/compressor/serf_xor_compressor.h"
-#include "serf/decompressor/SerfXORDecompressor.h"
-#include "serf/compressor/TorchSerfXORCompressor.h"
-#include "serf/decompressor/TorchSerfXORDecompressor.h"
-#include "serf/compressor/SerfQtCompressor.h"
-#include "serf/decompressor/SerfQtDecompressor.h"
-#include "serf/compressor32/SerfXORCompressor32.h"
-#include "serf/decompressor32/SerfXORDecompressor32.h"
-#include "serf/compressor/NetSerfXORCompressor.h"
-#include "serf/decompressor/NetSerfXORDecompressor.h"
-#include "serf/compressor/NetSerfQtCompressor.h"
-#include "serf/decompressor/NetSerfQtDecompressor.h"
-#include "serf/compressor32/SerfQtCompressor32.h"
-#include "serf/decompressor32/SerfQtDecompressor32.h"
+#include "serf/decompressor/serf_xor_decompressor.h"
+#include "serf/compressor/tensor_serf_xor_compressor.h"
+#include "serf/decompressor/tensor_serf_xor_decompressor.h"
+#include "serf/compressor/serf_qt_compressor.h"
+#include "serf/decompressor/serf_qt_decompressor.h"
+#include "serf/compressor32/serf_xor_compressor_32.h"
+#include "serf/decompressor32/serf_xor_decompressor_32.h"
+#include "serf/compressor/net_serf_xor_compressor.h"
+#include "serf/decompressor/net_serf_xor_decompressor.h"
+#include "serf/compressor/net_serf_qt_compressor.h"
+#include "serf/decompressor/net_serf_qt_decompressor.h"
+#include "serf/compressor32/serf_qt_compressor_32.h"
+#include "serf/decompressor32/serf_qt_decompressor_32.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
@@ -234,8 +234,8 @@ TEST(TestTorchSerfXOR, CorrectnessTest) {
                 fprintf(stderr, "[Error] Failed to open the file '%s'", dataSet.c_str());
             }
 
-            TorchSerfXORCompressor xor_compressor(max_diff, adjustD);
-            TorchSerfXORDecompressor xor_decompressor(adjustD);
+            TensorSerfXORCompressor xor_compressor(max_diff, adjustD);
+            TensorSerfXORDecompressor xor_decompressor(adjustD);
 
             double originalData;
             while (!dataSetInputStream.eof()) {

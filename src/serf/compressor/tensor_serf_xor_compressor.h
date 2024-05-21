@@ -12,7 +12,7 @@
 #include "serf/utils/serf_utils_64.h"
 #include "serf/utils/post_office_solver.h"
 
-class TorchSerfXORCompressor {
+class TensorSerfXORCompressor {
 private:
     const int BLOCK_SIZE = 1000;
     const double maxDiff;
@@ -77,7 +77,7 @@ private:
     int storedTrailingZeros = std::numeric_limits<int>::max();
 
 public:
-    TorchSerfXORCompressor(double maxDiff, long adjustD);
+    TensorSerfXORCompressor(double maxDiff, long adjustD);
 
     Array<uint8_t> compress(double v);
 
