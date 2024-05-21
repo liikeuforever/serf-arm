@@ -11,7 +11,10 @@ void SerfXORCompressor::AddValue(double v) {
     if (__builtin_expect(std::abs(Double::LongBitsToDouble(stored_val_) - adjust_digit_ - v) > max_diff_, false)) {
         // in our implementation, we do not consider special cases and overflow case
         double adjust_value = v + adjust_digit_;
-        this_val = Serf64Utils::findAppLong(adjust_value - max_diff_, adjust_value + max_diff_, v, stored_val_, max_diff_, adjust_digit_);
+        this_val = SerfUtils64::FindAppLong(adjust_value - max_diff_,
+                                            adjust_value + max_diff_, v,
+                                            stored_val_, max_diff_,
+                                            adjust_digit_);
     } else {
         // let current value be the last value, making an XORed value of 0.
         this_val = stored_val_;
