@@ -18,10 +18,10 @@ Array<int> PostOfficeSolver32::initRoundAndRepresentation(Array<int> &distributi
         }
         int num = PostOfficeSolver32::pow2z[z];     // 邮局的总数量
         PostOfficeResult por = PostOfficeSolver32::buildPostOffice(distribution, num, totalCountAndNonZerosCount[1], preNonZerosCount, postNonZerosCount);
-        int tempTotalCost = por.getAppCost() + presentCost;
+        int tempTotalCost = por.total_app_cost() + presentCost;
         if (tempTotalCost < totalCost) {
             totalCost = tempTotalCost;
-            positions = por.getOfficePositions();
+            positions = por.office_positions();
         }
     }
 

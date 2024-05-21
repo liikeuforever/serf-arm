@@ -5,7 +5,7 @@
 
 #include "serf/utils/array.h"
 #include "serf/utils/output_bit_stream.h"
-#include "serf/utils/PostOfficeResult.h"
+#include "serf/utils/post_office_result.h"
 
 class PostOfficeSolver32 {
 public:
