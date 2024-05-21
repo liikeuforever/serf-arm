@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "serf/utils/input_bit_stream.h"
-#include "serf/utils/OutputBitStream.h"
+#include "serf/utils/output_bit_stream.h"
 
 TEST(TestInputBitStream, BasicTest) {
     uint8_t test_data = 0b1011000;
@@ -12,26 +12,26 @@ TEST(TestInputBitStream, BasicTest) {
 
 TEST(TestOutputBitStream, BasicTest) {
     OutputBitStream output_bit_stream = OutputBitStream(1);
-    output_bit_stream.writeBit(true);
-    output_bit_stream.writeBit(false);
-    output_bit_stream.flush();
-    EXPECT_EQ(output_bit_stream.getBuffer()[0], 128);
+    output_bit_stream.WriteBit(true);
+    output_bit_stream.WriteBit(false);
+    output_bit_stream.Flush();
+    EXPECT_EQ(output_bit_stream.GetBuffer()[0], 128);
 }
 
 TEST(TestOutputBitStream, LongTest) {
     OutputBitStream output_bit_stream = OutputBitStream(10);
-    output_bit_stream.writeInt(0b00100011, 8);
-    output_bit_stream.writeInt(0b00011010, 8);
-    output_bit_stream.writeInt(0b01011010, 8);
-    output_bit_stream.writeInt(0b10011010, 8);
-    output_bit_stream.writeInt(0b00000010, 8);
-    output_bit_stream.writeInt(0b00010000, 8);
-    output_bit_stream.writeInt(0b01000010, 8);
-    output_bit_stream.writeInt(0b10000010, 8);
-    output_bit_stream.writeInt(0b00100010, 8);
-    output_bit_stream.flush();
+    output_bit_stream.WriteInt(0b00100011, 8);
+    output_bit_stream.WriteInt(0b00011010, 8);
+    output_bit_stream.WriteInt(0b01011010, 8);
+    output_bit_stream.WriteInt(0b10011010, 8);
+    output_bit_stream.WriteInt(0b00000010, 8);
+    output_bit_stream.WriteInt(0b00010000, 8);
+    output_bit_stream.WriteInt(0b01000010, 8);
+    output_bit_stream.WriteInt(0b10000010, 8);
+    output_bit_stream.WriteInt(0b00100010, 8);
+    output_bit_stream.Flush();
 
-    uint8_t *buffer = output_bit_stream.getBuffer();
+    uint8_t *buffer = output_bit_stream.GetBuffer();
 
     EXPECT_EQ(buffer[0], 0b00100011);
     EXPECT_EQ(buffer[1], 0b00011010);

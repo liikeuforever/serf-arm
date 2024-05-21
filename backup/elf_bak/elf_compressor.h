@@ -9,7 +9,7 @@
 
 #include "serf/utils/double.h"
 #include "serf/utils/array.h"
-#include "serf/utils/OutputBitStream.h"
+#include "serf/utils/output_bit_stream.h"
 #include "elf/elf_utils.h"
 
 class AbstractElfCompressor {

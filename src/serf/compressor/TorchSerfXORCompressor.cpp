@@ -27,13 +27,9 @@ Array<uint8_t> TorchSerfXORCompressor::addValue(uint64_t value) {
     }
     thisSize += compressValue(value);
     compressedSizeInBits += thisSize;
-    out->flush();
-    uint8_t *data_ptr = out->getBuffer();
-    Array<uint8_t> result(std::ceil(static_cast<double>(thisSize) / 8.0));
-    for (int i = 0; i < result.length(); ++i) {
-        result[i] = data_ptr[i];
-    }
-    out->refresh();
+    out->Flush();
+    Array<uint8_t> result = out->GetBuffer(std::ceil(static_cast<double>(thisSize) / 8.0));
+    out->Refresh();
     ++numberOfValues;
     return result;
 }
@@ -45,9 +41,9 @@ int TorchSerfXORCompressor::compressValue(uint64_t value) {
     if (xorResult == 0) {
         // case 01
         if (equalWin) {
-            thisSize += out->writeBit(true);
+            thisSize += out->WriteBit(true);
         } else {
-            thisSize += out->writeInt(1, 2);
+            thisSize += out->WriteInt(1, 2);
         }
         equalVote++;
     } else {
@@ -67,18 +63,22 @@ int TorchSerfXORCompressor::compressValue(uint64_t value) {
             if (equalWin) {
                 len = 2 + centerBits;
                 if (len > 64) {
-                    out->writeInt(1, 2);
-                    out->writeLong(xorResult >> storedTrailingZeros, centerBits);
+                    out->WriteInt(1, 2);
+                    out->WriteLong(xorResult >> storedTrailingZeros, centerBits);
                 } else {
-                    out->writeLong((1ULL << centerBits) | (xorResult >> storedTrailingZeros), 2 + centerBits);
+                    out->WriteLong((1ULL << centerBits) |
+                                   (xorResult >> storedTrailingZeros),
+                                   2 + centerBits);
                 }
             } else {
                 len = 1 + centerBits;
                 if (len > 64) {
-                    out->writeInt(1, 1);
-                    out->writeLong(xorResult >> storedTrailingZeros, centerBits);
+                    out->WriteInt(1, 1);
+                    out->WriteLong(xorResult >> storedTrailingZeros, centerBits);
                 } else {
-                    out->writeLong((1ULL << centerBits) | (xorResult >> storedTrailingZeros), 1 + centerBits);
+                    out->WriteLong((1ULL << centerBits) |
+                                   (xorResult >> storedTrailingZeros),
+                                   1 + centerBits);
                 }
             }
             thisSize += len;
@@ -91,14 +91,17 @@ int TorchSerfXORCompressor::compressValue(uint64_t value) {
             // case 00
             int len = 2 + leadingBitsPerValue + trailingBitsPerValue + centerBits;
             if (len > 64) {
-                out->writeInt((leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue)
+                out->WriteInt((leadingRepresentation[storedLeadingZeros]
+                                      << trailingBitsPerValue)
                               | trailingRepresentation[storedTrailingZeros],
                               2 + leadingBitsPerValue + trailingBitsPerValue);
-                out->writeLong(xorResult >> storedTrailingZeros, centerBits);
+                out->WriteLong(xorResult >> storedTrailingZeros, centerBits);
             } else {
-                out->writeLong(
-                        ((((uint64_t) leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue) |
-                          trailingRepresentation[storedTrailingZeros]) << centerBits) |
+                out->WriteLong(
+                        ((((uint64_t) leadingRepresentation[storedLeadingZeros]
+                                << trailingBitsPerValue) |
+                          trailingRepresentation[storedTrailingZeros])
+                                << centerBits) |
                         (xorResult >> storedTrailingZeros),
                         len
                 );
@@ -121,11 +124,11 @@ int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
         Array<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation,
                                                                                  trailingRound);
         trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length()];
-        len = static_cast<int>(out->writeInt(equalWin ? 3 : 1, 2))
+        len = static_cast<int>(out->WriteInt(equalWin ? 3 : 1, 2))
               + PostOfficeSolver::writePositions(leadPositions, out.get())
               + PostOfficeSolver::writePositions(trailPositions, out.get());
     } else {
-        len = static_cast<int>(out->writeInt(equalWin ? 2 : 0, 2));
+        len = static_cast<int>(out->WriteInt(equalWin ? 2 : 0, 2));
     }
     equalVote = 0;
     storedCompressionRatio = thisCompressionRatio;
@@ -160,14 +163,15 @@ std::vector<uint8_t> TorchSerfXORCompressor::addValue_vector(uint64_t value) {
     }
     thisSize += compressValue(value);
     compressedSizeInBits += thisSize;
-    out->flush();
-    uint8_t *data_ptr = out->getBuffer();
+    out->Flush();
+    Array<uint8_t> raw_data = out->GetBuffer(std::ceil(static_cast<double>
+            (thisSize) / 8.0));
     int ret_len = std::ceil(static_cast<double>(thisSize) / 8.0);
     std::vector<uint8_t> result(ret_len);
     for (int i = 0; i < ret_len; ++i) {
-        result[i] = data_ptr[i];
+        result[i] = raw_data[i];
     }
-    out->refresh();
+    out->Refresh();
     ++numberOfValues;
     return result;
 }

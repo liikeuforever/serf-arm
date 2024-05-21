@@ -43,9 +43,9 @@ Array<int> PostOfficeSolver32::initRoundAndRepresentation(Array<int> &distributi
 }
 
 int PostOfficeSolver32::writePositions(Array<int> &positions, OutputBitStream *out) {
-    int thisSize = out->writeInt(positions.length(), 4);
+    int thisSize = out->WriteInt(positions.length(), 4);
     for (int i = 0; i < positions.length(); i++) {
-        thisSize += out->writeInt(positions[i], 5);
+        thisSize += out->WriteInt(positions[i], 5);
     }
     return thisSize;
 }

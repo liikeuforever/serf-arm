@@ -4,7 +4,7 @@
 
 SerfXORCompressor32::SerfXORCompressor32(int capacity, float maxDiff): maxDiff(maxDiff) {
     this->out = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 4 + capacity / 4 + 1) * 1.2));
-    this->compressedSizeInBits = out->writeInt(0, 2);
+    this->compressedSizeInBits = out->WriteInt(0, 2);
 }
 
 void SerfXORCompressor32::addValue(float v) {
@@ -33,13 +33,9 @@ Array<uint8_t> SerfXORCompressor32::getBytes() {
 
 void SerfXORCompressor32::close() {
     compressedSizeInBits += compressValue(Float::FloatToIntBits(Float::kNan));
-    out->flush();
-    outBuffer = Array<uint8_t> (std::ceil(static_cast<double>(compressedSizeInBits) / 8.0));
-    uint8_t *buffer = out->getBuffer();
-    for (int i = 0; i < std::ceil(static_cast<double>(compressedSizeInBits) / 8.0); ++i) {
-        outBuffer[i] = buffer[i];
-    }
-    out->refresh();
+    out->Flush();
+    Array<uint8_t> result = out->GetBuffer(std::ceil(compressedSizeInBits / 8.0));
+    out->Refresh();
     storedCompressedSizeInBits = compressedSizeInBits;
     compressedSizeInBits = updateFlagAndPositionsIfNeeded();
 }
@@ -51,9 +47,9 @@ int SerfXORCompressor32::compressValue(uint32_t value) {
     if (xorResult == 0) {
         // case 01
         if (equalWin) {
-            thisSize += static_cast<int>(out->writeBit(true));
+            thisSize += static_cast<int>(out->WriteBit(true));
         } else {
-            thisSize += static_cast<int>(out->writeInt(1, 2));
+            thisSize += static_cast<int>(out->WriteInt(1, 2));
         }
         equalVote++;
     } else {
@@ -72,18 +68,22 @@ int SerfXORCompressor32::compressValue(uint32_t value) {
             if (equalWin) {
                 len = 2 + centerBits;
                 if (len > 32) {
-                    out->writeInt(1, 2);
-                    out->writeInt(xorResult >> storedTrailingZeros, centerBits);
+                    out->WriteInt(1, 2);
+                    out->WriteInt(xorResult >> storedTrailingZeros, centerBits);
                 } else {
-                    out->writeInt((1 << centerBits) | (xorResult >> storedTrailingZeros), 2 + centerBits);
+                    out->WriteInt((1 << centerBits) |
+                                  (xorResult >> storedTrailingZeros),
+                                  2 + centerBits);
                 }
             } else {
                 len = 1 + centerBits;
                 if (len > 32) {
-                    out->writeInt(1, 1);
-                    out->writeInt(xorResult >> storedTrailingZeros, centerBits);
+                    out->WriteInt(1, 1);
+                    out->WriteInt(xorResult >> storedTrailingZeros, centerBits);
                 } else {
-                    out->writeInt((1 << centerBits) | (xorResult >> storedTrailingZeros), 1 + centerBits);
+                    out->WriteInt((1 << centerBits) |
+                                  (xorResult >> storedTrailingZeros),
+                                  1 + centerBits);
                 }
             }
             thisSize += len;
@@ -96,13 +96,17 @@ int SerfXORCompressor32::compressValue(uint32_t value) {
             // case 00
             int len = 2 + leadingBitsPerValue + trailingBitsPerValue + centerBits;
             if (len > 32) {
-                out->writeInt((leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue)
-                             | trailingRepresentation[storedTrailingZeros], 2 + leadingBitsPerValue + trailingBitsPerValue);
-                out->writeInt(xorResult >> storedTrailingZeros, centerBits);
+                out->WriteInt((leadingRepresentation[storedLeadingZeros]
+                                      << trailingBitsPerValue)
+                              | trailingRepresentation[storedTrailingZeros],
+                              2 + leadingBitsPerValue + trailingBitsPerValue);
+                out->WriteInt(xorResult >> storedTrailingZeros, centerBits);
             } else {
-                out->writeInt((((leadingRepresentation[storedLeadingZeros] << trailingBitsPerValue)
-                               | trailingRepresentation[storedTrailingZeros]) << centerBits)
-                             | (xorResult >> storedTrailingZeros), len);
+                out->WriteInt((((leadingRepresentation[storedLeadingZeros]
+                        << trailingBitsPerValue)
+                                | trailingRepresentation[storedTrailingZeros])
+                        << centerBits)
+                              | (xorResult >> storedTrailingZeros), len);
             }
             thisSize += len;
         }
@@ -120,11 +124,11 @@ int SerfXORCompressor32::updateFlagAndPositionsIfNeeded() {
         leadingBitsPerValue = PostOfficeSolver32::positionLength2Bits[leadPositions.length()];
         Array<int> trailPositions = PostOfficeSolver32::initRoundAndRepresentation(trailDistribution, trailingRepresentation, trailingRound);
         trailingBitsPerValue = PostOfficeSolver32::positionLength2Bits[trailPositions.length()];
-        len = static_cast<int>(out->writeInt(equalWin ? 3 : 1, 2))
+        len = static_cast<int>(out->WriteInt(equalWin ? 3 : 1, 2))
               + PostOfficeSolver32::writePositions(leadPositions, out.get())
               + PostOfficeSolver32::writePositions(trailPositions, out.get());
     } else {
-        len = static_cast<int>(out->writeInt(equalWin ? 2 : 0, 2));
+        len = static_cast<int>(out->WriteInt(equalWin ? 2 : 0, 2));
     }
     equalVote = 0;
     storedCompressionRatio = thisCompressionRatio;

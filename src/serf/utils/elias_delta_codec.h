@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-#include "serf/utils/OutputBitStream.h"
+#include "serf/utils/output_bit_stream.h"
 #include "serf/utils/input_bit_stream.h"
 #include "serf/utils/double.h"
 

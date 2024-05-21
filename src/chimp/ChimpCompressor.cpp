@@ -18,7 +18,7 @@ void ChimpCompressor::addValue(double v) {
     if (first_) {
         first_ = false;
         storedValues_[current_] = value;
-        size_ += output_bit_stream_->writeLong(storedValues_[current_], 64);
+        size_ += output_bit_stream_->WriteLong(storedValues_[current_], 64);
         indices_[((int) value) & setLsb_] = index_;
     } else {
         int key = (int) value & setLsb_;
@@ -42,25 +42,32 @@ void ChimpCompressor::addValue(double v) {
         }
 
         if (xored_value == 0) {
-            size_ += output_bit_stream_->writeInt(previousIndex, flagZeroSize_);
+            size_ += output_bit_stream_->WriteInt(previousIndex, flagZeroSize_);
             storedLeadingZeros_ = 65;
         } else {
             int leadingZeros = leadingRnd_[__builtin_clzll(xored_value)];
 
             if (trailingZeros > threshold_) {
                 int significantBits = 64 - leadingZeros - trailingZeros;
-                size_ += output_bit_stream_->writeInt(512 * (previousValues_ + previousIndex) + 64 * leadingRep_[leadingZeros] + significantBits, flagOneSize_);
-                size_ += output_bit_stream_->writeLong(xored_value >> trailingZeros, significantBits);
+                size_ += output_bit_stream_->WriteInt(
+                        512 * (previousValues_ + previousIndex) +
+                        64 * leadingRep_[leadingZeros] + significantBits,
+                        flagOneSize_);
+                size_ += output_bit_stream_->WriteLong(
+                        xored_value >> trailingZeros, significantBits);
                 storedLeadingZeros_ = 65;
             } else if (leadingZeros == storedLeadingZeros_) {
-                size_ += output_bit_stream_->writeInt(2, 2);
+                size_ += output_bit_stream_->WriteInt(2, 2);
                 int significantBits = 64 - leadingZeros;
-                size_ += output_bit_stream_->writeLong(xored_value, significantBits);
+                size_ += output_bit_stream_->WriteLong(xored_value,
+                                                       significantBits);
             } else {
                 storedLeadingZeros_ = leadingZeros;
                 int significantBits = 64 - leadingZeros;
-                size_ += output_bit_stream_->writeInt(24 + leadingRep_[leadingZeros], 5);
-                size_ += output_bit_stream_->writeLong(xored_value, significantBits);
+                size_ += output_bit_stream_->WriteInt(
+                        24 + leadingRep_[leadingZeros], 5);
+                size_ += output_bit_stream_->WriteLong(xored_value,
+                                                       significantBits);
             }
         }
 
@@ -73,7 +80,7 @@ void ChimpCompressor::addValue(double v) {
 
 void ChimpCompressor::close() {
     addValue(std::numeric_limits<double>::quiet_NaN());
-    output_bit_stream_->flush();
+    output_bit_stream_->Flush();
 }
 
 long ChimpCompressor::get_size() {
@@ -81,11 +88,6 @@ long ChimpCompressor::get_size() {
 }
 
 Array<uint8_t> ChimpCompressor::get_compress_pack() {
-    uint8_t *data_ptr = output_bit_stream_->getBuffer();
-    int compress_pack_len_in_bytes = std::ceil(size_ / 8.0);
-    compress_pack_ = Array<uint8_t>(compress_pack_len_in_bytes);
-    for (int i = 0; i < compress_pack_len_in_bytes; ++i) {
-        compress_pack_[i] = data_ptr[i];
-    }
+    compress_pack_ = output_bit_stream_->GetBuffer(std::ceil(size_ / 8.0));
     return compress_pack_;
 }

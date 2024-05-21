@@ -21,19 +21,19 @@ int EliasDeltaCodec::Encode(int64_t number,
     int total_len = length_of_len + length_of_len + len;
     if (total_len <= 64) {
         compressed_size_in_bits += static_cast<int>(
-                output_bit_stream_ptr->writeLong(
+                output_bit_stream_ptr->WriteLong(
                         ((int64_t) len << (len - 1)) |
                         (number & ~(0xffffffffffffffffL << (len - 1))),
                         total_len));
     } else {
         compressed_size_in_bits += static_cast<int>(
-                output_bit_stream_ptr->writeInt(
+                output_bit_stream_ptr->WriteInt(
                         0, length_of_len));
         compressed_size_in_bits += static_cast<int>(
-                output_bit_stream_ptr->writeInt(
+                output_bit_stream_ptr->WriteInt(
                         len, length_of_len + 1));
         compressed_size_in_bits += static_cast<int>(
-                output_bit_stream_ptr->writeLong(
+                output_bit_stream_ptr->WriteLong(
                         number, len - 1));
     }
     return compressed_size_in_bits;

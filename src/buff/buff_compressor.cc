@@ -59,22 +59,19 @@ SparseResult BuffCompressor::findMajority(Array<uint8_t> nums) {
 }
 
 Array<uint8_t> BuffCompressor::get_out() {
-    uint8_t *data_ptr = output_bit_stream_->getBuffer();
-    Array<uint8_t> out = Array<uint8_t>(std::ceil(size_ / 8.0));
-    for (int i = 0; i < out.length(); ++i) {
-        out[i] = data_ptr[i];
-    }
+    Array<uint8_t> out = output_bit_stream_->GetBuffer(std::ceil(size_ / 8.0));
     return out;
 }
 
 void BuffCompressor::wholeWidthLongCompress(Array<double> values) {
     for (const auto &value: values) {
-        size_ += output_bit_stream_->writeLong(Double::DoubleToLongBits(value), 64);
+        size_ += output_bit_stream_->WriteLong(Double::DoubleToLongBits(value),
+                                               64);
     }
 }
 
 void BuffCompressor::close() {
-    output_bit_stream_->flush();
+    output_bit_stream_->Flush();
 }
 
 long BuffCompressor::get_size() {
@@ -84,10 +81,10 @@ long BuffCompressor::get_size() {
 void BuffCompressor::compress(const Array<double> &values) {
     headSample(values);
     Array<Array<uint8_t>> cols = encode(values);
-    size_ += output_bit_stream_->writeLong(lower_bound_, 64);
-    size_ += output_bit_stream_->writeInt(batch_size_, 32);
-    size_ += output_bit_stream_->writeInt(max_prec_, 32);
-    size_ += output_bit_stream_->writeInt(int_width_, 32);
+    size_ += output_bit_stream_->WriteLong(lower_bound_, 64);
+    size_ += output_bit_stream_->WriteInt(batch_size_, 32);
+    size_ += output_bit_stream_->WriteInt(max_prec_, 32);
+    size_ += output_bit_stream_->WriteInt(int_width_, 32);
     if (whole_width_ >= 64) {
         wholeWidthLongCompress(values);
     } else {
@@ -172,24 +169,25 @@ void BuffCompressor::sparseEncode(Array<Array<uint8_t>> &cols) {
     for (int i = 0; i < column_count_; ++i) {
         SparseResult result = findMajority(cols[i]);
         if (result.flag_) {
-            size_ += output_bit_stream_->writeBit(true);
+            size_ += output_bit_stream_->WriteBit(true);
             serialize(result);
         } else {
-            size_ += output_bit_stream_->writeBit(false);
+            size_ += output_bit_stream_->WriteBit(false);
             for (int j = 0; j < batch_size_; ++j) {
-                size_ += output_bit_stream_->writeInt(cols[i][j], 8);
+                size_ += output_bit_stream_->WriteInt(cols[i][j], 8);
             }
         }
     }
 }
 
 void BuffCompressor::serialize(SparseResult sr) {
-    size_ += output_bit_stream_->writeInt(sr.frequent_value_, 8);
+    size_ += output_bit_stream_->WriteInt(sr.frequent_value_, 8);
     for (int i = 0; i < batch_size_ / 8; ++i) {
-        size_ += output_bit_stream_->writeInt(sr.bitmap_[i], 8);
+        size_ += output_bit_stream_->WriteInt(sr.bitmap_[i], 8);
     }
-    size_ += output_bit_stream_->writeInt(sr.bitmap_[batch_size_ / 8], batch_size_ % 8);
+    size_ += output_bit_stream_->WriteInt(sr.bitmap_[batch_size_ / 8],
+                                          batch_size_ % 8);
     for (int i = 0; i < sr.outliers_count_; ++i) {
-        size_ += output_bit_stream_->writeInt(sr.outliers_[i], 8);
+        size_ += output_bit_stream_->WriteInt(sr.outliers_[i], 8);
     }
 }

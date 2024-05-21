@@ -2,7 +2,7 @@
 
 SerfXORCompressor::SerfXORCompressor(int capacity, double max_diff, long adjust_digit) : max_diff_(max_diff), adjust_digit_(adjust_digit) {
     output_buffer_ = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
-    compressed_size_in_bits_ = output_buffer_->writeInt(0, 2);
+    compressed_size_in_bits_ = output_buffer_->WriteInt(0, 2);
 }
 
 void SerfXORCompressor::AddValue(double v) {
@@ -32,10 +32,9 @@ Array<uint8_t> SerfXORCompressor::compressed_bytes() {
 
 void SerfXORCompressor::Close() {
     compressed_size_in_bits_ += CompressValue(Double::DoubleToLongBits(Double::kNan));
-    output_buffer_->flush();
-    compressed_bytes_ = Array<uint8_t>(std::ceil((double) compressed_size_in_bits_ / 8.0));
-    __builtin_memcpy(compressed_bytes_.begin(), output_buffer_->getBuffer(), compressed_bytes_.length());
-    output_buffer_->refresh();
+    output_buffer_->Flush();
+    compressed_bytes_ = output_buffer_->GetBuffer(std::ceil((double) compressed_size_in_bits_ / 8.0));
+    output_buffer_->Refresh();
     stored_compressed_size_in_bits_ = compressed_size_in_bits_;
     compressed_size_in_bits_ = UpdateFlagAndPositionsIfNeeded();
 }
@@ -46,7 +45,8 @@ int SerfXORCompressor::CompressValue(uint64_t value) {
 
     if (__builtin_expect(xor_result == 0, true)) {
         // case 01
-        this_size += equal_win_ ? output_buffer_->writeBit(true) : output_buffer_->writeInt(1, 2);
+        this_size += equal_win_ ? output_buffer_->WriteBit(true) : output_buffer_->WriteInt(
+                1, 2);
         equal_vote_++;
     } else {
         int leading_count = __builtin_clzll(xor_result);
@@ -65,18 +65,26 @@ int SerfXORCompressor::CompressValue(uint64_t value) {
             if (equal_win_) {
                 len = 2 + center_bits;
                 if (len > 64) {
-                    output_buffer_->writeInt(1, 2);
-                    output_buffer_->writeLong(xor_result >> stored_trailing_zeros_, center_bits);
+                    output_buffer_->WriteInt(1, 2);
+                    output_buffer_->WriteLong(
+                            xor_result >> stored_trailing_zeros_, center_bits);
                 } else {
-                    output_buffer_->writeLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 2 + center_bits);
+                    output_buffer_->WriteLong((1ULL << center_bits) |
+                                              (xor_result
+                                                      >> stored_trailing_zeros_),
+                                              2 + center_bits);
                 }
             } else {
                 len = 1 + center_bits;
                 if (len > 64) {
-                    output_buffer_->writeInt(1, 1);
-                    output_buffer_->writeLong(xor_result >> stored_trailing_zeros_, center_bits);
+                    output_buffer_->WriteInt(1, 1);
+                    output_buffer_->WriteLong(
+                            xor_result >> stored_trailing_zeros_, center_bits);
                 } else {
-                    output_buffer_->writeLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 1 + center_bits);
+                    output_buffer_->WriteLong((1ULL << center_bits) |
+                                              (xor_result
+                                                      >> stored_trailing_zeros_),
+                                              1 + center_bits);
                 }
             }
             this_size += len;
@@ -89,14 +97,19 @@ int SerfXORCompressor::CompressValue(uint64_t value) {
             // case 00
             int len = 2 + leading_bits_per_value_ + trailing_bits_per_value_ + center_bits;
             if (len > 64) {
-                output_buffer_->writeInt((leading_representation_[stored_leading_zeros_] << trailing_bits_per_value_)
-                                         | trailing_representation_[stored_trailing_zeros_],
-                                         2 + leading_bits_per_value_ + trailing_bits_per_value_);
-                output_buffer_->writeLong(xor_result >> stored_trailing_zeros_, center_bits);
+                output_buffer_->WriteInt(
+                        (leading_representation_[stored_leading_zeros_]
+                                << trailing_bits_per_value_)
+                        | trailing_representation_[stored_trailing_zeros_],
+                        2 + leading_bits_per_value_ + trailing_bits_per_value_);
+                output_buffer_->WriteLong(xor_result >> stored_trailing_zeros_,
+                                          center_bits);
             } else {
-                output_buffer_->writeLong(
-                        ((((uint64_t) leading_representation_[stored_leading_zeros_] << trailing_bits_per_value_) |
-                          trailing_representation_[stored_trailing_zeros_]) << center_bits) |
+                output_buffer_->WriteLong(
+                        ((((uint64_t) leading_representation_[stored_leading_zeros_]
+                                << trailing_bits_per_value_) |
+                          trailing_representation_[stored_trailing_zeros_])
+                                << center_bits) |
                         (xor_result >> stored_trailing_zeros_),
                         len
                 );
@@ -119,11 +132,11 @@ int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
         Array<int> trail_positions = PostOfficeSolver::initRoundAndRepresentation(trail_distribution_, trailing_representation_,
                                                                                   trailing_round_);
         trailing_bits_per_value_ = PostOfficeSolver::positionLength2Bits[trail_positions.length()];
-        len = output_buffer_->writeInt(equal_win_ ? 3 : 1, 2)
+        len = output_buffer_->WriteInt(equal_win_ ? 3 : 1, 2)
               + PostOfficeSolver::writePositions(lead_positions, output_buffer_.get())
               + PostOfficeSolver::writePositions(trail_positions, output_buffer_.get());
     } else {
-        len = output_buffer_->writeInt(equal_win_ ? 2 : 0, 2);
+        len = output_buffer_->WriteInt(equal_win_ ? 2 : 0, 2);
     }
     equal_vote_ = 0;
     stored_compression_ratio_ = this_compression_ratio;

@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 
-#include "serf/utils/OutputBitStream.h"
+#include "serf/utils/output_bit_stream.h"
 
 #define SIZE 32768
 

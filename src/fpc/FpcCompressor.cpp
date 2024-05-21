@@ -79,14 +79,14 @@ void FpcCompressor::addValue(double v) {
     i++;
 
     // 第一个outbuf写入数据时，前面的所有数据都已经稳定，可以write进数据流中
-    outStream.writeInt(code, 4);
+    outStream.WriteInt(code, 4);
     compressedSizeInBits += 4;
 
     if (bcode >= 4) {
-        outStream.writeLong(xor1, (bcode + 1) * 8);
+        outStream.WriteLong(xor1, (bcode + 1) * 8);
         compressedSizeInBits += (bcode + 1) * 8;
     } else if (bcode > 0) {
-        outStream.writeLong(xor1, bcode * 8);
+        outStream.WriteLong(xor1, bcode * 8);
         compressedSizeInBits += bcode * 8;
     }
 }
@@ -95,7 +95,7 @@ std::vector<char> FpcCompressor::getBytes() {
     int byteCount = std::ceil(compressedSizeInBits / 8.0);
     std::vector<char> result;
     result.reserve(byteCount);
-    auto bytes = outStream.getBuffer();
+    auto bytes = outStream.GetBuffer(byteCount);
     for (int i = 0; i < byteCount; ++i) {
         result.push_back(static_cast<char>(bytes[i]));
     }
@@ -107,5 +107,5 @@ void FpcCompressor::close() {
         out -= bcode + (bcode >> 2);
     }
     i = 0;
-    outStream.flush();
+    outStream.Flush();
 }

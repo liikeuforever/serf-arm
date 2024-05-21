@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "serf/utils/double.h"
-#include "serf/utils/OutputBitStream.h"
+#include "serf/utils/output_bit_stream.h"
 #include "serf/utils/Serf64Utils.h"
 #include "serf/utils/PostOfficeSolver.h"
 #include "serf/utils/array.h"
