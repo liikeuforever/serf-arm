@@ -1,6 +1,6 @@
 #include "SerfXORCompressor32.h"
 #include "serf/utils/Serf32Utils.h"
-#include "serf/utils/PostOfficeSolver32.h"
+#include "serf/utils/post_office_solver_32.h"
 
 SerfXORCompressor32::SerfXORCompressor32(int capacity, float maxDiff): maxDiff(maxDiff) {
     this->out = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 4 + capacity / 4 + 1) * 1.2));
@@ -120,13 +120,15 @@ int SerfXORCompressor32::updateFlagAndPositionsIfNeeded() {
     double thisCompressionRatio = static_cast<double>(compressedSizeInBits) / (numberOfValues * 32.0);
     if (storedCompressionRatio < thisCompressionRatio) {
         // update positions
-        Array<int> leadPositions = PostOfficeSolver32::initRoundAndRepresentation(leadDistribution, leadingRepresentation, leadingRound);
-        leadingBitsPerValue = PostOfficeSolver32::positionLength2Bits[leadPositions.length()];
-        Array<int> trailPositions = PostOfficeSolver32::initRoundAndRepresentation(trailDistribution, trailingRepresentation, trailingRound);
-        trailingBitsPerValue = PostOfficeSolver32::positionLength2Bits[trailPositions.length()];
+        Array<int> leadPositions = PostOfficeSolver32::InitRoundAndRepresentation(
+                leadDistribution, leadingRepresentation, leadingRound);
+        leadingBitsPerValue = PostOfficeSolver32::kPositionLength2Bits[leadPositions.length()];
+        Array<int> trailPositions = PostOfficeSolver32::InitRoundAndRepresentation(
+                trailDistribution, trailingRepresentation, trailingRound);
+        trailingBitsPerValue = PostOfficeSolver32::kPositionLength2Bits[trailPositions.length()];
         len = static_cast<int>(out->WriteInt(equalWin ? 3 : 1, 2))
-              + PostOfficeSolver32::writePositions(leadPositions, out.get())
-              + PostOfficeSolver32::writePositions(trailPositions, out.get());
+              + PostOfficeSolver32::WritePositions(leadPositions, out.get())
+              + PostOfficeSolver32::WritePositions(trailPositions, out.get());
     } else {
         len = static_cast<int>(out->WriteInt(equalWin ? 2 : 0, 2));
     }

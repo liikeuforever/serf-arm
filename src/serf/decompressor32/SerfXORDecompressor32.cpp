@@ -68,7 +68,7 @@ void SerfXORDecompressor32::updateLeadingRepresentation() {
     if (num == 0) {
         num = 16;
     }
-    leadingBitsPerValue = PostOfficeSolver32::positionLength2Bits[num];
+    leadingBitsPerValue = PostOfficeSolver32::kPositionLength2Bits[num];
     leadingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
         leadingRepresentation[i] = static_cast<int>(in->ReadInt(5));
@@ -80,7 +80,7 @@ void SerfXORDecompressor32::updateTrailingRepresentation() {
     if (num == 0) {
         num = 16;
     }
-    trailingBitsPerValue = PostOfficeSolver32::positionLength2Bits[num];
+    trailingBitsPerValue = PostOfficeSolver32::kPositionLength2Bits[num];
     trailingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
         trailingRepresentation[i] = static_cast<int>(in->ReadInt(5));
