@@ -1,4 +1,4 @@
-add_library(ALP SHARED
+add_library(alp SHARED
         falp.cpp
         fastlanes_generated_unffor.cpp
         fastlanes_generated_ffor.cpp

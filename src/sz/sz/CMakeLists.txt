@@ -4,7 +4,7 @@ else ()
   set (BUILD_EXT_LIBS_TYPE "STATIC")
 endif ()
 
-add_library (SZ ${BUILD_EXT_LIBS_TYPE}
+add_library (sz ${BUILD_EXT_LIBS_TYPE}
   src/ArithmeticCoding.c
   src/ByteToolkit.c
   src/CacheTable.c
@@ -65,7 +65,7 @@ add_library (SZ ${BUILD_EXT_LIBS_TYPE}
   src/sz_stats.c
 )
 
-target_include_directories(SZ 
+target_include_directories(sz
   PRIVATE 
   ${CMAKE_BINARY_DIR}
   PUBLIC 
@@ -84,7 +84,7 @@ else ()
     set (LIB_DEBUG_NAME "SZ${CMAKE_DEBUG_POSTFIX}")
   endif ()
 endif ()
-set_target_properties (SZ PROPERTIES
+set_target_properties (sz PROPERTIES
     OUTPUT_NAME                ${LIB_RELEASE_NAME}
 #    OUTPUT_NAME_DEBUG          ${LIB_DEBUG_NAME}
     OUTPUT_NAME_RELEASE        ${LIB_RELEASE_NAME}
@@ -93,9 +93,9 @@ set_target_properties (SZ PROPERTIES
   )
 
 if (WIN32 AND NOT MINGW)
-    target_link_libraries (SZ PUBLIC ${ZLIB_dep} ${ZSTD_dep})
+    target_link_libraries (sz PUBLIC ${ZLIB_dep} ${ZSTD_dep})
 else ()
-    target_link_libraries (SZ PUBLIC ${ZLIB_dep} ${ZSTD_dep} m)
+    target_link_libraries (sz PUBLIC ${ZLIB_dep} ${ZSTD_dep} m)
 endif ()
 
 if (WIN32 AND NOT MINGW)
@@ -105,7 +105,7 @@ if (WIN32 AND NOT MINGW)
     )
 else ()
     message(STATUS "GCC detected, adding compile flags")
-    target_compile_options(SZ
+    target_compile_options(sz
         PRIVATE $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic -Wno-unused-parameter>
     )
 endif()
@@ -133,7 +133,7 @@ if(BUILD_STATS)
   target_compile_definitions(SZ PUBLIC HAVE_WRITESTATS)
 endif()
 
-install (TARGETS SZ ${thirdparty_export} EXPORT SZConfig
+install (TARGETS sz ${thirdparty_export} EXPORT SZConfig
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -141,4 +141,4 @@ install (TARGETS SZ ${thirdparty_export} EXPORT SZConfig
 
 install (EXPORT SZConfig DESTINATION share/SZ/cmake)
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sz)
-export(TARGETS SZ FILE SZ.cmake)
+export(TARGETS sz FILE SZ.cmake)

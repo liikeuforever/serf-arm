@@ -13,14 +13,14 @@
 #include "serf/decompressor/tensor_serf_xor_decompressor.h"
 #include "serf/compressor/serf_qt_compressor.h"
 #include "serf/decompressor/serf_qt_decompressor.h"
-#include "serf/compressor32/serf_xor_compressor_32.h"
-#include "serf/decompressor32/serf_xor_decompressor_32.h"
+#include "serf/compressor_32/serf_xor_compressor_32.h"
+#include "serf/decompressor_32/serf_xor_decompressor_32.h"
 #include "serf/compressor/net_serf_xor_compressor.h"
 #include "serf/decompressor/net_serf_xor_decompressor.h"
 #include "serf/compressor/net_serf_qt_compressor.h"
 #include "serf/decompressor/net_serf_qt_decompressor.h"
-#include "serf/compressor32/serf_qt_compressor_32.h"
-#include "serf/decompressor32/serf_qt_decompressor_32.h"
+#include "serf/compressor_32/serf_qt_compressor_32.h"
+#include "serf/decompressor_32/serf_qt_decompressor_32.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/dataSet";
