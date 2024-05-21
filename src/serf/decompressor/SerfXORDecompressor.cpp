@@ -1,5 +1,5 @@
 #include "SerfXORDecompressor.h"
-#include "serf/utils/PostOfficeSolver.h"
+#include "serf/utils/post_office_solver.h"
 
 std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {
     in->SetBuffer(bs);
@@ -69,7 +69,7 @@ void SerfXORDecompressor::updateLeadingRepresentation() {
     if (num == 0) {
         num = 32;
     }
-    leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
+    leadingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[num];
     leadingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
         leadingRepresentation[i] = static_cast<int>(in->ReadInt(6));
@@ -81,7 +81,7 @@ void SerfXORDecompressor::updateTrailingRepresentation() {
     if (num == 0) {
         num = 32;
     }
-    trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
+    trailingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[num];
     trailingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
         trailingRepresentation[i] = static_cast<int>(in->ReadInt(6));

@@ -126,15 +126,19 @@ int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
     double this_compression_ratio = (double) compressed_size_in_bits_ / (number_of_values_ * 64);
     if (stored_compression_ratio_ < this_compression_ratio) {
         // update positions
-        Array<int> lead_positions = PostOfficeSolver::initRoundAndRepresentation(lead_distribution_, leading_representation_,
-                                                                                 leading_round_);
-        leading_bits_per_value_ = PostOfficeSolver::positionLength2Bits[lead_positions.length()];
-        Array<int> trail_positions = PostOfficeSolver::initRoundAndRepresentation(trail_distribution_, trailing_representation_,
-                                                                                  trailing_round_);
-        trailing_bits_per_value_ = PostOfficeSolver::positionLength2Bits[trail_positions.length()];
+        Array<int> lead_positions = PostOfficeSolver::InitRoundAndRepresentation(
+                lead_distribution_, leading_representation_,
+                leading_round_);
+        leading_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[lead_positions.length()];
+        Array<int> trail_positions = PostOfficeSolver::InitRoundAndRepresentation(
+                trail_distribution_, trailing_representation_,
+                trailing_round_);
+        trailing_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[trail_positions.length()];
         len = output_buffer_->WriteInt(equal_win_ ? 3 : 1, 2)
-              + PostOfficeSolver::writePositions(lead_positions, output_buffer_.get())
-              + PostOfficeSolver::writePositions(trail_positions, output_buffer_.get());
+              + PostOfficeSolver::WritePositions(lead_positions,
+                                                 output_buffer_.get())
+              + PostOfficeSolver::WritePositions(trail_positions,
+                                                 output_buffer_.get());
     } else {
         len = output_buffer_->WriteInt(equal_win_ ? 2 : 0, 2);
     }

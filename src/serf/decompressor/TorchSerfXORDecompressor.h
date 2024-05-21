@@ -9,7 +9,7 @@
 #include "serf/utils/double.h"
 #include "serf/utils/array.h"
 #include "serf/utils/input_bit_stream.h"
-#include "serf/utils/PostOfficeSolver.h"
+#include "serf/utils/post_office_solver.h"
 
 class TorchSerfXORDecompressor {
 private:

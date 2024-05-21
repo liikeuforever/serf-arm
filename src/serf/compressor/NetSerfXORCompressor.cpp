@@ -1,5 +1,5 @@
 #include "NetSerfXORCompressor.h"
-#include "serf/utils/PostOfficeSolver.h"
+#include "serf/utils/post_office_solver.h"
 
 NetSerfXORCompressor::NetSerfXORCompressor(double maxDiff, long adjustD):maxDiff(maxDiff), adjustD(adjustD) {
     this->out = std::make_unique<OutputBitStream>(5 * 64);
@@ -118,13 +118,15 @@ int NetSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     double thisCompressionRatio = compressedSizeInBits / (numberOfValues * 64.0);
     if (storedCompressionRatio < thisCompressionRatio) {
         // update positions
-        Array<int> leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation, leadingRound);
-        leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.length()];
-        Array<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation, trailingRound);
-        trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length()];
+        Array<int> leadPositions = PostOfficeSolver::InitRoundAndRepresentation(
+                leadDistribution, leadingRepresentation, leadingRound);
+        leadingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[leadPositions.length()];
+        Array<int> trailPositions = PostOfficeSolver::InitRoundAndRepresentation(
+                trailDistribution, trailingRepresentation, trailingRound);
+        trailingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[trailPositions.length()];
         len = out->WriteInt(equalWin ? 3 : 1, 2)
-              + PostOfficeSolver::writePositions(leadPositions, out.get())
-              + PostOfficeSolver::writePositions(trailPositions, out.get());
+              + PostOfficeSolver::WritePositions(leadPositions, out.get())
+              + PostOfficeSolver::WritePositions(trailPositions, out.get());
     } else {
         len = out->WriteInt(equalWin ? 2 : 0, 2);
     }

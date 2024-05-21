@@ -77,7 +77,7 @@ void NetSerfXORDecompressor::updateLeadingRepresentation() {
     if (num == 0) {
         num = 32;
     }
-    leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
+    leadingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[num];
     leadingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
         leadingRepresentation[i] = in->ReadInt(6);
@@ -89,7 +89,7 @@ void NetSerfXORDecompressor::updateTrailingRepresentation() {
     if (num == 0) {
         num = 32;
     }
-    trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[num];
+    trailingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[num];
     trailingRepresentation = Array<int>(num);
     for (int i = 0; i < num; i++) {
         trailingRepresentation[i] = in->ReadInt(6);

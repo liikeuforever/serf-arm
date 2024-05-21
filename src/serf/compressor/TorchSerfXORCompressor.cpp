@@ -118,15 +118,17 @@ int TorchSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
     double thisCompressionRatio = static_cast<double>(compressedSizeInBits) / (numberOfValues * 64.0);
     if (storedCompressionRatio < thisCompressionRatio) {
         // update positions
-        Array<int> leadPositions = PostOfficeSolver::initRoundAndRepresentation(leadDistribution, leadingRepresentation,
-                                                                                leadingRound);
-        leadingBitsPerValue = PostOfficeSolver::positionLength2Bits[leadPositions.length()];
-        Array<int> trailPositions = PostOfficeSolver::initRoundAndRepresentation(trailDistribution, trailingRepresentation,
-                                                                                 trailingRound);
-        trailingBitsPerValue = PostOfficeSolver::positionLength2Bits[trailPositions.length()];
+        Array<int> leadPositions = PostOfficeSolver::InitRoundAndRepresentation(
+                leadDistribution, leadingRepresentation,
+                leadingRound);
+        leadingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[leadPositions.length()];
+        Array<int> trailPositions = PostOfficeSolver::InitRoundAndRepresentation(
+                trailDistribution, trailingRepresentation,
+                trailingRound);
+        trailingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[trailPositions.length()];
         len = static_cast<int>(out->WriteInt(equalWin ? 3 : 1, 2))
-              + PostOfficeSolver::writePositions(leadPositions, out.get())
-              + PostOfficeSolver::writePositions(trailPositions, out.get());
+              + PostOfficeSolver::WritePositions(leadPositions, out.get())
+              + PostOfficeSolver::WritePositions(trailPositions, out.get());
     } else {
         len = static_cast<int>(out->WriteInt(equalWin ? 2 : 0, 2));
     }
