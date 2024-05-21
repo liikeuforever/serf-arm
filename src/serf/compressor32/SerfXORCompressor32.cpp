@@ -1,5 +1,5 @@
 #include "SerfXORCompressor32.h"
-#include "serf/utils/Serf32Utils.h"
+#include "serf/utils/serf_utils_32.h"
 #include "serf/utils/post_office_solver_32.h"
 
 SerfXORCompressor32::SerfXORCompressor32(int capacity, float maxDiff): maxDiff(maxDiff) {
@@ -12,7 +12,8 @@ void SerfXORCompressor32::addValue(float v) {
     // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
     if (std::abs(Float::IntBitsToFloat(storedVal) - v) > maxDiff) {
         // in our implementation, we do not consider special cases and overflow case
-        thisVal = Serf32Utils::findAppInt(v - maxDiff, v + maxDiff, v, storedVal, maxDiff);
+        thisVal = SerfUtils32::FindAppInt(v - maxDiff, v + maxDiff, v,
+                                          storedVal, maxDiff);
     } else {
         // let current value be the last value, making an XORed value of 0.
         thisVal = storedVal;

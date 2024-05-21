@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "serf/utils/Serf32Utils.h"
+#include "serf/utils/serf_utils_32.h"
 #include "serf/utils/post_office_solver_32.h"
 #include "serf/utils/float.h"
 #include "serf/utils/input_bit_stream.h"
