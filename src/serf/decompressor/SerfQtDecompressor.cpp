@@ -8,7 +8,8 @@ std::vector<double> SerfQtDecompressor::Decompress() {
 }
 
 double SerfQtDecompressor::NextValue() {
-    int64_t decodeValue = ZigZagCodec::decode(EliasDeltaCodec::Decode(input_bit_stream_.get()) - 1);
+    int64_t decodeValue = ZigZagCodec::Decode(
+        EliasDeltaCodec::Decode(input_bit_stream_.get()) - 1);
     double recoverValue = pre_value_ + 2 * max_diff_ * static_cast<double>(decodeValue);
     pre_value_ = recoverValue;
     return recoverValue;

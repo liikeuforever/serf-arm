@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "serf/utils/input_bit_stream.h"
-#include "serf/utils/ZigZagCodec.h"
+#include "serf/utils/zig_zag_codec.h"
 #include "serf/utils/elias_delta_codec.h"
 
 class NetSerfQtDecompressor {

@@ -16,7 +16,7 @@ void SerfQtCompressor32::addValue(float v) {
         preValue = v;
     } else {
         compressedBits += out->WriteBit(false);
-        compressedBits += EliasDeltaCodec::Encode(ZigZagCodec::encode(q) + 1, out.get());
+        compressedBits += EliasDeltaCodec::Encode(ZigZagCodec::Encode(q) + 1, out.get());
         preValue = recoverValue;
     }
 }

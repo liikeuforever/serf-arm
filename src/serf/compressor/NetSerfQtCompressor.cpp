@@ -15,7 +15,7 @@ Array<uint8_t> NetSerfQtCompressor::compress(double v) {
         preValue = v;
     } else {
         writtenBitsCount += out->WriteBit(false);
-        writtenBitsCount += EliasDeltaCodec::Encode(ZigZagCodec::encode(q) + 1, out.get());
+        writtenBitsCount += EliasDeltaCodec::Encode(ZigZagCodec::Encode(q) + 1, out.get());
         preValue = recoverValue;
     }
     out->Flush();

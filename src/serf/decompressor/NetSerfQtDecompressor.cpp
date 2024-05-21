@@ -7,7 +7,8 @@ double NetSerfQtDecompressor::decompress(Array<uint8_t> &bs) {
     in->ReadInt(4);
     int exceptionFlag = in->ReadInt(1);
     if (exceptionFlag == 0) {
-        long decodeValue = ZigZagCodec::decode(EliasDeltaCodec::Decode(in.get()) - 1);
+        long decodeValue =
+            ZigZagCodec::Decode(EliasDeltaCodec::Decode(in.get()) - 1);
         preValue = preValue + 2 * maxDiff * decodeValue;
     } else {
         int leadingZeroCount = in->ReadInt(5);
