@@ -17,8 +17,8 @@ class NetSerfXORCompressor {
 
  private:
   const int kBlockSize;
-  const double max_diff_;
-  const long adjust_digit_;
+  const double kMaxDiff;
+  const long kAdjustDigit;
 
   uint64_t stored_val_ = Double::DoubleToLongBits(2);
   std::unique_ptr<OutputBitStream> output_bit_stream_;

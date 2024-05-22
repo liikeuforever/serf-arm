@@ -2,18 +2,18 @@
 #include "serf/utils/post_office_solver.h"
 
 NetSerfXORCompressor::NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit): kBlockSize(capacity),
-max_diff_(max_diff), adjust_digit_(adjust_digit) {
+                                                                                              kMaxDiff(max_diff), kAdjustDigit(adjust_digit) {
   output_bit_stream_ = std::make_unique<OutputBitStream>(5 * 64);
 }
 
 Array<uint8_t> NetSerfXORCompressor::Compress(double v) {
   uint64_t this_val;
   // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
-  if (std::abs(Double::LongBitsToDouble(stored_val_) - adjust_digit_ - v) > max_diff_) {
+  if (std::abs(Double::LongBitsToDouble(stored_val_) - kAdjustDigit - v) > kMaxDiff) {
     // in our implementation, we do not consider special cases and overflow case
-    double adjust_value = v + adjust_digit_;
-    this_val = SerfUtils64::FindAppLong(adjust_value - max_diff_, adjust_value + max_diff_, v, stored_val_,
-                                        max_diff_, adjust_digit_);
+    double adjust_value = v + kAdjustDigit;
+    this_val = SerfUtils64::FindAppLong(adjust_value - kMaxDiff, adjust_value + kMaxDiff, v, stored_val_,
+                                        kMaxDiff, kAdjustDigit);
   } else {
     // let current value be the last value, making an XORed value of 0.
     this_val = stored_val_;
