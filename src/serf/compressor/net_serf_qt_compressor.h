@@ -12,15 +12,14 @@
 #include "serf/utils/zig_zag_codec.h"
 
 class NetSerfQtCompressor {
-private:
-    double preValue = 2;
-    const double maxDiff;
-    std::unique_ptr<OutputBitStream> out = std::make_unique<OutputBitStream>(5 * 8);
+ public:
+  explicit NetSerfQtCompressor(double errorBound);
+  Array<uint8_t> Compress(double v);
 
-public:
-    explicit NetSerfQtCompressor(double errorBound);
-
-    Array<uint8_t> compress(double v);
+ private:
+  const double kMaxDiff;
+  double pre_value_ = 2;
+  std::unique_ptr<OutputBitStream> output_bit_stream_ = std::make_unique<OutputBitStream>(5 * 8);
 };
 
-#endif //NET_SERF_QT_COMPRESSOR_H
+#endif  // NET_SERF_QT_COMPRESSOR_H

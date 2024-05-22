@@ -12,6 +12,10 @@
 #include "serf/utils/serf_utils_64.h"
 #include "serf/utils/post_office_solver.h"
 
+/**
+ * This class needs to be updated
+ */
+
 class TensorSerfXORCompressor {
 private:
     const int BLOCK_SIZE = 1000;

@@ -210,7 +210,7 @@ TEST(TestNetSerfQt, CorrectnessTest) {
             double originalData;
             while (!dataSetInputStream.eof()) {
                 dataSetInputStream >> originalData;
-                Array<uint8_t> result = qt_compressor.compress(originalData);
+                Array<uint8_t> result = qt_compressor.Compress(originalData);
                 double decompressed = qt_decompressor.decompress(result);
                 if (std::abs(originalData - decompressed) > max_diff) {
                     GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
