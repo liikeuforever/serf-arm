@@ -1,14 +1,14 @@
 #include "serf_qt_compressor.h"
 
-SerfQtCompressor::SerfQtCompressor(int block_size, double max_diff) : max_diff_(max_diff * 0.999) {
+SerfQtCompressor::SerfQtCompressor(int block_size, double max_diff) : kMaxDiff(max_diff * 0.999) {
   output_bit_stream_ = std::make_unique<OutputBitStream>(2 * block_size * 8);
   compressed_size_in_bits_ += output_bit_stream_->WriteInt(block_size, 16);
-  compressed_size_in_bits_ += output_bit_stream_->WriteLong(Double::DoubleToLongBits(max_diff_), 64);
+  compressed_size_in_bits_ += output_bit_stream_->WriteLong(Double::DoubleToLongBits(kMaxDiff), 64);
 }
 
 void SerfQtCompressor::AddValue(double v) {
-  double q = std::round((v - pre_value_) / (2 * max_diff_));
-  double recoverValue = pre_value_ + 2 * max_diff_ * q;
+  double q = std::round((v - pre_value_) / (2 * kMaxDiff));
+  double recoverValue = pre_value_ + 2 * kMaxDiff * q;
   compressed_size_in_bits_ += EliasDeltaCodec::Encode(ZigZagCodec::Encode(static_cast<int64_t>(q)) + 1,
                                                       output_bit_stream_.get());
   pre_value_ = recoverValue;
