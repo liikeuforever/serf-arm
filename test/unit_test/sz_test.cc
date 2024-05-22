@@ -15,7 +15,7 @@ constexpr static double MAX_DIFF[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.
  * @brief Scan all data set files in DATA_SET_DIR.
  * @return A vector contains all data set file path.
  */
-std::vector<std::string> scanDataSet() {
+std::vector<std::string> ScanDataSet() {
     namespace fs = std::filesystem;
     std::vector<std::string> dataSetList;
     for (const auto &entry: fs::recursive_directory_iterator(DATA_SET_DIR)) {
@@ -31,15 +31,15 @@ std::vector<std::string> scanDataSet() {
 
 /**
  * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
- * @param fileInputStreamRef Input steam where this function reads
+ * @param file_input_stream_ref Input steam where this function reads
  * @return A vector of doubles, whose size may be less than BLOCK_SIZE
  */
-std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
+std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
     std::vector<double> returnData;
     int readDoubleCount = 0;
     double buffer;
-    while (!fileInputStreamRef.eof() && readDoubleCount < BLOCK_SIZE) {
-        fileInputStreamRef >> buffer;
+    while (!file_input_stream_ref.eof() && readDoubleCount < BLOCK_SIZE) {
+        file_input_stream_ref >> buffer;
         returnData.emplace_back(buffer);
         ++readDoubleCount;
     }
@@ -51,7 +51,7 @@ std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
  * @param fileInputStreamRef Input steam where this function reads
  * @return A vector of doubles, whose size may be less than BLOCK_SIZE
  */
-std::vector<float> readBlock32(std::ifstream &fileInputStreamRef) {
+std::vector<float> ReadBlock32(std::ifstream &fileInputStreamRef) {
     std::vector<float> returnData;
     int readDoubleCount = 0;
     float buffer;
@@ -64,7 +64,7 @@ std::vector<float> readBlock32(std::ifstream &fileInputStreamRef) {
 }
 
 TEST(TestSZ, CorrectnessTest) {
-    std::vector<std::string> dataSetList = scanDataSet();
+    std::vector<std::string> dataSetList = ScanDataSet();
     for (const auto &dataSet: dataSetList) {
         std::string fileName = dataSet.substr(dataSet.find_last_of('/') + 1, dataSet.size());
         for (const auto &max_diff: MAX_DIFF) {
@@ -74,7 +74,7 @@ TEST(TestSZ, CorrectnessTest) {
             }
 
             std::vector<double> originalData;
-            while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+            while ((originalData = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
                 size_t compression_output_len;
                 auto decompression_output = new double[BLOCK_SIZE];
                 auto compression_output = SZ_compress_args(SZ_DOUBLE, originalData.data(), &compression_output_len,

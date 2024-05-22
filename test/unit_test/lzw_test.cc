@@ -13,7 +13,7 @@ const static std::string DATA_SET_DIR = "../../test/dataSet";
  * @brief Scan all data set files in DATA_SET_DIR.
  * @return A vector contains all data set file path.
  */
-std::vector<std::string> scanDataSet() {
+std::vector<std::string> ScanDataSet() {
     namespace fs = std::filesystem;
     std::vector<std::string> dataSetList;
     for (const auto &entry: fs::recursive_directory_iterator(DATA_SET_DIR)) {
@@ -27,12 +27,12 @@ std::vector<std::string> scanDataSet() {
     return dataSetList;
 }
 
-std::vector<std::string> readBlock(std::ifstream &fileInputStreamRef) {
+std::vector<std::string> ReadBlock(std::ifstream &file_input_stream_ref) {
     std::vector<std::string> returnData;
     int read_string_count = 0;
     std::string buffer;
-    while (!fileInputStreamRef.eof() && read_string_count < BLOCK_SIZE) {
-        std::getline(fileInputStreamRef, buffer);
+    while (!file_input_stream_ref.eof() && read_string_count < BLOCK_SIZE) {
+        std::getline(file_input_stream_ref, buffer);
         if (buffer.empty()) continue;
         returnData.emplace_back(buffer);
         ++read_string_count;
@@ -41,7 +41,7 @@ std::vector<std::string> readBlock(std::ifstream &fileInputStreamRef) {
 }
 
 TEST(TestLZW, CorrectnessTest) {
-    std::vector<std::string> dataSetList = scanDataSet();
+    std::vector<std::string> dataSetList = ScanDataSet();
     for (const auto &dataSet: dataSetList) {
         std::ifstream dataSetInputStream(dataSet);
         if (!dataSetInputStream.is_open()) {
@@ -49,7 +49,7 @@ TEST(TestLZW, CorrectnessTest) {
         }
 
         std::vector<std::string> originalData;
-        while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+        while ((originalData = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
             std::string input_string = "";
             for (const auto &item: originalData) input_string += (item + " ");
             LZW *lzw = LZW::instance();

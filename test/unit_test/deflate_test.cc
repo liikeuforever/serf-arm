@@ -32,7 +32,7 @@ const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D {
  * @brief Scan all data set files in DATA_SET_DIR.
  * @return A vector contains all data set file path.
  */
-std::vector<std::string> scanDataSet() {
+std::vector<std::string> ScanDataSet() {
     namespace fs = std::filesystem;
     std::vector<std::string> dataSetList;
     for (const auto &entry: fs::recursive_directory_iterator(DATA_SET_DIR)) {
@@ -48,15 +48,15 @@ std::vector<std::string> scanDataSet() {
 
 /**
  * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
- * @param fileInputStreamRef Input steam where this function reads
+ * @param file_input_stream_ref Input steam where this function reads
  * @return A vector of doubles, whose size may be less than BLOCK_SIZE
  */
-std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
+std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
     std::vector<double> returnData;
     int readDoubleCount = 0;
     double buffer;
-    while (!fileInputStreamRef.eof() && readDoubleCount < BLOCK_SIZE) {
-        fileInputStreamRef >> buffer;
+    while (!file_input_stream_ref.eof() && readDoubleCount < BLOCK_SIZE) {
+        file_input_stream_ref >> buffer;
         returnData.emplace_back(buffer);
         ++readDoubleCount;
     }
@@ -68,7 +68,7 @@ std::vector<double> readBlock(std::ifstream &fileInputStreamRef) {
  * @param fileInputStreamRef Input steam where this function reads
  * @return A vector of doubles, whose size may be less than BLOCK_SIZE
  */
-std::vector<float> readBlock32(std::ifstream &fileInputStreamRef) {
+std::vector<float> ReadBlock32(std::ifstream &fileInputStreamRef) {
     std::vector<float> returnData;
     int readDoubleCount = 0;
     float buffer;
@@ -81,7 +81,7 @@ std::vector<float> readBlock32(std::ifstream &fileInputStreamRef) {
 }
 
 TEST(TestDeflate, CorrectnessTest) {
-    std::vector<std::string> dataSetList = scanDataSet();
+    std::vector<std::string> dataSetList = ScanDataSet();
     for (const auto &dataSet: dataSetList) {
         std::ifstream dataSetInputStream(dataSet);
         if (!dataSetInputStream.is_open()) {
@@ -89,7 +89,7 @@ TEST(TestDeflate, CorrectnessTest) {
         }
 
         std::vector<double> originalData;
-        while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+        while ((originalData = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
             DeflateCompressor compressor;
             DeflateDecompressor decompressor;
             for (const auto &item: originalData) {
