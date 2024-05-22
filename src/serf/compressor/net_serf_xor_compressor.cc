@@ -1,144 +1,133 @@
 #include "net_serf_xor_compressor.h"
 #include "serf/utils/post_office_solver.h"
 
-NetSerfXORCompressor::NetSerfXORCompressor(double maxDiff, long adjustD):maxDiff(maxDiff), adjustD(adjustD) {
-    this->out = std::make_unique<OutputBitStream>(5 * 64);
+NetSerfXORCompressor::NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit): kBlockSize(capacity),
+max_diff_(max_diff), adjust_digit_(adjust_digit) {
+  output_bit_stream_ = std::make_unique<OutputBitStream>(5 * 64);
 }
 
-Array<uint8_t> NetSerfXORCompressor::compress(double v) {
-    uint64_t thisVal;
-    // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
-    if (std::abs(Double::LongBitsToDouble(storedVal) - adjustD - v) > maxDiff) {
-        // in our implementation, we do not consider special cases and overflow case
-        double adjustValue = v + adjustD;
-        thisVal = SerfUtils64::FindAppLong(adjustValue - maxDiff,
-                                           adjustValue + maxDiff, v, storedVal,
-                                           maxDiff, adjustD);
+Array<uint8_t> NetSerfXORCompressor::Compress(double v) {
+  uint64_t this_val;
+  // note we cannot let > maxDiff, because NaN - v > maxDiff is always false
+  if (std::abs(Double::LongBitsToDouble(stored_val_) - adjust_digit_ - v) > max_diff_) {
+    // in our implementation, we do not consider special cases and overflow case
+    double adjust_value = v + adjust_digit_;
+    this_val = SerfUtils64::FindAppLong(adjust_value - max_diff_, adjust_value + max_diff_, v, stored_val_,
+                                        max_diff_, adjust_digit_);
+  } else {
+    // let current value be the last value, making an XORed value of 0.
+    this_val = stored_val_;
+  }
+  Array<uint8_t> result = AddValue(this_val);
+  stored_val_ = this_val;
+  return result;
+}
+
+Array<uint8_t> NetSerfXORCompressor::AddValue(uint64_t value) {
+  // Reserve 4 bits for transition header
+  int this_size = output_bit_stream_->WriteInt(0, 4);
+  if (number_of_values_ >= kBlockSize) {
+    this_size += UpdateFlagAndPositionsIfNeeded();
+  }
+  this_size += CompressValue(value);
+  compressed_size_in_bits_ += this_size;
+  output_bit_stream_->Flush();
+  Array<uint8_t> ret = output_bit_stream_->GetBuffer(std::ceil(this_size / 8.0));
+  output_bit_stream_->Refresh();
+  ++number_of_values_;
+  return ret;
+}
+
+int NetSerfXORCompressor::CompressValue(uint64_t value) {
+  int this_size = 0;
+  uint64_t xor_result = stored_val_ ^ value;
+
+  if (xor_result == 0) {
+    // case 01
+    if (equal_win_) {
+      this_size += output_bit_stream_->WriteBit(true);
     } else {
-        // let current value be the last value, making an XORed value of 0.
-        thisVal = storedVal;
+      this_size += output_bit_stream_->WriteInt(1, 2);
     }
-    Array<uint8_t> result = addValue(thisVal);
-    storedVal = thisVal;
-    return result;
-}
+    equal_vote_++;
+  } else {
+    int leading_count = __builtin_clzll(xor_result);
+    int trailing_count = __builtin_ctzll(xor_result);
+    int leading_zeros = leading_round_[leading_count];
+    int trailing_zeros = trailing_round_[trailing_count];
+    ++lead_distribution_[leading_count];
+    ++trail_distribution_[trailing_count];
 
-Array<uint8_t> NetSerfXORCompressor::addValue(uint64_t value) {
-    int thisSize = out->WriteInt(0, 4); // Reserve 4 bits for transition header
-    if (numberOfValues >= BLOCK_SIZE) {
-        thisSize += updateFlagAndPositionsIfNeeded();
-    }
-    thisSize += compressValue(value);
-    compressedSizeInBits += thisSize;
-    out->Flush();
-    Array<uint8_t> ret = out->GetBuffer(std::ceil(thisSize / 8.0));
-    out->Refresh();
-    ++numberOfValues;
-    return ret;
-}
-
-int NetSerfXORCompressor::compressValue(uint64_t value) {
-    int thisSize = 0;
-    uint64_t xorResult = storedVal ^ value;
-
-    if (xorResult == 0) {
-        // case 01
-        if (equalWin) {
-            thisSize += out->WriteBit(true);
+    if (leading_zeros >= stored_leading_zeros_ && trailing_zeros >= stored_trailing_zeros_ &&
+        (leading_zeros - stored_leading_zeros_) + (trailing_zeros - stored_trailing_zeros_)
+            < 1 + leading_bits_per_value_ + trailing_bits_per_value_) {
+      // case 1
+      int center_bits = 64 - stored_leading_zeros_ - stored_trailing_zeros_;
+      int len;
+      if (equal_win_) {
+        len = 2 + center_bits;
+        if (len > 64) {
+          output_bit_stream_->WriteInt(1, 2);
+          output_bit_stream_->WriteLong(xor_result >> stored_trailing_zeros_, center_bits);
         } else {
-            thisSize += out->WriteInt(1, 2);
+          output_bit_stream_->WriteLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 2 +
+          center_bits);
         }
-        equalVote++;
-    } else {
-        int leadingCount = __builtin_clzll(xorResult);
-        int trailingCount = __builtin_ctzll(xorResult);
-        int leadingZeros = leadingRound[leadingCount];
-        int trailingZeros = trailingRound[trailingCount];
-        ++leadDistribution[leadingCount];
-        ++trailDistribution[trailingCount];
-
-        if (leadingZeros >= storedLeadingZeros && trailingZeros >= storedTrailingZeros &&
-            (leadingZeros - storedLeadingZeros) + (trailingZeros - storedTrailingZeros) < 1 + leadingBitsPerValue + trailingBitsPerValue) {
-            // case 1
-            int centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
-            int len;
-            if (equalWin) {
-                len = 2 + centerBits;
-                if (len > 64) {
-                    out->WriteInt(1, 2);
-                    out->WriteLong(xorResult >> storedTrailingZeros, centerBits);
-                } else {
-                    out->WriteLong((1ULL << centerBits) |
-                                   (xorResult >> storedTrailingZeros),
-                                   2 + centerBits);
-                }
-            } else {
-                len = 1 + centerBits;
-                if (len > 64) {
-                    out->WriteInt(1, 1);
-                    out->WriteLong(xorResult >> storedTrailingZeros, centerBits);
-                } else {
-                    out->WriteLong((1ULL << centerBits) |
-                                   (xorResult >> storedTrailingZeros),
-                                   1 + centerBits);
-                }
-            }
-            thisSize += len;
-            equalVote--;
+      } else {
+        len = 1 + center_bits;
+        if (len > 64) {
+          output_bit_stream_->WriteInt(1, 1);
+          output_bit_stream_->WriteLong(xor_result >> stored_trailing_zeros_, center_bits);
         } else {
-            storedLeadingZeros = leadingZeros;
-            storedTrailingZeros = trailingZeros;
-            int centerBits = 64 - storedLeadingZeros - storedTrailingZeros;
-
-            // case 00
-            int len = 2 + leadingBitsPerValue + trailingBitsPerValue + centerBits;
-            if (len > 64) {
-                out->WriteInt((leadingRepresentation[storedLeadingZeros]
-                                      << trailingBitsPerValue)
-                              | trailingRepresentation[storedTrailingZeros],
-                              2 + leadingBitsPerValue + trailingBitsPerValue);
-                out->WriteLong(xorResult >> storedTrailingZeros, centerBits);
-            } else {
-                out->WriteLong(
-                        ((((uint64_t) leadingRepresentation[storedLeadingZeros]
-                                << trailingBitsPerValue) |
-                          trailingRepresentation[storedTrailingZeros])
-                                << centerBits) |
-                        (xorResult >> storedTrailingZeros),
-                        len
-                );
-            }
-            thisSize += len;
+          output_bit_stream_->WriteLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 1 +
+          center_bits);
         }
+      }
+      this_size += len;
+      equal_vote_--;
+    } else {
+      stored_leading_zeros_ = leading_zeros;
+      stored_trailing_zeros_ = trailing_zeros;
+      int center_bits = 64 - stored_leading_zeros_ - stored_trailing_zeros_;
+
+      // case 00
+      int len = 2 + leading_bits_per_value_ + trailing_bits_per_value_ + center_bits;
+      if (len > 64) {
+        output_bit_stream_->WriteInt((leading_representation_[stored_leading_zeros_] << trailing_bits_per_value_) |
+        trailing_representation_[stored_trailing_zeros_], 2 + leading_bits_per_value_ + trailing_bits_per_value_);
+        output_bit_stream_->WriteLong(xor_result >> stored_trailing_zeros_, center_bits);
+      } else {
+        output_bit_stream_->WriteLong(((((uint64_t) leading_representation_[stored_leading_zeros_] <<
+        trailing_bits_per_value_) | trailing_representation_[stored_trailing_zeros_]) << center_bits) | (xor_result
+        >> stored_trailing_zeros_), len);
+      }
+      this_size += len;
     }
-    return thisSize;
+  }
+  return this_size;
 }
 
-int NetSerfXORCompressor::updateFlagAndPositionsIfNeeded() {
-    int len;
-    equalWin = equalVote > 0;
-    double thisCompressionRatio = compressedSizeInBits / (numberOfValues * 64.0);
-    if (storedCompressionRatio < thisCompressionRatio) {
-        // update positions
-        Array<int> leadPositions = PostOfficeSolver::InitRoundAndRepresentation(
-                leadDistribution, leadingRepresentation, leadingRound);
-        leadingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[leadPositions.length()];
-        Array<int> trailPositions = PostOfficeSolver::InitRoundAndRepresentation(
-                trailDistribution, trailingRepresentation, trailingRound);
-        trailingBitsPerValue = PostOfficeSolver::kPositionLength2Bits[trailPositions.length()];
-        len = out->WriteInt(equalWin ? 3 : 1, 2)
-              + PostOfficeSolver::WritePositions(leadPositions, out.get())
-              + PostOfficeSolver::WritePositions(trailPositions, out.get());
-    } else {
-        len = out->WriteInt(equalWin ? 2 : 0, 2);
-    }
-    equalVote = 0;
-    storedCompressionRatio = thisCompressionRatio;
-    compressedSizeInBits = 0;
-    numberOfValues = 0;
-    for (int i = 0; i < 64; ++i) {
-        leadDistribution[i] = 0;
-        trailDistribution[i] = 0;
-    }
-    return len;
+int NetSerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
+  int len;
+  equal_win_ = equal_vote_ > 0;
+  double this_compression_ratio = compressed_size_in_bits_ / (number_of_values_ * 64.0);
+  if (stored_compression_ratio_ < this_compression_ratio) {
+    // update positions
+    Array<int> lead_positions = PostOfficeSolver::InitRoundAndRepresentation(lead_distribution_, leading_representation_, leading_round_);
+    leading_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[lead_positions.length()];
+    Array<int> trail_positions = PostOfficeSolver::InitRoundAndRepresentation(trail_distribution_, trailing_representation_, trailing_round_);
+    trailing_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[trail_positions.length()];
+    len = output_bit_stream_->WriteInt(equal_win_ ? 3 : 1, 2)
+        + PostOfficeSolver::WritePositions(lead_positions, output_bit_stream_.get())
+        + PostOfficeSolver::WritePositions(trail_positions, output_bit_stream_.get());
+  } else {
+    len = output_bit_stream_->WriteInt(equal_win_ ? 2 : 0, 2);
+  }
+  equal_vote_ = 0;
+  stored_compression_ratio_ = this_compression_ratio;
+  compressed_size_in_bits_ = 0;
+  number_of_values_ = 0;
+  __builtin_memset(lead_distribution_.begin(), 0, 64 * sizeof(int));
+  __builtin_memset(trail_distribution_.begin(), 0, 64 * sizeof(int));
+  return len;
 }

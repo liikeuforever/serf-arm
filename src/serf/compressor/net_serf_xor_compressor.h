@@ -11,79 +11,77 @@
 #include "serf/utils/output_bit_stream.h"
 
 class NetSerfXORCompressor {
-private:
-    const int BLOCK_SIZE = 1000;
-    const double maxDiff;
-    const long adjustD;
+ public:
+  NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit);
+  Array<uint8_t> Compress(double v);
 
-    uint64_t storedVal = Double::DoubleToLongBits(2);
-    std::unique_ptr<OutputBitStream> out;
+ private:
+  const int kBlockSize;
+  const double max_diff_;
+  const long adjust_digit_;
 
-    int compressedSizeInBits = 0;
-    int numberOfValues = 0;
-    double storedCompressionRatio = 0;
+  uint64_t stored_val_ = Double::DoubleToLongBits(2);
+  std::unique_ptr<OutputBitStream> output_bit_stream_;
 
-    int equalVote = 0;
-    bool equalWin = false;
+  int compressed_size_in_bits_ = 0;
+  int number_of_values_ = 0;
+  double stored_compression_ratio_ = 0;
 
-    Array<int> leadingRepresentation = {
-            0, 0, 0, 0, 0, 0, 0, 0,
-            1, 1, 1, 1, 2, 2, 2, 2,
-            3, 3, 4, 4, 5, 5, 6, 6,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7
-    };
-    Array<int> leadingRound = {
-            0, 0, 0, 0, 0, 0, 0, 0,
-            8, 8, 8, 8, 12, 12, 12, 12,
-            16, 16, 18, 18, 20, 20, 22, 22,
-            24, 24, 24, 24, 24, 24, 24, 24,
-            24, 24, 24, 24, 24, 24, 24, 24,
-            24, 24, 24, 24, 24, 24, 24, 24,
-            24, 24, 24, 24, 24, 24, 24, 24,
-            24, 24, 24, 24, 24, 24, 24, 24
-    };
-    Array<int> trailingRepresentation = {
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 1, 1,
-            1, 1, 1, 1, 2, 2, 2, 2,
-            3, 3, 3, 3, 4, 4, 4, 4,
-            5, 5, 6, 6, 6, 6, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-    };
-    Array<int> trailingRound = {
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 22, 22,
-            22, 22, 22, 22, 28, 28, 28, 28,
-            32, 32, 32, 32, 36, 36, 36, 36,
-            40, 40, 42, 42, 42, 42, 46, 46,
-            46, 46, 46, 46, 46, 46, 46, 46,
-            46, 46, 46, 46, 46, 46, 46, 46,
-    };
-    int leadingBitsPerValue = 3;
-    int trailingBitsPerValue = 3;
-    Array<int> leadDistribution = Array<int>(64);
-    Array<int> trailDistribution = Array<int>(64);
-    int storedLeadingZeros = std::numeric_limits<int>::max();
-    int storedTrailingZeros = std::numeric_limits<int>::max();
+  int equal_vote_ = 0;
+  bool equal_win_ = false;
 
-public:
-    NetSerfXORCompressor(double maxDiff, long adjustD);
+  Array<int> leading_representation_ = {
+      0, 0, 0, 0, 0, 0, 0, 0,
+      1, 1, 1, 1, 2, 2, 2, 2,
+      3, 3, 4, 4, 5, 5, 6, 6,
+      7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7
+  };
+  Array<int> leading_round_ = {
+      0, 0, 0, 0, 0, 0, 0, 0,
+      8, 8, 8, 8, 12, 12, 12, 12,
+      16, 16, 18, 18, 20, 20, 22, 22,
+      24, 24, 24, 24, 24, 24, 24, 24,
+      24, 24, 24, 24, 24, 24, 24, 24,
+      24, 24, 24, 24, 24, 24, 24, 24,
+      24, 24, 24, 24, 24, 24, 24, 24,
+      24, 24, 24, 24, 24, 24, 24, 24
+  };
+  Array<int> trailing_representation_ = {
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 1, 1,
+      1, 1, 1, 1, 2, 2, 2, 2,
+      3, 3, 3, 3, 4, 4, 4, 4,
+      5, 5, 6, 6, 6, 6, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7,
+  };
+  Array<int> trailing_round_ = {
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 22, 22,
+      22, 22, 22, 22, 28, 28, 28, 28,
+      32, 32, 32, 32, 36, 36, 36, 36,
+      40, 40, 42, 42, 42, 42, 46, 46,
+      46, 46, 46, 46, 46, 46, 46, 46,
+      46, 46, 46, 46, 46, 46, 46, 46,
+  };
+  int leading_bits_per_value_ = 3;
+  int trailing_bits_per_value_ = 3;
+  Array<int> lead_distribution_ = Array<int>(64);
+  Array<int> trail_distribution_ = Array<int>(64);
+  int stored_leading_zeros_ = std::numeric_limits<int>::max();
+  int stored_trailing_zeros_ = std::numeric_limits<int>::max();
 
-    Array<uint8_t> compress(double v);
+  Array<uint8_t> AddValue(uint64_t value);
 
-private:
-    Array<uint8_t> addValue(uint64_t value);
+  int CompressValue(uint64_t value);
 
-    int compressValue(uint64_t value);
-
-    int updateFlagAndPositionsIfNeeded();
+  int UpdateFlagAndPositionsIfNeeded();
 };
 
-#endif //NET_XOR_COMPRESSOR_H
+#endif  // NET_XOR_COMPRESSOR_H
