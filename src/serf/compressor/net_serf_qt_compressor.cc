@@ -1,17 +1,16 @@
-#include "net_serf_qt_compressor.h"
+#include "serf/compressor/net_serf_qt_compressor.h"
 
-NetSerfQtCompressor::NetSerfQtCompressor(double errorBound) : kMaxDiff(errorBound) {}
+NetSerfQtCompressor::NetSerfQtCompressor(double error_bound) : kMaxDiff(error_bound) {}
 
 Array<uint8_t> NetSerfQtCompressor::Compress(double v) {
   int written_bits_count = output_bit_stream_->WriteInt(0, 4);
-  double q = std::round((v - pre_value_) / (2 * kMaxDiff));
-  double recoverValue = pre_value_ + 2 * kMaxDiff * q;
+  long q = static_cast<long>(std::round((v - pre_value_) / (2 * kMaxDiff)));
+  double recover_value = pre_value_ + 2 * kMaxDiff * static_cast<double>(q);
   written_bits_count += EliasDeltaCodec::Encode(ZigZagCodec::Encode(static_cast<int64_t>(q)) + 1,
                                                       output_bit_stream_.get());
-  pre_value_ = recoverValue;
+  pre_value_ = recover_value;
   output_bit_stream_->Flush();
   Array<uint8_t> result = output_bit_stream_->GetBuffer(std::ceil(written_bits_count / 8.0));
   output_bit_stream_->Refresh();
   return result;
 }
-

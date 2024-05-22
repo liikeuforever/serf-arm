@@ -211,7 +211,7 @@ TEST(TestNetSerfQt, CorrectnessTest) {
             while (!dataSetInputStream.eof()) {
                 dataSetInputStream >> originalData;
                 Array<uint8_t> result = qt_compressor.Compress(originalData);
-                double decompressed = qt_decompressor.decompress(result);
+                double decompressed = qt_decompressor.Decompress(result);
                 if (std::abs(originalData - decompressed) > max_diff) {
                     GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
                 }
@@ -268,11 +268,11 @@ TEST(TestSerfXOR32, CorrectnessTest) {
             std::vector<float> originalData;
             while ((originalData = readBlock32(dataSetInputStream)).size() == BLOCK_SIZE) {
                 for (const auto &item: originalData) {
-                    xor_compressor_32.addValue(item);
+                  xor_compressor_32.AddValue(item);
                 }
-                xor_compressor_32.close();
-                Array<uint8_t> result = xor_compressor_32.getBytes();
-                std::vector<float> decompressed = xor_decompressor_32.decompress(result);
+              xor_compressor_32.Close();
+                Array<uint8_t> result = xor_compressor_32.out_buffer();
+                std::vector<float> decompressed = xor_decompressor_32.Decompress(result);
                 EXPECT_EQ(originalData.size(), decompressed.size());
                 if (originalData.size() != decompressed.size()) {
                     GTEST_LOG_(INFO) << dataSet << " " << max_diff;
@@ -306,11 +306,11 @@ TEST(TestSerfQt32, CorrectnessTest) {
             std::vector<float> originalData;
             while ((originalData = readBlock32(dataSetInputStream)).size() == BLOCK_SIZE) {
                 for (const auto &item: originalData) {
-                    qt_compressor_32.addValue(item);
+                  qt_compressor_32.AddValue(item);
                 }
-                qt_compressor_32.close();
-                Array<uint8_t> result = qt_compressor_32.getBytes();
-                std::vector<float> decompressed = qt_decompressor_32.decompress(result);
+              qt_compressor_32.Close();
+                Array<uint8_t> result = qt_compressor_32.GetBytes();
+                std::vector<float> decompressed = qt_decompressor_32.Decompress(result);
                 EXPECT_EQ(originalData.size(), decompressed.size());
                 if (originalData.size() != decompressed.size()) {
                     GTEST_LOG_(INFO) << dataSet << " " << max_diff;

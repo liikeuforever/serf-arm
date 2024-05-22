@@ -73,12 +73,12 @@ TEST(TestElf, CorrectnessTest) {
         while ((originalData = readBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
             ElfCompressor compressor;
             for (const auto &item: originalData) {
-                compressor.addValue(item);
+              compressor.AddValue(item);
             }
-            compressor.close();
-            Array<uint8_t> compressed = compressor.getBytes();
+          compressor.Close();
+            Array<uint8_t> compressed = compressor.out_buffer();
             ElfDecompressor decompressor(compressed);
-            std::vector<double> decompressed = decompressor.decompress();
+            std::vector<double> decompressed = decompressor.Decompress();
             EXPECT_EQ(originalData.size(), decompressed.size());
             for (int i = 0; i < BLOCK_SIZE; ++i) {
                 if (originalData[i] - decompressed[i] != 0) {

@@ -1,40 +1,32 @@
-#include "serf_qt_compressor_32.h"
+#include "serf/compressor_32/serf_qt_compressor_32.h"
 
-SerfQtCompressor32::SerfQtCompressor32(float maxDiff): maxDiff(maxDiff) {}
-
-void SerfQtCompressor32::addValue(float v) {
-    long q = std::round((v - preValue) / (2 * maxDiff));
-    float recoverValue = preValue + 2 * maxDiff * q;
-    if (std::abs(recoverValue - v) > maxDiff || std::isnan(v)) {
-        // small cases
-        compressedBits += out->WriteBit(true);
-        uint32_t xorResult = Float::FloatToIntBits(v) ^
-                             Float::FloatToIntBits(preValue);
-        int leadingZeroCount = std::min(__builtin_clz(xorResult), 15);
-        compressedBits += out->WriteInt(leadingZeroCount, 4);
-        compressedBits += out->WriteInt(xorResult, 32 - leadingZeroCount);
-        preValue = v;
-    } else {
-        compressedBits += out->WriteBit(false);
-        compressedBits += EliasDeltaCodec::Encode(ZigZagCodec::Encode(q) + 1, out.get());
-        preValue = recoverValue;
-    }
+SerfQtCompressor32::SerfQtCompressor32(int block_size, float max_diff): kMaxDiff(max_diff) {
+  output_bit_stream_ = std::make_unique<OutputBitStream>(2 * block_size * 8);
+  compressed_size_in_bits_ += output_bit_stream_->WriteInt(block_size, 16);
+  compressed_size_in_bits_ += output_bit_stream_->WriteInt(Float::FloatToIntBits(kMaxDiff), 32);
 }
 
-Array<uint8_t> SerfQtCompressor32::getBytes() {
-    Array<uint8_t> result = out->GetBuffer(std::ceil(storedCompressedBits / 8.0));
-    out->Refresh();
+void SerfQtCompressor32::AddValue(float v) {
+  long q = static_cast<long>(std::round((v - pre_value_) / (2 * kMaxDiff)));
+  float recover_value = pre_value_ + 2 * kMaxDiff * static_cast<float>(q);
+  compressed_size_in_bits_ += EliasDeltaCodec::Encode(ZigZagCodec::Encode(q) + 1,
+                                                      output_bit_stream_.get());
+  pre_value_ = recover_value;
+}
+
+Array<uint8_t> SerfQtCompressor32::GetBytes() {
+    Array<uint8_t> result = output_bit_stream_->GetBuffer(std::ceil(stored_compressed_size_in_bits_ / 8.0));
+    output_bit_stream_->Refresh();
     return result;
 }
 
-void SerfQtCompressor32::close() {
-    addValue(Float::kNan);
-    out->Flush();
-    preValue = 2;
-    storedCompressedBits = compressedBits;
-    compressedBits = 0;
+void SerfQtCompressor32::Close() {
+  output_bit_stream_->Flush();
+  pre_value_ = 2;
+  stored_compressed_size_in_bits_ = compressed_size_in_bits_;
+  compressed_size_in_bits_ = 0;
 }
 
-long SerfQtCompressor32::getCompressedSizeInBits() {
-    return compressedBits;
+long SerfQtCompressor32::compressed_size_in_bits() const {
+    return compressed_size_in_bits_;
 }

@@ -1,19 +1,11 @@
-#include "net_serf_qt_decompressor.h"
+#include "serf/decompressor/net_serf_qt_decompressor.h"
 
-NetSerfQtDecompressor::NetSerfQtDecompressor(double maxDiff): maxDiff(maxDiff) {}
+NetSerfQtDecompressor::NetSerfQtDecompressor(double max_diff) : kMaxDiff(max_diff) {}
 
-double NetSerfQtDecompressor::decompress(Array<uint8_t> &bs) {
-    in->SetBuffer(bs);
-    in->ReadInt(4);
-    int exceptionFlag = in->ReadInt(1);
-    if (exceptionFlag == 0) {
-        long decodeValue =
-            ZigZagCodec::Decode(EliasDeltaCodec::Decode(in.get()) - 1);
-        preValue = preValue + 2 * maxDiff * decodeValue;
-    } else {
-        int leadingZeroCount = in->ReadInt(5);
-        long leftBits = in->ReadLong(64 - leadingZeroCount);
-        preValue = Double::LongBitsToDouble(leftBits ^ Double::DoubleToLongBits(preValue));
-    }
-    return preValue;
+double NetSerfQtDecompressor::Decompress(Array<uint8_t> &bs) {
+  input_bit_stream_->SetBuffer(bs);
+  input_bit_stream_->ReadInt(4);
+  long decodeValue = ZigZagCodec::Decode(EliasDeltaCodec::Decode(input_bit_stream_.get()) - 1);
+  pre_value_ = pre_value_ + 2 * kMaxDiff * static_cast<double>(decodeValue);
+  return pre_value_;
 }

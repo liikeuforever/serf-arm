@@ -13,7 +13,7 @@
 
 class NetSerfQtCompressor {
  public:
-  explicit NetSerfQtCompressor(double errorBound);
+  explicit NetSerfQtCompressor(double error_bound);
   Array<uint8_t> Compress(double v);
 
  private:

@@ -9,15 +9,15 @@
 #include "serf/utils/elias_delta_codec.h"
 
 class NetSerfQtDecompressor {
-private:
-    const double maxDiff;
-    double preValue = 2;
-    std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();
+ public:
+  explicit NetSerfQtDecompressor(double max_diff);
 
-public:
-    explicit NetSerfQtDecompressor(double maxDiff);
+  double Decompress(Array<uint8_t> &bs);
 
-    double decompress(Array<uint8_t> &bs);
+ private:
+  const double kMaxDiff;
+  double pre_value_ = 2;
+  std::unique_ptr<InputBitStream> input_bit_stream_ = std::make_unique<InputBitStream>();
 };
 
-#endif //NET_SERF_QT_DECOMPRESSOR_H
+#endif  // NET_SERF_QT_DECOMPRESSOR_H

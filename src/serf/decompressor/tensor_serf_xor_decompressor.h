@@ -11,6 +11,11 @@
 #include "serf/utils/input_bit_stream.h"
 #include "serf/utils/post_office_solver.h"
 
+/**
+ * This class is deprecated
+ * Needs to be updated when being used again
+ */
+
 class TensorSerfXORDecompressor {
 private:
     static const int BLOCK_SIZE = 1000;

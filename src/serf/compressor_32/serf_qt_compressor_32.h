@@ -11,24 +11,19 @@
 #include "serf/utils/zig_zag_codec.h"
 
 class SerfQtCompressor32 {
-private:
-    const int BLOCK_SIZE = 1000;
-    const float maxDiff;
-    std::unique_ptr<OutputBitStream> out = std::make_unique<OutputBitStream>(2 * BLOCK_SIZE * 32);
-    float preValue = 2;
-    long compressedBits = 0;
-    long storedCompressedBits;
+ public:
+  explicit SerfQtCompressor32(int block_size, float max_diff);
+  void AddValue(float v);
+  Array<uint8_t> GetBytes();
+  void Close();
+  long compressed_size_in_bits() const;
 
-public:
-    explicit SerfQtCompressor32(float maxDiff);
-
-    void addValue(float v);
-
-    Array<uint8_t> getBytes();
-
-    void close();
-
-    long getCompressedSizeInBits();
+ private:
+  const float kMaxDiff;
+  std::unique_ptr<OutputBitStream> output_bit_stream_;
+  float pre_value_ = 2;
+  long compressed_size_in_bits_ = 0;
+  long stored_compressed_size_in_bits_ = 0;
 };
 
-#endif //SERF_QT_COMPRESSOR_32_H
+#endif  // SERF_QT_COMPRESSOR_32_H

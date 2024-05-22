@@ -1,34 +1,20 @@
-#include "serf_qt_decompressor_32.h"
+#include "serf/decompressor_32/serf_qt_decompressor_32.h"
 
-SerfQtDecompressor32::SerfQtDecompressor32(float maxDiff): maxDiff(maxDiff) {}
-
-std::vector<float> SerfQtDecompressor32::decompress(Array<uint8_t> &bs) {
-    preValue = 2;
-    in->SetBuffer(bs);
-    std::vector<float> decompressedValueList;
-    float value;
-    while (!std::isnan(value = nextValue())) {
-        decompressedValueList.emplace_back(value);
-    }
-    return decompressedValueList;
+SerfQtDecompressor32::SerfQtDecompressor32(const Array<uint8_t> &bs) {
+  input_bit_stream_->SetBuffer(bs);
+  block_size_ = input_bit_stream_->ReadInt(16);
+  max_diff_ = Float::IntBitsToFloat(input_bit_stream_->ReadInt(32));
 }
 
-float SerfQtDecompressor32::nextValue() {
-    float returnValue;
-    int exceptionFlag = in->ReadInt(1);
-    if (exceptionFlag == 0) {
-        long decodeValue =
-            ZigZagCodec::Decode(EliasDeltaCodec::Decode(in.get()) - 1);
-        float recoverValue = preValue + 2 * maxDiff * decodeValue;
-        preValue = recoverValue;
-        returnValue = recoverValue;
-    } else {
-        int leadingZeroCount = in->ReadInt(4);
-        uint32_t leftBits = in->ReadInt(32 - leadingZeroCount);
-        float recoverValue = Float::IntBitsToFloat(
-                leftBits ^ Float::FloatToIntBits(preValue));
-        preValue = recoverValue;
-        returnValue = recoverValue;
-    }
-    return returnValue;
+std::vector<float> SerfQtDecompressor32::Decompress() {
+  std::vector<float> decompressedValueList;
+  while (block_size_--) decompressedValueList.emplace_back(NextValue());
+  return decompressedValueList;
+}
+
+float SerfQtDecompressor32::NextValue() {
+  long decodeValue = ZigZagCodec::Decode(EliasDeltaCodec::Decode(input_bit_stream_.get()) - 1);
+  float recoverValue = pre_value_ + 2 * max_diff_ * static_cast<float>(decodeValue);
+  pre_value_ = recoverValue;
+  return recoverValue;
 }

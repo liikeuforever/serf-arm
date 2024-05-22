@@ -1,5 +1,4 @@
-#include "net_serf_xor_compressor.h"
-#include "serf/utils/post_office_solver.h"
+#include "serf/compressor/net_serf_xor_compressor.h"
 
 NetSerfXORCompressor::NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit): kBlockSize(capacity),
                                                                                               kMaxDiff(max_diff), kAdjustDigit(adjust_digit) {

@@ -10,18 +10,17 @@
 #include "serf/utils/input_bit_stream.h"
 
 class SerfQtDecompressor32 {
-private:
-    const float maxDiff;
-    std::unique_ptr<InputBitStream> in = std::make_unique<InputBitStream>();
-    float preValue;
+ public:
+  explicit SerfQtDecompressor32(const Array<uint8_t> &bs);
+  std::vector<float> Decompress();
 
-public:
-    explicit SerfQtDecompressor32(float maxDiff);
+ private:
+  int block_size_;
+  float max_diff_;
+  std::unique_ptr<InputBitStream> input_bit_stream_ = std::make_unique<InputBitStream>();
+  float pre_value_ = 2;
 
-    std::vector<float> decompress(Array<uint8_t> &bs);
-
-private:
-    float nextValue();
+  float NextValue();
 };
 
-#endif //SERF_QT_DECOMPRESSOR_32_H
+#endif  // SERF_QT_DECOMPRESSOR_32_H
