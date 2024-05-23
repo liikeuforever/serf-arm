@@ -1169,11 +1169,12 @@ PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff
 
 PerfRecord PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff) {
     PerfRecord perf_record;
+    SerfQtCompressor serf_qt_compressor(kBlockSize, max_diff);
+    SerfQtDecompressor serf_qt_decompressor;
 
     int block_count = 0;
     std::vector<double> original_data;
     while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        SerfQtCompressor serf_qt_compressor(kBlockSize, max_diff);
         ++block_count;
         auto compression_start_time = std::chrono::steady_clock::now();
         for (const auto &value: original_data) {
@@ -1182,10 +1183,9 @@ PerfRecord PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff)
         serf_qt_compressor.Close();
         auto compression_end_time = std::chrono::steady_clock::now();
         perf_record.AddCompressedSize(serf_qt_compressor.get_compressed_size_in_bits());
-        Array<uint8_t> compression_output = serf_qt_compressor.GetBytes();
-        SerfQtDecompressor serf_qt_decompressor(compression_output);
+        Array<uint8_t> compression_output = serf_qt_compressor.compressed_bytes();
         auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = serf_qt_decompressor.Decompress();
+        std::vector<double> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
         auto decompression_end_time = std::chrono::steady_clock::now();
 
         auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(

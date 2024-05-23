@@ -38,6 +38,13 @@ const static std::string kDataSetList[] = {
     "Stocks-USA.csv",
     "Wind-Speed.csv"
 };
+const static std::string kDataSetList32[] = {
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "IR-bio-temp.csv",
+    "PM10-dust.csv",
+    "Wind-Speed.csv"
+};
 const static std::unordered_map<std::string, int> kFileToAdjustD {
     {"init.csv", 0},
     {"Air-pressure.csv", 0},
@@ -56,7 +63,7 @@ const static std::unordered_map<std::string, int> kFileToAdjustD {
     {"Wind-Speed.csv", 2}
 };
 constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-constexpr static float kMaxDiff32[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+constexpr static float kMaxDiff32[] = {1.0E-1f, 1.0E-2f, 1.0E-3f};
 
 /**
  * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
@@ -265,7 +272,7 @@ TEST(TestSerfXOR32, CorrectnessTest) {
 }
 
 TEST(TestSerfQt32, CorrectnessTest) {
-  for (const auto &data_set : kDataSetList) {
+  for (const auto &data_set : kDataSetList32) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;

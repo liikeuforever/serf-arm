@@ -1,7 +1,7 @@
 #include "serf/compressor_32/serf_qt_compressor_32.h"
 
 SerfQtCompressor32::SerfQtCompressor32(int block_size, float max_diff): kBlockSize(block_size),
-kMaxDiff(max_diff * 0.999f) {
+kMaxDiff(max_diff * 0.99f) {
   output_bit_stream_ = std::make_unique<OutputBitStream>(2 * kBlockSize * 8);
 }
 
