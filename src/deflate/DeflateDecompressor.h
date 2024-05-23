@@ -19,6 +19,8 @@ public:
     ~DeflateDecompressor();
 
     std::vector<double> decompress(const Array<unsigned char> &bs);
+
+    std::vector<float> decompress32(const Array<unsigned char> &bs);
 };
 
 #endif //DEFLATE_DECOMPRESSOR_H

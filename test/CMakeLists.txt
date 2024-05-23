@@ -19,3 +19,5 @@ foreach(F ${TEST_SRC})
 endforeach(F)
 
 add_executable(PerformanceProgram Perf.cc)
+target_link_libraries(PerformanceProgram PRIVATE alp buff chimp deflate elf fpc gorilla lzw lz77 lz4 machete sz serf GTest::gtest_main)
+gtest_discover_tests(PerformanceProgram)

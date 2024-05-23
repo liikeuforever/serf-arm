@@ -25,6 +25,15 @@ void DeflateCompressor::addValue(double v) {
     }
 }
 
+void DeflateCompressor::addValue32(float v) {
+  strm.avail_in = sizeof(float);
+  strm.next_in = reinterpret_cast<unsigned char *>(&v);
+  ret = deflate(&strm, Z_NO_FLUSH);
+  if (ret == Z_STREAM_ERROR) {
+    throw std::runtime_error("[Deflate Error]: Failed to addValue.");
+  }
+}
+
 void DeflateCompressor::close() {
     ret = deflate(&strm, Z_FINISH);
     if (ret == Z_STREAM_ERROR) {

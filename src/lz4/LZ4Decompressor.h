@@ -17,6 +17,8 @@ public:
     ~LZ4Decompressor();
 
     std::vector<double> decompress(const Array<char> &bs);
+
+    std::vector<float> decompress32(const Array<char> &bs);
 };
 
 #endif //LZ4_DECOMPRESSOR_H

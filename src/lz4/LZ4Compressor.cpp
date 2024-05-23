@@ -29,6 +29,15 @@ void LZ4Compressor::addValue(double v) {
     written_bytes += rc;
 }
 
+void LZ4Compressor::addValue32(float v) {
+  rc = LZ4F_compressUpdate(compression_context, compress_frame.begin() + written_bytes, compress_frame.length() - written_bytes, &v,
+                           sizeof(float), nullptr);
+  if (LZ4F_isError(rc)) {
+    throw std::runtime_error(LZ4F_getErrorName(rc));
+  }
+  written_bytes += rc;
+}
+
 void LZ4Compressor::close() {
     rc = LZ4F_compressEnd(compression_context, compress_frame.begin() + written_bytes, compress_frame.length() - written_bytes, nullptr);
     if (LZ4F_isError(rc)) {

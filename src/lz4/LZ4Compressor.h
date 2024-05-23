@@ -21,6 +21,8 @@ public:
 
     void addValue(double v);
 
+    void addValue32(float v);
+
     void close();
 
     Array<char> getBytes();

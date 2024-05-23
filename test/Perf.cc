@@ -7,6 +7,8 @@
 #include <vector>
 #include <unordered_map>
 #include <chrono>
+#include <thread>
+#include <sys/socket.h>
 
 #include "serf/compressor/serf_xor_compressor.h"
 #include "serf/decompressor/serf_xor_decompressor.h"
@@ -30,13 +32,16 @@
 #include "lzw/src/LZW.h"
 #include "machete/machete.h"
 #include "sz/sz/include/sz.h"
-
+#include "serf/compressor_32/serf_xor_compressor_32.h"
+#include "serf/decompressor_32/serf_xor_decompressor_32.h"
+#include "serf/compressor_32/serf_qt_compressor_32.h"
+#include "serf/decompressor_32/serf_qt_decompressor_32.h"
 
 const static size_t kBlockSize = 50;
 const static size_t kDoubleSize = 64;
 const static std::string kExportExprTablePrefix = "../../test/";
 const static std::string kExportExprTableFileName = "perf_table.csv";
-const static std::string kDataSetDirPrefix = "../../test/dataSet/";
+const static std::string kDataSetDirPrefix = "../../test/data_set/";
 const static std::string kDataSetList[] = {
         "init.csv",
         "Air-pressure.csv",
@@ -53,6 +58,13 @@ const static std::string kDataSetList[] = {
         "Stocks-UK.csv",
         "Stocks-USA.csv",
         "Wind-Speed.csv"
+};
+const static std::string kDataSetList32[] = {
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "IR-bio-temp.csv",
+    "PM10-dust.csv",
+    "Wind-Speed.csv"
 };
 const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
         {"init.csv",           0},
@@ -71,8 +83,9 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
         {"Stocks-USA.csv",     243},
         {"Wind-Speed.csv",     2}
 };
-constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+//constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 //constexpr static double kMaxDiffList[] = {1.0E-4};
+constexpr static float kMaxDiffList[] = {1.0E-3};
 //constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
 static std::string double_to_string_with_precision(double val, size_t precision) {
@@ -107,7 +120,7 @@ public:
     }
 
     auto AvgDecompressionTimePerBlock() {
-        return (double) decompression_time_.count() / block_count_;
+        return static_cast<double>(decompression_time_.count()) / block_count_;
     }
 
     long compressed_size_in_bits() {
@@ -1041,20 +1054,20 @@ void GenTableDT() {
 //            << std::endl;
 
     expr_table_output_stream
-            << expr_table.find(ExprConf("LZW", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
+            << expr_table.find(ExprConf("LZW", kDataSetList[0],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
+//            << expr_table.find(ExprConf("LZW", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
             << std::endl;
 
 //    expr_table_output_stream
@@ -1089,6 +1102,19 @@ std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
         ++entry_count;
     }
     return ret;
+}
+
+std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref) {
+  std::vector<float> ret;
+  ret.reserve(kBlockSize);
+  int entry_count = 0;
+  float buffer;
+  while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
+    file_input_stream_ref >> buffer;
+    ret.emplace_back(buffer);
+    ++entry_count;
+  }
+  return ret;
 }
 
 std::vector<double> ReadBlockWithPrecisionInfo(std::ifstream &file_input_stream_ref, int *precision) {
@@ -1167,6 +1193,40 @@ PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff
     return perf_record;
 }
 
+PerfRecord PerfSerfXOR32(std::ifstream &data_set_input_stream_ref, float max_diff, const std::string &data_set) {
+  PerfRecord perf_record;
+  SerfXORCompressor32 serf_xor_compressor(kBlockSize, max_diff);
+  SerfXORDecompressor32 serf_xor_decompressor;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+    ++block_count;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value: original_data) {
+      serf_xor_compressor.AddValue(value);
+    }
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_in_bits());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes();
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<float> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 PerfRecord PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff) {
     PerfRecord perf_record;
     SerfQtCompressor serf_qt_compressor(kBlockSize, max_diff);
@@ -1199,6 +1259,40 @@ PerfRecord PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff)
 
     perf_record.set_block_count(block_count);
     return perf_record;
+}
+
+PerfRecord PerfSerfQt32(std::ifstream &data_set_input_stream_ref, float max_diff) {
+  PerfRecord perf_record;
+  SerfQtCompressor32 serf_qt_compressor(kBlockSize, max_diff);
+  SerfQtDecompressor32 serf_qt_decompressor;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+    ++block_count;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value: original_data) {
+      serf_qt_compressor.AddValue(value);
+    }
+    serf_qt_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(serf_qt_compressor.stored_compressed_size_in_bits());
+    Array<uint8_t> compression_output = serf_qt_compressor.compressed_bytes();
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<float> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
 }
 
 PerfRecord PerfDeflate(std::ifstream &data_set_input_stream_ref) {
@@ -1235,6 +1329,40 @@ PerfRecord PerfDeflate(std::ifstream &data_set_input_stream_ref) {
     return perf_record;
 }
 
+PerfRecord PerfDeflate32(std::ifstream &data_set_input_stream_ref) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+    DeflateCompressor deflate_compressor;
+    DeflateDecompressor deflate_decompressor;
+    ++block_count;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value: original_data) {
+      deflate_compressor.addValue32(value);
+    }
+    deflate_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(deflate_compressor.getCompressedSizeInBits());
+    Array<uint8_t> compression_output = deflate_compressor.getBytes();
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<float> decompressed_data = deflate_decompressor.decompress32(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 PerfRecord PerfLZ4(std::ifstream &data_set_input_stream_ref) {
     PerfRecord perf_record;
 
@@ -1267,6 +1395,40 @@ PerfRecord PerfLZ4(std::ifstream &data_set_input_stream_ref) {
 
     perf_record.set_block_count(block_count);
     return perf_record;
+}
+
+PerfRecord PerfLZ432(std::ifstream &data_set_input_stream_ref) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+    LZ4Compressor lz_4_compressor;
+    LZ4Decompressor lz_4_decompressor;
+    ++block_count;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value: original_data) {
+      lz_4_compressor.addValue32(value);
+    }
+    lz_4_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(lz_4_compressor.getCompressedSizeInBits());
+    Array<char> compression_output = lz_4_compressor.getBytes();
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<float> decompressed_data = lz_4_decompressor.decompress32(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
 }
 
 PerfRecord PerfFPC(std::ifstream &data_set_input_stream_ref) {
@@ -1515,6 +1677,41 @@ PerfRecord PerfLZ77(std::ifstream &data_set_input_stream_ref) {
     return perf_record;
 }
 
+PerfRecord PerfLZ7732(std::ifstream &data_set_input_stream_ref) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+    auto *compression_output = new uint8_t[10000];
+    auto *decompression_output = new float [1000];
+    ++block_count;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    int compression_output_len = fastlz_compress_level(2, original_data.data(), kBlockSize * sizeof(float ),
+                                                       compression_output);
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(compression_output_len * 8);
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    fastlz_decompress(compression_output, compression_output_len, decompression_output,
+                      kBlockSize * sizeof(float ));
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] compression_output;
+    delete[] decompression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 PerfRecord PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff) {
     PerfRecord perf_record;
 
@@ -1586,6 +1783,41 @@ PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff) {
     return perf_record;
 }
 
+PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, double max_diff) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+    ++block_count;
+    size_t compression_output_len;
+    auto decompression_output = new float [kBlockSize];
+    auto compression_start_time = std::chrono::steady_clock::now();
+    auto compression_output = SZ_compress_args(SZ_FLOAT, original_data.data(), &compression_output_len,
+                                               ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(compression_output_len * 8);
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    size_t decompression_output_len = SZ_decompress_args(SZ_FLOAT, compression_output,
+                                                         compression_output_len, decompression_output, 0, 0,
+                                                         0, 0, kBlockSize);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] decompression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 PerfRecord PerfLZW(std::ifstream &data_set_input_stream_ref) {
     PerfRecord perf_record;
 
@@ -1628,39 +1860,39 @@ TEST(Perf, All) {
 
         // Lossy
         for (const auto &max_diff: kMaxDiffList) {
-//            expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
-//                                             PerfSerfXOR(data_set_input_stream, max_diff, data_set)));
-//            ResetFileStream(data_set_input_stream);
-//            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
-//                                             PerfSerfQt(data_set_input_stream, max_diff)));
-//            ResetFileStream(data_set_input_stream);
-//            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
-//                                             PerfMachete(data_set_input_stream, max_diff)));
-//            ResetFileStream(data_set_input_stream);
-//            expr_table.insert(
-//                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
-//            ResetFileStream(data_set_input_stream);
+            expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
+                                             PerfSerfXOR(data_set_input_stream, max_diff, data_set)));
+            ResetFileStream(data_set_input_stream);
+            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
+                                             PerfSerfQt(data_set_input_stream, max_diff)));
+            ResetFileStream(data_set_input_stream);
+            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
+                                             PerfMachete(data_set_input_stream, max_diff)));
+            ResetFileStream(data_set_input_stream);
+            expr_table.insert(
+                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
+            ResetFileStream(data_set_input_stream);
         }
 
         // Lossless
-//        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, 0), PerfDeflate(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("Elf", data_set, 0), PerfElf(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("FPC", data_set, 0), PerfFPC(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, 0), PerfGorilla(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, 0), PerfLZ4(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//        expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, 0), PerfLZ77(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, 0), PerfDeflate(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("Elf", data_set, 0), PerfElf(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("FPC", data_set, 0), PerfFPC(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, 0), PerfGorilla(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, 0), PerfLZ4(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
+        expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, 0), PerfLZ77(data_set_input_stream)));
+        ResetFileStream(data_set_input_stream);
         expr_table.insert(std::make_pair(ExprConf("LZW", data_set, 0), PerfLZW(data_set_input_stream)));
         ResetFileStream(data_set_input_stream);
 
@@ -1668,9 +1900,42 @@ TEST(Perf, All) {
     }
 
     // Export all performance data
-    GenTableDT();
+//    GenTableDT();
 //    ExportTotalExprTable();
 //    ExportExprTableWithCompressionRatioNoSpecificDataset();
 //    ExportExprTableWithCompressionTimeNoSpecificDataset();
 //    ExportExprTableWithDecompressionTimeNoSpecificDataset();
 }
+//
+//void send_with_limit(int sockfd, const char* buffer, size_t len, size_t rate) {
+//  size_t sent = 0;
+//  auto start = std::chrono::steady_clock::now();
+//
+//  while (sent < len) {
+//    size_t to_send = std::min(len - sent, rate);
+//    ssize_t bytes_sent = send(sockfd, buffer + sent, to_send, 0);
+//
+//    if (bytes_sent <= 0) {
+//      std::cerr << "Send error!" << std::endl;
+//      return;
+//    }
+//
+//    sent += bytes_sent;
+//
+//    // Calculate elapsed time
+//    auto end = std::chrono::steady_clock::now();
+//    std::chrono::duration<double> elapsed = end - start;
+//
+//    // If we sent data too fast, sleep to limit the rate
+//    if (elapsed.count() < 1.0) {
+//      std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((1.0 - elapsed.count()) * 1000)));
+//    }
+//
+//    // Reset the start time
+//    start = std::chrono::steady_clock::now();
+//  }
+//}
+//
+//TEST(Perf, TransSerfXOR) {
+//
+//}

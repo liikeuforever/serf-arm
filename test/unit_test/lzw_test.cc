@@ -7,7 +7,7 @@
 #include "lzw/src/LZW.h"
 
 const static int BLOCK_SIZE = 1000;
-const static std::string DATA_SET_DIR = "../../test/dataSet";
+const static std::string DATA_SET_DIR = "../../test/data_set";
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.
