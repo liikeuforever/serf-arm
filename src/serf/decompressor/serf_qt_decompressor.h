@@ -11,15 +11,14 @@
 
 class SerfQtDecompressor {
  public:
-  explicit SerfQtDecompressor(const Array<uint8_t> &bs);
-
-  std::vector<double> Decompress();
+  SerfQtDecompressor() = default;
+  std::vector<double> Decompress(const Array<uint8_t> &bs);
 
  private:
-  int block_size_;
-  double max_diff_;
+  int block_size_ = 0;
+  double max_diff_ = 0;
   std::unique_ptr<InputBitStream> input_bit_stream_ = std::make_unique<InputBitStream>();
-  double pre_value_;
+  double pre_value_ = 2;
 
   double NextValue();
 };

@@ -10,8 +10,7 @@ void SerfXORCompressor32::AddValue(float v) {
   // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
   if (std::abs(Float::IntBitsToFloat(stored_val_) - v) > kMaxDiff) {
     // in our implementation, we do not consider special cases and overflow case
-    thisVal = SerfUtils32::FindAppInt(v - kMaxDiff, v + kMaxDiff, v,
-                                      stored_val_, kMaxDiff);
+    thisVal = SerfUtils32::FindAppInt(v - kMaxDiff, v + kMaxDiff, v, stored_val_, kMaxDiff);
   } else {
     // let current value be the last value, making an XORed value of 0.
     thisVal = stored_val_;
@@ -23,17 +22,17 @@ void SerfXORCompressor32::AddValue(float v) {
 }
 
 long SerfXORCompressor32::compressed_size_in_bits() const {
-  return compressed_size_in_bits_;
+  return stored_compressed_size_in_bits_;
 }
 
-Array<uint8_t> SerfXORCompressor32::out_buffer() {
-  return out_buffer_;
+Array<uint8_t> SerfXORCompressor32::compressed_bytes() {
+  return compressed_bytes_;
 }
 
 void SerfXORCompressor32::Close() {
   compressed_size_in_bits_ += CompressValue(Float::FloatToIntBits(Float::kNan));
   output_bit_stream_->Flush();
-  Array<uint8_t> result = output_bit_stream_->GetBuffer(std::ceil(compressed_size_in_bits_ / 8.0));
+  compressed_bytes_ = output_bit_stream_->GetBuffer(std::ceil(compressed_size_in_bits_ / 8.0));
   output_bit_stream_->Refresh();
   stored_compressed_size_in_bits_ = compressed_size_in_bits_;
   compressed_size_in_bits_ = UpdateFlagAndPositionsIfNeeded();

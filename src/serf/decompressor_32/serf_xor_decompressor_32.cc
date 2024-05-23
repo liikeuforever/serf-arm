@@ -5,7 +5,7 @@ std::vector<float> SerfXORDecompressor32::Decompress(const Array<uint8_t> &bs) {
   UpdateFlagAndPositionsIfNeeded();
   std::vector<float> values;
   uint32_t value;
-  while ((value = ReadValue()) != Float::FloatToIntBits(Float::kNan)) {
+  while (!std::isnan(Float::IntBitsToFloat(value = ReadValue()))) {
     values.emplace_back(Float::IntBitsToFloat(value));
     stored_val_ = value;
   }

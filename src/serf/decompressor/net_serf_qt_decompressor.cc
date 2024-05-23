@@ -1,6 +1,6 @@
 #include "serf/decompressor/net_serf_qt_decompressor.h"
 
-NetSerfQtDecompressor::NetSerfQtDecompressor(double max_diff) : kMaxDiff(max_diff) {}
+NetSerfQtDecompressor::NetSerfQtDecompressor(double max_diff) : kMaxDiff(max_diff * 0.999) {}
 
 double NetSerfQtDecompressor::Decompress(Array<uint8_t> &bs) {
   input_bit_stream_->SetBuffer(bs);

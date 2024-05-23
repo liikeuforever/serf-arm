@@ -1151,7 +1151,7 @@ PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff
         perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_in_bits());
         Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes();
         auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = serf_xor_decompressor.decompress(compression_output);
+        std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
         auto decompression_end_time = std::chrono::steady_clock::now();
 
         auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(

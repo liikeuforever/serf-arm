@@ -11,8 +11,8 @@
 
 class SerfQtDecompressor32 {
  public:
-  explicit SerfQtDecompressor32(const Array<uint8_t> &bs);
-  std::vector<float> Decompress();
+  SerfQtDecompressor32() = default;
+  std::vector<float> Decompress(const Array<uint8_t> &bs);
 
  private:
   int block_size_;

@@ -25,7 +25,7 @@ SerfUtils32::FindAppInt(float min_float, float max_float, uint32_t sign,
     uint32_t min = Float::FloatToIntBits(min_float) & 0x7fffffff;
     uint32_t max = Float::FloatToIntBits(max_float);
     int leading_zeros = __builtin_clz(min ^ max);
-    uint32_t front_mask = 0xffffffff << (32 - leading_zeros);
+    int32_t front_mask = 0xffffffff << (32 - leading_zeros);
     int shift = 32 - leading_zeros;
     uint32_t result_int;
     float diff;

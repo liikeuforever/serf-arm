@@ -14,19 +14,19 @@ void SerfQtCompressor32::AddValue(float v) {
   pre_value_ = recover_value;
 }
 
-Array<uint8_t> SerfQtCompressor32::GetBytes() {
-    Array<uint8_t> result = output_bit_stream_->GetBuffer(std::ceil(stored_compressed_size_in_bits_ / 8.0));
-    output_bit_stream_->Refresh();
-    return result;
+Array<uint8_t> SerfQtCompressor32::compressed_bytes() {
+  return compressed_bytes_;
 }
 
 void SerfQtCompressor32::Close() {
   output_bit_stream_->Flush();
+  compressed_bytes_ = output_bit_stream_->GetBuffer(std::ceil(compressed_size_in_bits_ / 8.0));
+  output_bit_stream_->Refresh();
   pre_value_ = 2;
   stored_compressed_size_in_bits_ = compressed_size_in_bits_;
   compressed_size_in_bits_ = 0;
 }
 
-long SerfQtCompressor32::compressed_size_in_bits() const {
-    return compressed_size_in_bits_;
+long SerfQtCompressor32::stored_compressed_size_in_bits() const {
+    return stored_compressed_size_in_bits_;
 }

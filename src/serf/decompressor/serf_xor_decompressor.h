@@ -15,7 +15,7 @@ class SerfXORDecompressor {
  public:
   explicit SerfXORDecompressor(long adjust_digit) : adjust_digit_(adjust_digit) {};
 
-  std::vector<double> decompress(const Array<uint8_t> &bs);
+  std::vector<double> Decompress(const Array<uint8_t> &bs);
 
  private:
   uint64_t stored_val_ = Double::DoubleToLongBits(2);

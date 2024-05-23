@@ -1,6 +1,6 @@
 #include "serf/decompressor/serf_xor_decompressor.h"
 
-std::vector<double> SerfXORDecompressor::decompress(const Array<uint8_t> &bs) {
+std::vector<double> SerfXORDecompressor::Decompress(const Array<uint8_t> &bs) {
   input_bit_stream_->SetBuffer(bs);
   UpdateFlagAndPositionsIfNeeded();
   std::vector<double> values;

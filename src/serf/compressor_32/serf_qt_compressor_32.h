@@ -14,14 +14,15 @@ class SerfQtCompressor32 {
  public:
   explicit SerfQtCompressor32(int block_size, float max_diff);
   void AddValue(float v);
-  Array<uint8_t> GetBytes();
+  Array<uint8_t> compressed_bytes();
   void Close();
-  long compressed_size_in_bits() const;
+  long stored_compressed_size_in_bits() const;
 
  private:
   const float kMaxDiff;
   std::unique_ptr<OutputBitStream> output_bit_stream_;
   float pre_value_ = 2;
+  Array<uint8_t> compressed_bytes_;
   long compressed_size_in_bits_ = 0;
   long stored_compressed_size_in_bits_ = 0;
 };

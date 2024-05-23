@@ -23,7 +23,7 @@ class SerfQtCompressor {
 
   void AddValue(double v);
 
-  Array<uint8_t> GetBytes();
+  Array<uint8_t> compressed_bytes();
 
   void Close();
 
@@ -31,7 +31,10 @@ class SerfQtCompressor {
 
  private:
   const double kMaxDiff;
+  const int kBlockSize;
+  bool first_ = true;
   std::unique_ptr<OutputBitStream> output_bit_stream_;
+  Array<uint8_t> compressed_bytes_;
   double pre_value_ = 2;
   long compressed_size_in_bits_ = 0;
   long stored_compressed_size_in_bits_ = 0;

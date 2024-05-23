@@ -76,7 +76,7 @@ TEST(TestElf, CorrectnessTest) {
               compressor.AddValue(item);
             }
           compressor.Close();
-            Array<uint8_t> compressed = compressor.out_buffer();
+            Array<uint8_t> compressed = compressor.compressed_bytes();
             ElfDecompressor decompressor(compressed);
             std::vector<double> decompressed = decompressor.Decompress();
             EXPECT_EQ(originalData.size(), decompressed.size());

@@ -1,6 +1,6 @@
 #include "serf/compressor/net_serf_qt_compressor.h"
 
-NetSerfQtCompressor::NetSerfQtCompressor(double error_bound) : kMaxDiff(error_bound) {}
+NetSerfQtCompressor::NetSerfQtCompressor(double error_bound) : kMaxDiff(error_bound * 0.999) {}
 
 Array<uint8_t> NetSerfQtCompressor::Compress(double v) {
   int written_bits_count = output_bit_stream_->WriteInt(0, 4);
