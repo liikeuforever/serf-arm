@@ -19,7 +19,9 @@ class SerfQtCompressor32 {
   long stored_compressed_size_in_bits() const;
 
  private:
+  const int kBlockSize;
   const float kMaxDiff;
+  bool first_ = true;
   std::unique_ptr<OutputBitStream> output_bit_stream_;
   float pre_value_ = 2;
   Array<uint8_t> compressed_bytes_;

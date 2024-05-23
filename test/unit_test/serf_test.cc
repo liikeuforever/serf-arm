@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <filesystem>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -9,8 +8,6 @@
 
 #include "serf/compressor/serf_xor_compressor.h"
 #include "serf/decompressor/serf_xor_decompressor.h"
-#include "serf/compressor/tensor_serf_xor_compressor.h"
-#include "serf/decompressor/tensor_serf_xor_decompressor.h"
 #include "serf/compressor/serf_qt_compressor.h"
 #include "serf/decompressor/serf_qt_decompressor.h"
 #include "serf/compressor_32/serf_xor_compressor_32.h"
