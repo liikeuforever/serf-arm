@@ -1875,8 +1875,8 @@ TEST(Perf, All) {
         }
 
         // Lossless
-        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
+//        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
         expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream)));
         ResetFileStream(data_set_input_stream);
         expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream)));

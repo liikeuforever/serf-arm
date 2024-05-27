@@ -1,8 +1,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "serf/concurrency/tensor_xor_compress_manager.h"
-#include "serf/concurrency/tensor_xor_decompress_manager.h"
+#include "serf/parallel/tensor_xor_compress_manager.h"
+#include "serf/parallel/tensor_xor_decompress_manager.h"
 
 namespace py = pybind11;
 
