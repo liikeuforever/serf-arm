@@ -9,7 +9,7 @@
 #include "lz4/LZ4Decompressor.h"
 
 const static int BLOCK_SIZE = 1000;
-const static std::string DATA_SET_DIR = "../../test/dataSet";
+const static std::string DATA_SET_DIR = "../../test/data_set";
 const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D {
         std::make_pair("init.csv", 0),
         std::make_pair("Air-pressure.csv", 0),

@@ -14,7 +14,7 @@ foreach(F ${TEST_SRC})
     get_filename_component(TEST_PROG ${F} NAME_WE)
     add_executable(${TEST_PROG} ${F})
     string(REPLACE "_test" "" LIB_NAME ${TEST_PROG})
-    target_link_libraries(${TEST_PROG} PRIVATE ${LIB_NAME} GTest::gtest_main)
+    target_link_libraries(${TEST_PROG} PRIVATE ${LIB_NAME} serf GTest::gtest_main)
     gtest_discover_tests(${TEST_PROG})
 endforeach(F)
 

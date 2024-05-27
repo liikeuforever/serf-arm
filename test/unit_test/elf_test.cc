@@ -3,11 +3,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "elf/elf_compressor.h"
-#include "elf/elf_decompressor.h"
+
+#include "elf/elf.h"
 
 const static int BLOCK_SIZE = 1000;
-const static std::string DATA_SET_DIR = "../../test/dataSet";
+const static std::string DATA_SET_DIR = "../../test/data_set";
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.
@@ -69,22 +69,16 @@ TEST(TestElf, CorrectnessTest) {
             fprintf(stderr, "[Error] Failed to open the file '%s'\n", dataSet.c_str());
         }
 
-        std::vector<double> originalData;
-        while ((originalData = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
-            ElfCompressor compressor;
-            for (const auto &item: originalData) {
-              compressor.AddValue(item);
-            }
-          compressor.Close();
-            Array<uint8_t> compressed = compressor.compressed_bytes();
-            ElfDecompressor decompressor(compressed);
-            std::vector<double> decompressed = decompressor.Decompress();
-            EXPECT_EQ(originalData.size(), decompressed.size());
+        std::vector<double> original_data;
+        while ((original_data = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
+            uint8_t *compression_output_buffer;
+            double decompression_output[BLOCK_SIZE];
+            ssize_t compression_output_len_in_bytes = elf_encode(original_data.data(), original_data.size(),
+                                                             &compression_output_buffer, 0);
+            elf_decode(compression_output_buffer, compression_output_len_in_bytes, decompression_output,
+                     0);
             for (int i = 0; i < BLOCK_SIZE; ++i) {
-                if (originalData[i] - decompressed[i] != 0) {
-                    GTEST_LOG_(INFO) << " " << originalData[i] << " " << decompressed[i];
-                }
-                EXPECT_TRUE(originalData[i] - decompressed[i] == 0);
+                EXPECT_TRUE(original_data[i] - decompression_output[i] == 0);
             }
         }
 

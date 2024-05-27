@@ -7,7 +7,7 @@
 #include "machete/machete.h"
 
 const static int BLOCK_SIZE = 1000;
-const static std::string DATA_SET_DIR = "../../test/dataSet";
+const static std::string DATA_SET_DIR = "../../test/data_set";
 
 constexpr static double MAX_DIFF[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 

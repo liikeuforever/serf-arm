@@ -8,7 +8,7 @@
 #include "buff/buff_decompressor.h"
 
 const static int kBlockSize = 1000;
-const static std::string kDataSetDir = "../../test/dataSet";
+const static std::string kDataSetDir = "../../test/data_set";
 
 int block_max_precision;
 
@@ -80,7 +80,7 @@ TEST(TestBuff, CorrectnessTest) {
             Array<uint8_t> compress_pack = compressor.get_out();
             BuffDecompressor decompressor(compress_pack);
             Array<double> output = decompressor.decompress();
-            EXPECT_EQ(original_data.size(), output.length);
+            EXPECT_EQ(original_data.size(), output.length());
             for (int i = 0; i < kBlockSize; ++i) {
                 EXPECT_FLOAT_EQ(original_data[i], output[i]);
                 if (original_data[i] - output[i] != 0) {
