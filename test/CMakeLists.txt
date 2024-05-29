@@ -21,3 +21,8 @@ endforeach(F)
 add_executable(PerformanceProgram Perf.cc)
 target_link_libraries(PerformanceProgram PRIVATE alp buff chimp deflate elf fpc gorilla lzw lz77 lz4 machete sz serf GTest::gtest_main)
 gtest_discover_tests(PerformanceProgram)
+
+add_executable(TransClient transmission/prog/client.cc)
+add_executable(TransServer transmission/prog/server.cc)
+target_link_libraries(TransClient serf)
+target_link_libraries(TransServer serf)
