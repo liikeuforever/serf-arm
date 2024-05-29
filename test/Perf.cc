@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <filesystem>
 #include <fstream>
 #include <string>
 #include <utility>
@@ -7,8 +6,6 @@
 #include <vector>
 #include <unordered_map>
 #include <chrono>
-#include <thread>
-#include <sys/socket.h>
 
 #include "serf/compressor/serf_xor_compressor.h"
 #include "serf/decompressor/serf_xor_decompressor.h"
@@ -43,21 +40,21 @@ const static std::string kExportExprTablePrefix = "../../test/";
 const static std::string kExportExprTableFileName = "perf_table.csv";
 const static std::string kDataSetDirPrefix = "../../test/data_set/";
 const static std::string kDataSetList[] = {
-        "init.csv",
-        "Air-pressure.csv",
-        "Air-sensor.csv",
-        "Bird-migration.csv",
-        "Bitcoin-price.csv",
-        "Basel-temp.csv",
-        "Basel-wind.csv",
-        "City-temp.csv",
-        "Dew-point-temp.csv",
-        "IR-bio-temp.csv",
-        "PM10-dust.csv",
-        "Stocks-DE.csv",
-        "Stocks-UK.csv",
-        "Stocks-USA.csv",
-        "Wind-Speed.csv"
+    "init.csv",
+    "Air-pressure.csv",
+    "Air-sensor.csv",
+    "Bird-migration.csv",
+    "Bitcoin-price.csv",
+    "Basel-temp.csv",
+    "Basel-wind.csv",
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "IR-bio-temp.csv",
+    "PM10-dust.csv",
+    "Stocks-DE.csv",
+    "Stocks-UK.csv",
+    "Stocks-USA.csv",
+    "Wind-Speed.csv"
 };
 const static std::string kDataSetList32[] = {
     "City-temp.csv",
@@ -67,1049 +64,1132 @@ const static std::string kDataSetList32[] = {
     "Wind-Speed.csv"
 };
 const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
-        {"init.csv",           0},
-        {"Air-pressure.csv",   0},
-        {"Air-sensor.csv",     128},
-        {"Bird-migration.csv", 60},
-        {"Bitcoin-price.csv",  511220},
-        {"Basel-temp.csv",     77},
-        {"Basel-wind.csv",     128},
-        {"City-temp.csv",      355},
-        {"Dew-point-temp.csv", 94},
-        {"IR-bio-temp.csv",    49},
-        {"PM10-dust.csv",      256},
-        {"Stocks-DE.csv",      253},
-        {"Stocks-UK.csv",      8047},
-        {"Stocks-USA.csv",     243},
-        {"Wind-Speed.csv",     2}
+    {"init.csv", 0},
+    {"Air-pressure.csv", 0},
+    {"Air-sensor.csv", 128},
+    {"Bird-migration.csv", 60},
+    {"Bitcoin-price.csv", 511220},
+    {"Basel-temp.csv", 77},
+    {"Basel-wind.csv", 128},
+    {"City-temp.csv", 355},
+    {"Dew-point-temp.csv", 94},
+    {"IR-bio-temp.csv", 49},
+    {"PM10-dust.csv", 256},
+    {"Stocks-DE.csv", 253},
+    {"Stocks-UK.csv", 8047},
+    {"Stocks-USA.csv", 243},
+    {"Wind-Speed.csv", 2}
 };
+constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 //constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 //constexpr static double kMaxDiffList[] = {1.0E-4};
 constexpr static float kMaxDiffList[] = {1.0E-3};
 //constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
 static std::string double_to_string_with_precision(double val, size_t precision) {
-    std::ostringstream stringBuffer;
-    stringBuffer << std::fixed << std::setprecision(precision) << val;
-    return stringBuffer.str();
+  std::ostringstream stringBuffer;
+  stringBuffer << std::fixed << std::setprecision(precision) << val;
+  return stringBuffer.str();
 }
 
-
 class PerfRecord {
-public:
-    PerfRecord() = default;
+ public:
+  PerfRecord() = default;
 
-    void IncreaseCompressionTime(std::chrono::microseconds &duration) {
-        compression_time_ += duration;
-    }
+  static int SetGlobalBlockSize(int block_size) {
+    block_size_ = block_size;
+    return block_size_;
+  }
 
-    auto &compression_time() {
-        return compression_time_;
-    }
+  void IncreaseCompressionTime(std::chrono::microseconds &duration) {
+    compression_time_ += duration;
+  }
 
-    auto AvgCompressionTimePerBlock() {
-        return (double) compression_time_.count() / block_count_;
-    }
+  auto &compression_time() {
+    return compression_time_;
+  }
 
-    void IncreaseDecompressionTime(std::chrono::microseconds &duration) {
-        decompression_time_ += duration;
-    }
+  auto AvgCompressionTimePerBlock() {
+    return (double) compression_time_.count() / block_count_;
+  }
 
-    auto &decompression_time() {
-        return decompression_time_;
-    }
+  void IncreaseDecompressionTime(std::chrono::microseconds &duration) {
+    decompression_time_ += duration;
+  }
 
-    auto AvgDecompressionTimePerBlock() {
-        return static_cast<double>(decompression_time_.count()) / block_count_;
-    }
+  auto &decompression_time() {
+    return decompression_time_;
+  }
 
-    long compressed_size_in_bits() {
-        return compressed_size_in_bits_;
-    }
+  auto AvgDecompressionTimePerBlock() {
+    return static_cast<double>(decompression_time_.count()) / block_count_;
+  }
 
-    void AddCompressedSize(long size) {
-        compressed_size_in_bits_ += size;
-    }
+  long compressed_size_in_bits() {
+    return compressed_size_in_bits_;
+  }
 
-    void set_block_count(int blockCount_) {
-        block_count_ = blockCount_;
-    }
+  void AddCompressedSize(long size) {
+    compressed_size_in_bits_ += size;
+  }
 
-    int block_count() {
-        return block_count_;
-    }
+  void set_block_count(int blockCount_) {
+    block_count_ = blockCount_;
+  }
 
-    double CalCompressionRatio() {
-        return (double) compressed_size_in_bits_ / (double) (block_count_ * kBlockSize * kDoubleSize);
-    }
+  int block_count() {
+    return block_count_;
+  }
 
-private:
-    std::chrono::microseconds compression_time_ = std::chrono::microseconds::zero();
-    std::chrono::microseconds decompression_time_ = std::chrono::microseconds::zero();
-    long compressed_size_in_bits_ = 0;
-    int block_count_ = 0;
+  double CalCompressionRatio() {
+    return (double) compressed_size_in_bits_ / (double) (block_count_ * block_size_ * kDoubleSize);
+  }
+
+ private:
+  std::chrono::microseconds compression_time_ = std::chrono::microseconds::zero();
+  std::chrono::microseconds decompression_time_ = std::chrono::microseconds::zero();
+  long compressed_size_in_bits_ = 0;
+  int block_count_ = 0;
+  static int block_size_;
 };
-
 
 class ExprConf {
-public:
-    struct hash {
-        std::size_t operator()(const ExprConf &conf) const {
-            return std::hash<std::string>()(conf.method_ + conf.data_set_ + conf.max_diff_);
-        }
-    };
-
-    ExprConf() = delete;
-
-    ExprConf(std::string method, std::string data_set, double max_diff) : method_(std::move(method)),
-                                                                          data_set_(std::move(data_set)),
-                                                                          max_diff_(double_to_string_with_precision(
-                                                                                  max_diff, 8)) {}
-
-    bool operator==(const ExprConf &otherConf) const {
-        return method_ == otherConf.method_ && data_set_ == otherConf.data_set_ && max_diff_ == otherConf.max_diff_;
+ public:
+  struct hash {
+    std::size_t operator()(const ExprConf &conf) const {
+      return std::hash<std::string>()(conf.method_ + conf.data_set_ + conf.max_diff_);
     }
+  };
 
-    std::string method() const {
-        return method_;
-    }
+  ExprConf() = delete;
 
-    std::string data_set() const {
-        return data_set_;
-    }
+  ExprConf(std::string method, std::string data_set, double max_diff) : method_(std::move(method)),
+                                                                        data_set_(std::move(data_set)),
+                                                                        max_diff_(double_to_string_with_precision(
+                                                                            max_diff, 8)) {}
 
-    std::string max_diff() const {
-        return max_diff_;
-    }
+  bool operator==(const ExprConf &otherConf) const {
+    return method_ == otherConf.method_ && data_set_ == otherConf.data_set_ && max_diff_ == otherConf.max_diff_;
+  }
 
-private:
-    const std::string method_;
-    const std::string data_set_;
-    const std::string max_diff_;
+  std::string method() const {
+    return method_;
+  }
+
+  std::string data_set() const {
+    return data_set_;
+  }
+
+  std::string max_diff() const {
+    return max_diff_;
+  }
+
+ private:
+  const std::string method_;
+  const std::string data_set_;
+  const std::string max_diff_;
 };
-
 
 std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> expr_table;
 
 void ExportTotalExprTable() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
-    // Write header
-    expr_table_output_stream
-            << "Method,DataSet,MaxDiff,BlockCount,CompressionRatio,CompressionTime(AvgPerBlock),DecompressionTime(AvgPerBlock)"
-            << std::endl;
-    // Write record
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
-                                 << record.block_count() << ","
-                                 << record.CalCompressionRatio() << "," << record.AvgCompressionTimePerBlock() << ","
-                                 << record.AvgDecompressionTimePerBlock() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,DataSet,MaxDiff,CompressionRatio,CompressionTime(AvgPerBlock),DecompressionTime(AvgPerBlock)"
+      << std::endl;
+  // Write record
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                             << record.CalCompressionRatio() << "," << record.AvgCompressionTimePerBlock() << ","
+                             << record.AvgDecompressionTimePerBlock() << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
 void ExportExprTableWithCompressionRatio() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
-    // Write header
-    expr_table_output_stream
-            << "Method,DataSet,MaxDiff,CompressionRatio"
-            << std::endl;
-    // Write record
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
-                                 << record.CalCompressionRatio() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,DataSet,MaxDiff,CompressionRatio"
+      << std::endl;
+  // Write record
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                             << record.CalCompressionRatio() << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
-void ExportExprTableWithCompressionRatioNoSpecificDataset() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
+void ExportExprTableWithCompressionRatioAvg() {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,MaxDiff,CompressionRatio"
+      << std::endl;
+  // Aggregate data and write
+  std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
+    auto find_result = aggr_table.find(aggr_key);
+    if (find_result != aggr_table.end()) {
+      auto &selected_record = find_result->second;
+      selected_record.set_block_count(selected_record.block_count() + record.block_count());
+      selected_record.AddCompressedSize(record.compressed_size_in_bits());
+    } else {
+      PerfRecord new_record;
+      new_record.set_block_count(record.block_count());
+      new_record.AddCompressedSize(record.compressed_size_in_bits());
+      aggr_table.insert(std::make_pair(aggr_key, new_record));
     }
-    // Write header
-    expr_table_output_stream
-            << "Method,MaxDiff,CompressionRatio"
-            << std::endl;
-    // Aggregate data and write
-    std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
-        auto find_result = aggr_table.find(aggr_key);
-        if (find_result != aggr_table.end()) {
-            auto &selected_record = find_result->second;
-            selected_record.set_block_count(selected_record.block_count() + record.block_count());
-            selected_record.AddCompressedSize(record.compressed_size_in_bits());
-        } else {
-            PerfRecord new_record;
-            new_record.set_block_count(record.block_count());
-            new_record.AddCompressedSize(record.compressed_size_in_bits());
-            aggr_table.insert(std::make_pair(aggr_key, new_record));
-        }
-    }
-    for (const auto &conf_record: aggr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << record.CalCompressionRatio() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  }
+  for (const auto &conf_record : aggr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << record.CalCompressionRatio()
+                             << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
 void ExportExprTableWithCompressionTime() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
-    // Write header
-    expr_table_output_stream
-            << "Method,DataSet,MaxDiff,CompressionTime(Total)"
-            << std::endl;
-    // Write record
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
-                                 << record.compression_time().count() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,DataSet,MaxDiff,CompressionTime(Total)"
+      << std::endl;
+  // Write record
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                             << record.compression_time().count() << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
-void ExportExprTableWithCompressionTimeNoSpecificDataset() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
+void ExportExprTableWithCompressionTimeAvg() {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,MaxDiff,CompressionTime(AvgPerBlock)"
+      << std::endl;
+  // Aggregate data and write
+  std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
+    auto find_result = aggr_table.find(aggr_key);
+    if (find_result != aggr_table.end()) {
+      auto &selected_record = find_result->second;
+      selected_record.set_block_count(selected_record.block_count() + record.block_count());
+      selected_record.IncreaseCompressionTime(record.compression_time());
+    } else {
+      PerfRecord new_record;
+      new_record.set_block_count(record.block_count());
+      new_record.IncreaseCompressionTime(record.compression_time());
+      aggr_table.insert(std::make_pair(aggr_key, new_record));
     }
-    // Write header
-    expr_table_output_stream
-            << "Method,MaxDiff,CompressionTime(AvgPerBlock)"
-            << std::endl;
-    // Aggregate data and write
-    std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
-        auto find_result = aggr_table.find(aggr_key);
-        if (find_result != aggr_table.end()) {
-            auto &selected_record = find_result->second;
-            selected_record.set_block_count(selected_record.block_count() + record.block_count());
-            selected_record.IncreaseCompressionTime(record.compression_time());
-        } else {
-            PerfRecord new_record;
-            new_record.set_block_count(record.block_count());
-            new_record.IncreaseCompressionTime(record.compression_time());
-            aggr_table.insert(std::make_pair(aggr_key, new_record));
-        }
-    }
-    for (const auto &conf_record: aggr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << std::fixed << std::setprecision(6) << record.AvgCompressionTimePerBlock() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  }
+  for (const auto &conf_record : aggr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << std::fixed << std::setprecision(6)
+                             << record.AvgCompressionTimePerBlock() << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
 void ExportExprTableWithDecompressionTime() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
-    // Write header
-    expr_table_output_stream
-            << "Method,DataSet,MaxDiff,DecompressionTime(Total)"
-            << std::endl;
-    // Write record
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
-                                 << record.decompression_time().count() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,DataSet,MaxDiff,DecompressionTime(Total)"
+      << std::endl;
+  // Write record
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.data_set() << "," << conf.max_diff() << ","
+                             << record.decompression_time().count() << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
-void ExportExprTableWithDecompressionTimeNoSpecificDataset() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
+void ExportExprTableWithDecompressionAvg() {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  // Write header
+  expr_table_output_stream
+      << "Method,MaxDiff,DecompressionTime(AvgPerBlock)"
+      << std::endl;
+  // Aggregate data and write
+  std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
+  for (const auto &conf_record : expr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
+    auto find_result = aggr_table.find(aggr_key);
+    if (find_result != aggr_table.end()) {
+      auto &selected_record = find_result->second;
+      selected_record.set_block_count(selected_record.block_count() + record.block_count());
+      selected_record.IncreaseDecompressionTime(record.decompression_time());
+    } else {
+      PerfRecord new_record;
+      new_record.set_block_count(record.block_count());
+      new_record.IncreaseDecompressionTime(record.decompression_time());
+      aggr_table.insert(std::make_pair(aggr_key, new_record));
     }
-    // Write header
-    expr_table_output_stream
-            << "Method,MaxDiff,DecompressionTime(AvgPerBlock)"
-            << std::endl;
-    // Aggregate data and write
-    std::unordered_map<ExprConf, PerfRecord, ExprConf::hash> aggr_table;
-    for (const auto &conf_record: expr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        auto aggr_key = ExprConf(conf.method(), "", std::stod(conf.max_diff()));
-        auto find_result = aggr_table.find(aggr_key);
-        if (find_result != aggr_table.end()) {
-            auto &selected_record = find_result->second;
-            selected_record.set_block_count(selected_record.block_count() + record.block_count());
-            selected_record.IncreaseDecompressionTime(record.decompression_time());
-        } else {
-            PerfRecord new_record;
-            new_record.set_block_count(record.block_count());
-            new_record.IncreaseDecompressionTime(record.decompression_time());
-            aggr_table.insert(std::make_pair(aggr_key, new_record));
-        }
-    }
-    for (const auto &conf_record: aggr_table) {
-        auto conf = conf_record.first;
-        auto record = conf_record.second;
-        expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << std::fixed << std::setprecision(6) << record.AvgDecompressionTimePerBlock() << std::endl;
-    }
-    // Go!!
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  }
+  for (const auto &conf_record : aggr_table) {
+    auto conf = conf_record.first;
+    auto record = conf_record.second;
+    expr_table_output_stream << conf.method() << "," << conf.max_diff() << "," << std::fixed << std::setprecision(6)
+                             << record.AvgDecompressionTimePerBlock() << std::endl;
+  }
+  // Go!!
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
+// Auto-Gen
 void GenTableCT() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[7],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[9],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[8],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[1],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[6],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[5],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[4],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[3],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfXOR", kDataSetList[2],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[7], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[9], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[8], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[1], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[6], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[5], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[4], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[3], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[2], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[7],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[9],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[8],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[1],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[6],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[5],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[4],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[3],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SerfQt", kDataSetList[2],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[7], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[9], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[8], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[1], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[6], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[5], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[4], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[3], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[2], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("Deflate", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Deflate", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Deflate", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("LZ4", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ4", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZ4", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("FPC", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("FPC", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("FPC", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Gorilla", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("Chimp", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Chimp", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Chimp", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("Elf", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Elf", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Elf", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("SZ", kDataSetList[7],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[9],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[8],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[1],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[6],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[5],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[4],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[3],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("SZ", kDataSetList[2],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SZ", kDataSetList[7], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[9], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[8], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[1], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[6], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[5], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[4], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[3], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[2], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("Machete", kDataSetList[7],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[9],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[8],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[1],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[6],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[5],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[4],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[3],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Machete", kDataSetList[2],  kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Machete", kDataSetList[7], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[9], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[14], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[10], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[12], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[13], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[11], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[8], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[1], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[6], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[5], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[4], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[3], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[2], kMaxDiffList[0]))->second.AvgCompressionTimePerBlock()
+      << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("LZ77", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZ77", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZ77", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("LZW", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("LZW", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZW", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-    << expr_table.find(ExprConf("Buff", kDataSetList[7],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[9],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[8],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[1],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[6],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[5],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[4],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[3],  0))->second.AvgCompressionTimePerBlock() << ","
-    << expr_table.find(ExprConf("Buff", kDataSetList[2],  0))->second.AvgCompressionTimePerBlock() << ","
-    << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Buff", kDataSetList[7], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[9], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[14], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[10], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[12], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[13], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[11], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[8], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[1], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[6], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[5], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[4], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[3], 0))->second.AvgCompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[2], 0))->second.AvgCompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
 void GenTableCR() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[7],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[9],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[8],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[1],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[6],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[5],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[4],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[3],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfXOR", kDataSetList[2],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[7], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[9], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[8], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[1], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[6], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[5], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[4], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[3], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[2], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[7],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[9],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[8],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[1],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[6],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[5],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[4],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[3],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SerfQt", kDataSetList[2],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[7], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[9], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[8], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[1], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[6], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[5], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[4], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[3], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[2], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("Deflate", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Deflate", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Deflate", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("LZ4", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ4", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZ4", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("FPC", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("FPC", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("FPC", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Gorilla", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("Chimp", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Chimp", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Chimp", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("Elf", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Elf", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Elf", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("SZ", kDataSetList[7],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[9],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[8],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[1],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[6],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[5],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[4],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[3],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("SZ", kDataSetList[2],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SZ", kDataSetList[7], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[9], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[8], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[1], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[6], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[5], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[4], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[3], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[2], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("Machete", kDataSetList[7],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[9],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[8],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[1],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[6],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[5],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[4],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[3],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Machete", kDataSetList[2],  kMaxDiffList[0]))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Machete", kDataSetList[7], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[9], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[14], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[10], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[12], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[13], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[11], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[8], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[1], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[6], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[5], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[4], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[3], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[2], kMaxDiffList[0]))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("LZ77", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZ77", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZ77", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("LZW", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZW", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream
-            << expr_table.find(ExprConf("Buff", kDataSetList[7],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[9],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[8],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[1],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[6],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[5],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[4],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[3],  0))->second.CalCompressionRatio() << ","
-            << expr_table.find(ExprConf("Buff", kDataSetList[2],  0))->second.CalCompressionRatio() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Buff", kDataSetList[7], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[9], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[14], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[10], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[12], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[13], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[11], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[8], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[1], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[6], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[5], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[4], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[3], 0))->second.CalCompressionRatio() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[2], 0))->second.CalCompressionRatio() << ","
+      << std::endl;
 
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
 void GenTableDT() {
-    std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
-    if (!expr_table_output_stream.is_open()) {
-        std::cerr << "Failed to export performance data." << std::endl;
-        exit(-1);
-    }
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
 
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[7],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[9],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[8],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[1],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[6],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[5],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[4],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[3],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfXOR", kDataSetList[2],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[7],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[9],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[8],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[1],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[6],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[5],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[4],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[3],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SerfQt", kDataSetList[2],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Deflate", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ4", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("FPC", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("FPC", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Gorilla", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Chimp", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("Elf", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Elf", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
-//
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("SZ", kDataSetList[7],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[9],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[8],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[1],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[6],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[5],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[4],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[3],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("SZ", kDataSetList[2],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[7], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[9], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[8], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[1], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[6], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[5], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[4], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[3], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfXOR", kDataSetList[2], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << std::endl;
 
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("Machete", kDataSetList[7],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[9],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[8],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[1],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[6],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[5],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[4],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[3],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Machete", kDataSetList[2],  kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[7], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[9], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[8], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[1], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[6], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[5], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[4], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[3], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SerfQt", kDataSetList[2], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << std::endl;
 
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZ77", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Deflate", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Deflate", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream
-//            << expr_table.find(ExprConf("LZW", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << expr_table.find(ExprConf("LZW", kDataSetList[0],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("LZW", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZ4", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ4", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
 
-//    expr_table_output_stream
-//            << expr_table.find(ExprConf("Buff", kDataSetList[7],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[9],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[8],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[1],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[6],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[5],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[4],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[3],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << expr_table.find(ExprConf("Buff", kDataSetList[2],  0))->second.AvgDecompressionTimePerBlock() << ","
-//            << std::endl;
+  expr_table_output_stream
+      << expr_table.find(ExprConf("FPC", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("FPC", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
 
-    expr_table_output_stream.flush();
-    expr_table_output_stream.close();
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Gorilla", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Chimp", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Chimp", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Elf", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Elf", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("SZ", kDataSetList[7], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[9], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[8], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[1], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[6], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[5], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[4], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[3], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("SZ", kDataSetList[2], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Machete", kDataSetList[7], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[9], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[14], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[10], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[12], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[13], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[11], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[8], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[1], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[6], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[5], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[4], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[3], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << expr_table.find(ExprConf("Machete", kDataSetList[2], kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock()
+      << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZ77", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZ77", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("LZW", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[0], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("LZW", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream
+      << expr_table.find(ExprConf("Buff", kDataSetList[7], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[9], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[14], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[10], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[12], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[13], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[11], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[8], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[1], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[6], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[5], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[4], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[3], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << expr_table.find(ExprConf("Buff", kDataSetList[2], 0))->second.AvgDecompressionTimePerBlock() << ","
+      << std::endl;
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
 }
 
-std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
-    std::vector<double> ret;
-    ret.reserve(kBlockSize);
-    int entry_count = 0;
-    double buffer;
-    while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
-        file_input_stream_ref >> buffer;
-        ret.emplace_back(buffer);
-        ++entry_count;
-    }
-    return ret;
-}
-
-std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref) {
-  std::vector<float> ret;
-  ret.reserve(kBlockSize);
+std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref, int block_size) {
+  std::vector<double> ret;
+  ret.reserve(block_size);
   int entry_count = 0;
-  float buffer;
-  while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
+  double buffer;
+  while (!file_input_stream_ref.eof() && entry_count < block_size) {
     file_input_stream_ref >> buffer;
     ret.emplace_back(buffer);
     ++entry_count;
@@ -1117,99 +1197,121 @@ std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref) {
   return ret;
 }
 
-std::vector<double> ReadBlockWithPrecisionInfo(std::ifstream &file_input_stream_ref, int *precision) {
-    std::vector<double> return_block;
-    int read_double_count = 0;
-    std::string double_value_raw_string;
-    size_t max_precision = 0;
-    size_t cur_precision;
-    while (!file_input_stream_ref.eof() && read_double_count < kBlockSize) {
-        std::getline(file_input_stream_ref, double_value_raw_string);
-        if (double_value_raw_string.empty()) continue;
-        if (double_value_raw_string.find('.') == std::string::npos) {
-            cur_precision = 1;
-            max_precision = std::max(max_precision, cur_precision);
-        } else {
-            cur_precision = double_value_raw_string.size() - double_value_raw_string.find('.') - 1;
-            max_precision = std::max(max_precision, cur_precision);
-        }
-        double buffer = std::stod(double_value_raw_string);
-        return_block.emplace_back(buffer);
-        ++read_double_count;
-    }
-    *precision = (int) max_precision;
-    return return_block;
+std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref, int block_size) {
+  std::vector<float> ret;
+  ret.reserve(block_size);
+  int entry_count = 0;
+  float buffer;
+  while (!file_input_stream_ref.eof() && entry_count < block_size) {
+    file_input_stream_ref >> buffer;
+    ret.emplace_back(buffer);
+    ++entry_count;
+  }
+  return ret;
 }
 
-std::vector<std::string> ReadRawBlock(std::ifstream &file_input_stream_ref) {
-    std::vector<std::string> ret;
-    int read_string_count = 0;
-    std::string buffer;
-    while (!file_input_stream_ref.eof() && read_string_count < kBlockSize) {
-        std::getline(file_input_stream_ref, buffer);
-        if (buffer.empty()) continue;
-        ret.emplace_back(buffer);
-        ++read_string_count;
+std::vector<double> ReadBlockWithPrecisionInfo(std::ifstream &file_input_stream_ref, int *precision, int block_size) {
+  std::vector<double> return_block;
+  int read_double_count = 0;
+  std::string double_value_raw_string;
+  size_t max_precision = 0;
+  size_t cur_precision;
+  while (!file_input_stream_ref.eof() && read_double_count < block_size) {
+    std::getline(file_input_stream_ref, double_value_raw_string);
+    if (double_value_raw_string.empty()) continue;
+    if (double_value_raw_string.find('.') == std::string::npos) {
+      cur_precision = 1;
+      max_precision = std::max(max_precision, cur_precision);
+    } else {
+      cur_precision = double_value_raw_string.size() - double_value_raw_string.find('.') - 1;
+      max_precision = std::max(max_precision, cur_precision);
     }
-    return ret;
+    double buffer = std::stod(double_value_raw_string);
+    return_block.emplace_back(buffer);
+    ++read_double_count;
+  }
+  *precision = (int) max_precision;
+  return return_block;
+}
+
+std::vector<std::string> ReadRawBlock(std::ifstream &file_input_stream_ref, int block_size) {
+  std::vector<std::string> ret;
+  int read_string_count = 0;
+  std::string buffer;
+  while (!file_input_stream_ref.eof() && read_string_count < block_size) {
+    std::getline(file_input_stream_ref, buffer);
+    if (buffer.empty()) continue;
+    ret.emplace_back(buffer);
+    ++read_string_count;
+  }
+  return ret;
 }
 
 void ResetFileStream(std::ifstream &data_set_input_stream_ref) {
-    data_set_input_stream_ref.clear();
-    data_set_input_stream_ref.seekg(0, std::ios::beg);
+  data_set_input_stream_ref.clear();
+  data_set_input_stream_ref.seekg(0, std::ios::beg);
 }
 
-PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff, const std::string &data_set) {
-    PerfRecord perf_record;
-    SerfXORCompressor serf_xor_compressor(kBlockSize, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
-    SerfXORDecompressor serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            serf_xor_compressor.AddValue(value);
-        }
-        serf_xor_compressor.Close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_in_bits());
-        Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes();
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfSerfXOR32(std::ifstream &data_set_input_stream_ref, float max_diff, const std::string &data_set) {
+PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref,
+                       double max_diff,
+                       int block_size,
+                       const std::string &data_set) {
   PerfRecord perf_record;
-  SerfXORCompressor32 serf_xor_compressor(kBlockSize, max_diff);
+
+  SerfXORCompressor serf_xor_compressor(block_size, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
+  SerfXORDecompressor serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_in_bits());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfSerfXOR32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
+  PerfRecord perf_record;
+
+  SerfXORCompressor32 serf_xor_compressor(block_size, max_diff);
   SerfXORDecompressor32 serf_xor_decompressor;
 
   int block_count = 0;
   std::vector<float> original_data;
-  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
+
     auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value: original_data) {
-      serf_xor_compressor.AddValue(value);
-    }
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
     serf_xor_compressor.Close();
     auto compression_end_time = std::chrono::steady_clock::now();
+
     perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_in_bits());
     Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes();
+
     auto decompression_start_time = std::chrono::steady_clock::now();
     std::vector<float> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
@@ -1227,57 +1329,63 @@ PerfRecord PerfSerfXOR32(std::ifstream &data_set_input_stream_ref, float max_dif
   return perf_record;
 }
 
-PerfRecord PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff) {
-    PerfRecord perf_record;
-    SerfQtCompressor serf_qt_compressor(kBlockSize, max_diff);
-    SerfQtDecompressor serf_qt_decompressor;
+PerfRecord PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
+  PerfRecord perf_record;
 
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            serf_qt_compressor.AddValue(value);
-        }
-        serf_qt_compressor.Close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(serf_qt_compressor.get_compressed_size_in_bits());
-        Array<uint8_t> compression_output = serf_qt_compressor.compressed_bytes();
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
-        auto decompression_end_time = std::chrono::steady_clock::now();
+  SerfQtCompressor serf_qt_compressor(block_size, max_diff);
+  SerfQtDecompressor serf_qt_decompressor;
 
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
+  int block_count = 0;
+  std::vector<double> original_data;
 
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
 
-    perf_record.set_block_count(block_count);
-    return perf_record;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_qt_compressor.AddValue(value);
+    serf_qt_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_qt_compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = serf_qt_compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
 }
 
-PerfRecord PerfSerfQt32(std::ifstream &data_set_input_stream_ref, float max_diff) {
+PerfRecord PerfSerfQt32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
   PerfRecord perf_record;
-  SerfQtCompressor32 serf_qt_compressor(kBlockSize, max_diff);
+
+  SerfQtCompressor32 serf_qt_compressor(block_size, max_diff);
   SerfQtDecompressor32 serf_qt_decompressor;
 
   int block_count = 0;
   std::vector<float> original_data;
-  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
+
     auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value: original_data) {
-      serf_qt_compressor.AddValue(value);
-    }
+    for (const auto &value : original_data) serf_qt_compressor.AddValue(value);
     serf_qt_compressor.Close();
     auto compression_end_time = std::chrono::steady_clock::now();
+
     perf_record.AddCompressedSize(serf_qt_compressor.stored_compressed_size_in_bits());
     Array<uint8_t> compression_output = serf_qt_compressor.compressed_bytes();
+
     auto decompression_start_time = std::chrono::steady_clock::now();
     std::vector<float> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
@@ -1295,57 +1403,63 @@ PerfRecord PerfSerfQt32(std::ifstream &data_set_input_stream_ref, float max_diff
   return perf_record;
 }
 
-PerfRecord PerfDeflate(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
+PerfRecord PerfDeflate(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
 
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        DeflateCompressor deflate_compressor;
-        DeflateDecompressor deflate_decompressor;
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            deflate_compressor.addValue(value);
-        }
-        deflate_compressor.close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(deflate_compressor.getCompressedSizeInBits());
-        Array<uint8_t> compression_output = deflate_compressor.getBytes();
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = deflate_decompressor.decompress(compression_output);
-        auto decompression_end_time = std::chrono::steady_clock::now();
+  int block_count = 0;
+  std::vector<double> original_data;
 
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
 
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
+    DeflateCompressor deflate_compressor(block_size);
+    DeflateDecompressor deflate_decompressor;
 
-    perf_record.set_block_count(block_count);
-    return perf_record;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) deflate_compressor.addValue(value);
+    deflate_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(deflate_compressor.getCompressedSizeInBits());
+    Array<uint8_t> compression_output = deflate_compressor.getBytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = deflate_decompressor.decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
 }
 
-PerfRecord PerfDeflate32(std::ifstream &data_set_input_stream_ref) {
+PerfRecord PerfDeflate32(std::ifstream &data_set_input_stream_ref, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
   std::vector<float> original_data;
-  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
-    DeflateCompressor deflate_compressor;
-    DeflateDecompressor deflate_decompressor;
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
+
+    DeflateCompressor deflate_compressor(block_size);
+    DeflateDecompressor deflate_decompressor;
+
     auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value: original_data) {
-      deflate_compressor.addValue32(value);
-    }
+    for (const auto &value : original_data) deflate_compressor.addValue32(value);
     deflate_compressor.close();
     auto compression_end_time = std::chrono::steady_clock::now();
+
     perf_record.AddCompressedSize(deflate_compressor.getCompressedSizeInBits());
     Array<uint8_t> compression_output = deflate_compressor.getBytes();
+
     auto decompression_start_time = std::chrono::steady_clock::now();
     std::vector<float> decompressed_data = deflate_decompressor.decompress32(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
@@ -1363,57 +1477,63 @@ PerfRecord PerfDeflate32(std::ifstream &data_set_input_stream_ref) {
   return perf_record;
 }
 
-PerfRecord PerfLZ4(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
+PerfRecord PerfLZ4(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
 
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        LZ4Compressor lz_4_compressor;
-        LZ4Decompressor lz_4_decompressor;
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            lz_4_compressor.addValue(value);
-        }
-        lz_4_compressor.close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(lz_4_compressor.getCompressedSizeInBits());
-        Array<char> compression_output = lz_4_compressor.getBytes();
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = lz_4_decompressor.decompress(compression_output);
-        auto decompression_end_time = std::chrono::steady_clock::now();
+  int block_count = 0;
+  std::vector<double> original_data;
 
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
 
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
+    LZ4Compressor lz_4_compressor(block_size);
+    LZ4Decompressor lz_4_decompressor;
 
-    perf_record.set_block_count(block_count);
-    return perf_record;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) lz_4_compressor.addValue(value);
+    lz_4_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(lz_4_compressor.getCompressedSizeInBits());
+    Array<char> compression_output = lz_4_compressor.getBytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = lz_4_decompressor.decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
 }
 
-PerfRecord PerfLZ432(std::ifstream &data_set_input_stream_ref) {
+PerfRecord PerfLZ432(std::ifstream &data_set_input_stream_ref, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
   std::vector<float> original_data;
-  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
-    LZ4Compressor lz_4_compressor;
-    LZ4Decompressor lz_4_decompressor;
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
+
+    LZ4Compressor lz_4_compressor(block_size);
+    LZ4Decompressor lz_4_decompressor;
+
     auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value: original_data) {
-      lz_4_compressor.addValue32(value);
-    }
+    for (const auto &value : original_data) lz_4_compressor.addValue32(value);
     lz_4_compressor.close();
     auto compression_end_time = std::chrono::steady_clock::now();
+
     perf_record.AddCompressedSize(lz_4_compressor.getCompressedSizeInBits());
     Array<char> compression_output = lz_4_compressor.getBytes();
+
     auto decompression_start_time = std::chrono::steady_clock::now();
     std::vector<float> decompressed_data = lz_4_decompressor.decompress32(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
@@ -1431,269 +1551,258 @@ PerfRecord PerfLZ432(std::ifstream &data_set_input_stream_ref) {
   return perf_record;
 }
 
-PerfRecord PerfFPC(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        FpcCompressor fpc_compressor(5, kBlockSize);
-        FpcDecompressor fpc_decompressor(5, kBlockSize);
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            fpc_compressor.addValue(value);
-        }
-        fpc_compressor.close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(fpc_compressor.getCompressedSizeInBits());
-        std::vector<char> compression_output = fpc_compressor.getBytes();
-        fpc_decompressor.setBytes(compression_output.data(), compression_output.size());
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompressed_data = fpc_decompressor.decompress();
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfALP(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        uint8_t compression_output_buffer[(kBlockSize * sizeof(double)) + 1024];
-        auto decompressed_buffer_size = alp::AlpApiUtils::align_value<size_t, alp::config::VECTOR_SIZE>(kBlockSize);
-        double decompress_output[decompressed_buffer_size];
-        alp::AlpCompressor alp_compressor;
-        alp::AlpDecompressor alp_decompressor;
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        alp_compressor.compress(original_data.data(), original_data.size(), compression_output_buffer);
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(alp_compressor.get_size() * 8);
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        alp_decompressor.decompress(compression_output_buffer, kBlockSize, decompress_output);
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfElf(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        uint8_t *compression_output_buffer;
-        double decompression_output[kBlockSize];
-        ssize_t compression_output_len_in_bytes;
-        ssize_t decompression_len;
-        ++block_count;
-
-        auto compression_start_time = std::chrono::steady_clock::now();
-        compression_output_len_in_bytes = elf_encode(original_data.data(), original_data.size(),
-                                                     &compression_output_buffer, 0);
-        auto compression_end_time = std::chrono::steady_clock::now();
-
-        perf_record.AddCompressedSize(compression_output_len_in_bytes * 8);
-
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        decompression_len = elf_decode(compression_output_buffer, compression_output_len_in_bytes, decompression_output,
-                                       0);
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfChimp128(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        ChimpCompressor chimp_compressor(128);
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            chimp_compressor.addValue(value);
-        }
-        chimp_compressor.close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(chimp_compressor.get_size());
-        Array<uint8_t> compression_output = chimp_compressor.get_compress_pack();
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        ChimpDecompressor chimp_decompressor(compression_output, 128);
-        std::vector<double> decompression_output = chimp_decompressor.decompress();
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfGorilla(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        GorillaCompressor gorilla_compressor(kBlockSize);
-        GorillaDecompressor gorilla_decompressor;
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        for (const auto &value: original_data) {
-            gorilla_compressor.addValue(value);
-        }
-        gorilla_compressor.close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(gorilla_compressor.get_compress_size_in_bits());
-        Array<uint8_t> compression_output = gorilla_compressor.get_compress_pack();
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        std::vector<double> decompression_output = gorilla_decompressor.decompress(compression_output);
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfBuff(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    int max_precision_this_block;
-    while ((original_data = ReadBlockWithPrecisionInfo(data_set_input_stream_ref, &max_precision_this_block)).size() ==
-           kBlockSize) {
-        ++block_count;
-        Array<double> original_data_array(kBlockSize);
-        for (int i = 0; i < kBlockSize; ++i) {
-            original_data_array[i] = original_data[i];
-        }
-        BuffCompressor buff_compressor(kBlockSize, max_precision_this_block);
-        auto compression_start_time = std::chrono::steady_clock::now();
-        buff_compressor.compress(original_data_array);
-        buff_compressor.close();
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(buff_compressor.get_size());
-        Array<uint8_t> compression_output = buff_compressor.get_out();
-        BuffDecompressor buff_decompressor(compression_output);
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        Array<double> decompression_output = buff_decompressor.decompress();
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfLZ77(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        auto *compression_output = new uint8_t[10000];
-        auto *decompression_output = new double[1000];
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        int compression_output_len = fastlz_compress_level(2, original_data.data(), kBlockSize * sizeof(double),
-                                                           compression_output);
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(compression_output_len * 8);
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        fastlz_decompress(compression_output, compression_output_len, decompression_output,
-                          kBlockSize * sizeof(double));
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-
-        delete[] compression_output;
-        delete[] decompression_output;
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfLZ7732(std::ifstream &data_set_input_stream_ref) {
+PerfRecord PerfFPC(std::ifstream &data_set_input_stream_ref, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
-  std::vector<float> original_data;
-  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
-    auto *compression_output = new uint8_t[10000];
-    auto *decompression_output = new float [1000];
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    FpcCompressor fpc_compressor(5, block_size);
+    FpcDecompressor fpc_decompressor(5, block_size);
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) fpc_compressor.addValue(value);
+    fpc_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(fpc_compressor.getCompressedSizeInBits());
+    std::vector<char> compression_output = fpc_compressor.getBytes();
+    fpc_decompressor.setBytes(compression_output.data(), compression_output.size());
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = fpc_decompressor.decompress();
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+// FPC only supports double precision
+
+// Alp can not handle with small block such as 50 records
+PerfRecord PerfALP(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    uint8_t compression_output_buffer[(block_size * sizeof(double)) + 1024];
+    auto decompressed_buffer_size = alp::AlpApiUtils::align_value<size_t, alp::config::VECTOR_SIZE>(block_size);
+    double decompress_output[decompressed_buffer_size];
+    alp::AlpCompressor alp_compressor;
+    alp::AlpDecompressor alp_decompressor;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    alp_compressor.compress(original_data.data(), original_data.size(), compression_output_buffer);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(alp_compressor.get_size() * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    alp_decompressor.decompress(compression_output_buffer, block_size, decompress_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+// ALP does not provide single precision interfaces as it mentioned in its paper
+
+PerfRecord PerfElf(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    uint8_t *compression_output_buffer;
+    double *decompression_output = new double[block_size];
+    ssize_t compression_output_len_in_bytes;
+    ssize_t decompression_len;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    compression_output_len_in_bytes = elf_encode(original_data.data(), original_data.size(),
+                                                 &compression_output_buffer, 0);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len_in_bytes * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    decompression_len = elf_decode(compression_output_buffer, compression_output_len_in_bytes, decompression_output,
+                                   0);
+    delete[] decompression_output;
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfChimp128(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    ChimpCompressor chimp_compressor(128);
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) {
+      chimp_compressor.addValue(value);
+    }
+    chimp_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(chimp_compressor.get_size());
+    Array<uint8_t> compression_output = chimp_compressor.get_compress_pack();
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    ChimpDecompressor chimp_decompressor(compression_output, 128);
+    std::vector<double> decompression_output = chimp_decompressor.decompress();
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfGorilla(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    GorillaCompressor gorilla_compressor(block_size);
+    GorillaDecompressor gorilla_decompressor;
     ++block_count;
     auto compression_start_time = std::chrono::steady_clock::now();
-    int compression_output_len = fastlz_compress_level(2, original_data.data(), kBlockSize * sizeof(float ),
+    for (const auto &value : original_data) {
+      gorilla_compressor.addValue(value);
+    }
+    gorilla_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+    perf_record.AddCompressedSize(gorilla_compressor.get_compress_size_in_bits());
+    Array<uint8_t> compression_output = gorilla_compressor.get_compress_pack();
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompression_output = gorilla_decompressor.decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfBuff(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+  int max_precision_this_block;
+
+  while ((original_data =
+              ReadBlockWithPrecisionInfo(data_set_input_stream_ref, &max_precision_this_block, block_size)).size() ==
+      block_size) {
+    ++block_count;
+    Array<double> original_data_array(block_size);
+    for (int i = 0; i < block_size; ++i) {
+      original_data_array[i] = original_data[i];
+    }
+    BuffCompressor buff_compressor(block_size, max_precision_this_block);
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    buff_compressor.compress(original_data_array);
+    buff_compressor.close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(buff_compressor.get_size());
+    Array<uint8_t> compression_output = buff_compressor.get_out();
+    BuffDecompressor buff_decompressor(compression_output);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    Array<double> decompression_output = buff_decompressor.decompress();
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfLZ77(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    auto *compression_output = new uint8_t[10000];
+    auto *decompression_output = new double[1000];
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    int compression_output_len = fastlz_compress_level(2, original_data.data(), block_size * sizeof(double),
                                                        compression_output);
     auto compression_end_time = std::chrono::steady_clock::now();
+
     perf_record.AddCompressedSize(compression_output_len * 8);
+
     auto decompression_start_time = std::chrono::steady_clock::now();
     fastlz_decompress(compression_output, compression_output_len, decompression_output,
-                      kBlockSize * sizeof(float ));
+                      block_size * sizeof(double));
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1712,95 +1821,106 @@ PerfRecord PerfLZ7732(std::ifstream &data_set_input_stream_ref) {
   return perf_record;
 }
 
-PerfRecord PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        ++block_count;
-        auto *compression_buffer = new uint8_t[100000];
-        auto *decompression_buffer = new double[kBlockSize];
-        auto compression_start_time = std::chrono::steady_clock::now();
-        ssize_t compression_output_len = machete_compress<lorenzo1, hybrid>(original_data.data(), original_data.size(),
-                                                                            &compression_buffer, max_diff);
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(compression_output_len * 8);
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        ssize_t decompression_output_len = machete_decompress<lorenzo1, hybrid>(compression_buffer,
-                                                                                compression_output_len,
-                                                                                decompression_buffer);
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-
-        delete[] compression_buffer;
-        delete[] decompression_buffer;
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff) {
-    PerfRecord perf_record;
-
-    int block_count = 0;
-    std::vector<double> original_data;
-    while ((original_data = ReadBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        ++block_count;
-        size_t compression_output_len;
-        auto decompression_output = new double[kBlockSize];
-        auto compression_start_time = std::chrono::steady_clock::now();
-        auto compression_output = SZ_compress_args(SZ_DOUBLE, original_data.data(), &compression_output_len,
-                                                   ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(compression_output_len * 8);
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        size_t decompression_output_len = SZ_decompress_args(SZ_DOUBLE, compression_output,
-                                                             compression_output_len, decompression_output, 0, 0,
-                                                             0, 0, kBlockSize);
-        auto decompression_end_time = std::chrono::steady_clock::now();
-
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
-
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-
-        delete[] decompression_output;
-    }
-
-    perf_record.set_block_count(block_count);
-    return perf_record;
-}
-
-PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, double max_diff) {
+PerfRecord PerfLZ7732(std::ifstream &data_set_input_stream_ref, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
   std::vector<float> original_data;
-  while ((original_data = ReadBlock32(data_set_input_stream_ref)).size() == kBlockSize) {
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    auto *compression_output = new uint8_t[10000];
+    auto *decompression_output = new float[1000];
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    int compression_output_len = fastlz_compress_level(2, original_data.data(), block_size * sizeof(float),
+                                                       compression_output);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    fastlz_decompress(compression_output, compression_output_len, decompression_output,
+                      block_size * sizeof(float));
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] compression_output;
+    delete[] decompression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    auto *compression_buffer = new uint8_t[100000];
+    auto *decompression_buffer = new double[block_size];
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    ssize_t compression_output_len = machete_compress<lorenzo1, hybrid>(original_data.data(), original_data.size(),
+                                                                        &compression_buffer, max_diff);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    ssize_t decompression_output_len = machete_decompress<lorenzo1, hybrid>(compression_buffer,
+                                                                            compression_output_len,
+                                                                            decompression_buffer);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] compression_buffer;
+    delete[] decompression_buffer;
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
     size_t compression_output_len;
-    auto decompression_output = new float [kBlockSize];
+    auto decompression_output = new double[block_size];
+
     auto compression_start_time = std::chrono::steady_clock::now();
-    auto compression_output = SZ_compress_args(SZ_FLOAT, original_data.data(), &compression_output_len,
+    auto compression_output = SZ_compress_args(SZ_DOUBLE, original_data.data(), &compression_output_len,
                                                ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
     auto compression_end_time = std::chrono::steady_clock::now();
+
     perf_record.AddCompressedSize(compression_output_len * 8);
+
     auto decompression_start_time = std::chrono::steady_clock::now();
-    size_t decompression_output_len = SZ_decompress_args(SZ_FLOAT, compression_output,
+    size_t decompression_output_len = SZ_decompress_args(SZ_DOUBLE, compression_output,
                                                          compression_output_len, decompression_output, 0, 0,
-                                                         0, 0, kBlockSize);
+                                                         0, 0, block_size);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1818,124 +1938,132 @@ PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, double max_diff) {
   return perf_record;
 }
 
-PerfRecord PerfLZW(std::ifstream &data_set_input_stream_ref) {
-    PerfRecord perf_record;
+PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
+  PerfRecord perf_record;
 
-    int block_count = 0;
-    std::vector<std::string> original_data;
-    while ((original_data = ReadRawBlock(data_set_input_stream_ref)).size() == kBlockSize) {
-        std::string input_string;
-        for (const auto &item: original_data) input_string += (item + " ");
-        LZW *lzw = LZW::instance();
-        ++block_count;
-        auto compression_start_time = std::chrono::steady_clock::now();
-        auto [compression_result, compression_result_code] = lzw->Compress(input_string);
-        EXPECT_EQ(compression_result_code, LZWResultCode::LZW_OK);
-        auto compression_end_time = std::chrono::steady_clock::now();
-        perf_record.AddCompressedSize(compression_result.size() * 8);
-        auto decompression_start_time = std::chrono::steady_clock::now();
-        auto [decompression_result, decompression_result_code] = lzw->Decompress(compression_result);
-        EXPECT_EQ(decompression_result_code, LZWResultCode::LZW_OK);
-        auto decompression_end_time = std::chrono::steady_clock::now();
+  int block_count = 0;
+  std::vector<float> original_data;
 
-        auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                compression_end_time - compression_start_time);
-        auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-                decompression_end_time - decompression_start_time);
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    size_t compression_output_len;
+    auto decompression_output = new float[block_size];
 
-        perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-        perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-    }
+    auto compression_start_time = std::chrono::steady_clock::now();
+    auto compression_output = SZ_compress_args(SZ_FLOAT, original_data.data(), &compression_output_len,
+                                               ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
+    auto compression_end_time = std::chrono::steady_clock::now();
 
-    perf_record.set_block_count(block_count);
-    return perf_record;
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    size_t decompression_output_len = SZ_decompress_args(SZ_FLOAT, compression_output,
+                                                         compression_output_len, decompression_output, 0, 0,
+                                                         0, 0, block_size);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] decompression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfLZW(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<std::string> original_data;
+  while ((original_data = ReadRawBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    std::string input_string;
+    for (const auto &item : original_data) input_string += (item + " ");
+    LZW *lzw = LZW::instance();
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    auto [compression_result, compression_result_code] = lzw->Compress(input_string);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_result.size() * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    auto [decompression_result, decompression_result_code] = lzw->Decompress(compression_result);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
 }
 
 TEST(Perf, All) {
-    for (const auto &data_set: kDataSetList) {
-        std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
-        if (!data_set_input_stream.is_open()) {
-            std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
-        }
-
-        // Lossy
-        for (const auto &max_diff: kMaxDiffList) {
-            expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
-                                             PerfSerfXOR(data_set_input_stream, max_diff, data_set)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
-                                             PerfSerfQt(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
-                                             PerfMachete(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-            expr_table.insert(
-                    std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff)));
-            ResetFileStream(data_set_input_stream);
-        }
-
-        // Lossless
-//        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, 0), PerfDeflate(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Elf", data_set, 0), PerfElf(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("FPC", data_set, 0), PerfFPC(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, 0), PerfGorilla(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, 0), PerfLZ4(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, 0), PerfLZ77(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-        expr_table.insert(std::make_pair(ExprConf("LZW", data_set, 0), PerfLZW(data_set_input_stream)));
-        ResetFileStream(data_set_input_stream);
-
-        data_set_input_stream.close();
+  int block_size = PerfRecord::SetGlobalBlockSize(kBlockSizeList[0]);
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_set_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    // Export all performance data
+    // Lossy
+    for (const auto &max_diff : kMaxDiffList) {
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
+                                       PerfSerfXOR(data_set_input_stream, max_diff, block_size, data_set)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
+                                       PerfSerfQt(data_set_input_stream, max_diff, block_size)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
+                                       PerfMachete(data_set_input_stream, max_diff, block_size)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(
+          std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff, block_size)));
+      ResetFileStream(data_set_input_stream);
+    }
+
+    // Lossless
+//        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
+//        ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Buff", data_set, 0), PerfBuff(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, 0), PerfChimp128(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, 0), PerfDeflate(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, 0), PerfElf(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, 0), PerfFPC(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, 0), PerfGorilla(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, 0), PerfLZ4(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, 0), PerfLZ77(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("LZW", data_set, 0), PerfLZW(data_set_input_stream, block_size)));
+    ResetFileStream(data_set_input_stream);
+
+    data_set_input_stream.close();
+  }
+
+  // Export all performance data
 //    GenTableDT();
 //    ExportTotalExprTable();
 //    ExportExprTableWithCompressionRatioNoSpecificDataset();
 //    ExportExprTableWithCompressionTimeNoSpecificDataset();
 //    ExportExprTableWithDecompressionTimeNoSpecificDataset();
 }
-//
-//void send_with_limit(int sockfd, const char* buffer, size_t len, size_t rate) {
-//  size_t sent = 0;
-//  auto start = std::chrono::steady_clock::now();
-//
-//  while (sent < len) {
-//    size_t to_send = std::min(len - sent, rate);
-//    ssize_t bytes_sent = send(sockfd, buffer + sent, to_send, 0);
-//
-//    if (bytes_sent <= 0) {
-//      std::cerr << "Send error!" << std::endl;
-//      return;
-//    }
-//
-//    sent += bytes_sent;
-//
-//    // Calculate elapsed time
-//    auto end = std::chrono::steady_clock::now();
-//    std::chrono::duration<double> elapsed = end - start;
-//
-//    // If we sent data too fast, sleep to limit the rate
-//    if (elapsed.count() < 1.0) {
-//      std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((1.0 - elapsed.count()) * 1000)));
-//    }
-//
-//    // Reset the start time
-//    start = std::chrono::steady_clock::now();
-//  }
-//}
-//
-//TEST(Perf, TransSerfXOR) {
-//
-//}

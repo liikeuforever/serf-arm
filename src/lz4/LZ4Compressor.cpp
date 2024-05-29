@@ -1,6 +1,7 @@
 #include "LZ4Compressor.h"
 
-LZ4Compressor::LZ4Compressor() {
+LZ4Compressor::LZ4Compressor(int block_size) {
+  compress_frame = Array<char>(static_cast<int>(LZ4F_compressBound(block_size * sizeof(double), nullptr)));
     LZ4F_errorCode_t error_code = LZ4F_createCompressionContext(&compression_context, LZ4F_VERSION);
     if (LZ4F_isError(error_code)) {
         throw std::runtime_error(LZ4F_getErrorName(error_code));

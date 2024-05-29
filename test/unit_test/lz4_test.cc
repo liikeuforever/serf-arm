@@ -90,7 +90,7 @@ TEST(TestLZ4, CorrectnessTest) {
 
         std::vector<double> originalData;
         while ((originalData = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
-            LZ4Compressor compressor;
+          LZ4Compressor compressor(BLOCK_SIZE);
             LZ4Decompressor decompressor;
             for (const auto &item: originalData) {
                 compressor.addValue(item);

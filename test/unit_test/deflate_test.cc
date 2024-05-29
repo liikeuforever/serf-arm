@@ -90,7 +90,7 @@ TEST(TestDeflate, CorrectnessTest) {
 
         std::vector<double> originalData;
         while ((originalData = ReadBlock(dataSetInputStream)).size() == BLOCK_SIZE) {
-            DeflateCompressor compressor;
+          DeflateCompressor compressor(BLOCK_SIZE);
             DeflateDecompressor decompressor;
             for (const auto &item: originalData) {
                 compressor.addValue(item);

@@ -8,13 +8,12 @@
 
 class DeflateCompressor {
 private:
-    const int BLOCK_SIZE = 1000;
     int ret;
     z_stream strm;
-    Array<unsigned char> compress_pack = Array<unsigned char>(BLOCK_SIZE * static_cast<int>(sizeof(double)));
+  Array<unsigned char> compress_pack;
 
 public:
-    DeflateCompressor();
+  DeflateCompressor(int block_size);
 
     ~DeflateCompressor();
 

@@ -8,14 +8,13 @@
 
 class LZ4Compressor {
 private:
-    const int BLOCK_SIZE = 1000;
     LZ4F_compressionContext_t compression_context;
     size_t rc;
-    Array<char> compress_frame = Array<char>(static_cast<int>(LZ4F_compressBound(BLOCK_SIZE * sizeof(double), nullptr)));
+  Array<char> compress_frame;
     size_t written_bytes = 0;
 
 public:
-    LZ4Compressor();
+  LZ4Compressor(int block_size);
 
     ~LZ4Compressor();
 
