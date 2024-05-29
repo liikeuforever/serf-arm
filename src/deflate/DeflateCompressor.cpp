@@ -4,9 +4,9 @@ DeflateCompressor::DeflateCompressor(int block_size) {
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
-  compress_pack = Array<unsigned char>(block_size * static_cast<int>(sizeof(double)));
+  compress_pack = Array<unsigned char>(2 * block_size * static_cast<int>(sizeof(double)));
   deflateInit(&strm, Z_DEFAULT_COMPRESSION);
-  strm.avail_out = block_size * static_cast<int>(sizeof(double));
+  strm.avail_out = 2 * block_size * static_cast<int>(sizeof(double));
     strm.next_out = compress_pack.begin();
 }
 
