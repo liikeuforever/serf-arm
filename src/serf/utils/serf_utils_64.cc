@@ -1,29 +1,23 @@
 #include "serf/utils/serf_utils_64.h"
 
-uint64_t
-SerfUtils64::FindAppLong(double min, double max, double v, uint64_t last_long,
-                         double max_diff, double adjust_digit) {
+uint64_t SerfUtils64::FindAppLong(double min, double max, double v, uint64_t last_long, double max_diff) {
   if (min >= 0) {
     // both positive
-    return FindAppLong(min, max, 0, v, last_long, max_diff, adjust_digit);
+    return FindAppLong(min, max, 0, v, last_long, max_diff);
   } else if (max <= 0) {
     // both negative
-    return FindAppLong(-max, -min, 0x8000000000000000ULL, v, last_long,
-                       max_diff, adjust_digit);
+    return FindAppLong(-max, -min, 0x8000000000000000ULL, v, last_long, max_diff);
   } else if (last_long >> 63 == 0) {
     // consider positive part only, to make more leading zeros
-    return FindAppLong(0, max, 0, v, last_long, max_diff, adjust_digit);
+    return FindAppLong(0, max, 0, v, last_long, max_diff);
   } else {
     // consider negative part only, to make more leading zeros
-    return FindAppLong(0, -min, 0x8000000000000000ULL, v, last_long,
-                       max_diff, adjust_digit);
+    return FindAppLong(0, -min, 0x8000000000000000ULL, v, last_long, max_diff);
   }
 }
 
-uint64_t
-SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t sign,
-                         double original, uint64_t last_long,
-                         double max_diff, double adjust_digit) {
+uint64_t SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t sign, double original,
+                                  uint64_t last_long, double max_diff) {
   // may be negative zero
   uint64_t min = Double::DoubleToLongBits(min_double) & 0x7fffffffffffffffULL;
   uint64_t max = Double::DoubleToLongBits(max_double);
@@ -40,8 +34,7 @@ SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t sign,
     append = rear | front;
     if (append >= min && append <= max) {
       result_long = append ^ sign;
-      diff = Double::LongBitsToDouble(result_long) - adjust_digit -
-          original;
+      diff = Double::LongBitsToDouble(result_long) - original;
       if (diff >= -max_diff && diff <= max_diff) {
         return result_long;
       }
@@ -52,8 +45,7 @@ SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t sign,
     if (append <= max) {
       // append must be greater than min
       result_long = append ^ sign;
-      diff = Double::LongBitsToDouble(result_long) - adjust_digit -
-          original;
+      diff = Double::LongBitsToDouble(result_long) - original;
       if (diff >= -max_diff && diff <= max_diff) {
         return result_long;
       }
@@ -65,5 +57,5 @@ SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t sign,
   }
 
   // we do not find a satisfied value, so we return the original value
-  return Double::DoubleToLongBits(original + adjust_digit);
+  return Double::DoubleToLongBits(original);
 }

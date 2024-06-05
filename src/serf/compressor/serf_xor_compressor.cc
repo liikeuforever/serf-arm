@@ -1,7 +1,6 @@
 #include "serf_xor_compressor.h"
 
-SerfXORCompressor::SerfXORCompressor(int capacity, double max_diff, long adjust_digit)
-    : kMaxDiff(max_diff), kAdjustDigit(adjust_digit) {
+SerfXORCompressor::SerfXORCompressor(int capacity, double max_diff): kMaxDiff(max_diff) {
   output_buffer_ = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 8 + capacity / 8 + 1) * 1.2));
   compressed_size_in_bits_ = output_buffer_->WriteInt(0, 2);
 }
@@ -9,11 +8,9 @@ SerfXORCompressor::SerfXORCompressor(int capacity, double max_diff, long adjust_
 void SerfXORCompressor::AddValue(double v) {
   uint64_t this_val;
   // note we cannot let > max_diff_, because kNan - v > max_diff_ is always false
-  if (__builtin_expect(std::abs(Double::LongBitsToDouble(stored_val_) - kAdjustDigit - v) > kMaxDiff, false)) {
+  if (__builtin_expect(std::abs(Double::LongBitsToDouble(stored_val_) - v) > kMaxDiff, false)) {
     // in our implementation, we do not consider special cases and overflow case
-    double adjust_value = v + kAdjustDigit;
-    this_val = SerfUtils64::FindAppLong(adjust_value - kMaxDiff, adjust_value + kMaxDiff, v, stored_val_,
-                                        kMaxDiff, kAdjustDigit);
+    this_val = SerfUtils64::FindAppLong(v - kMaxDiff, v + kMaxDiff, v, stored_val_, kMaxDiff);
   } else {
     // let current value be the last value, making an XORed value of 0.
     this_val = stored_val_;

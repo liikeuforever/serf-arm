@@ -11,12 +11,11 @@
 
 class NetSerfXORDecompressor {
  public:
-  explicit NetSerfXORDecompressor(int capacity, long adjustD);
+  explicit NetSerfXORDecompressor(int capacity);
   double Decompress(Array<uint8_t> &bs);
 
  private:
   const int kBlockSize;
-  const long adjust_digit_;
 
   uint64_t stored_val_ = Double::DoubleToLongBits(2);
   int stored_leading_zeros_ = std::numeric_limits<int>::max();

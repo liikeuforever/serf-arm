@@ -1,11 +1,10 @@
 #include "serf/decompressor/net_serf_xor_decompressor.h"
 
-NetSerfXORDecompressor::NetSerfXORDecompressor(int capacity, long adjustD) : kBlockSize(capacity), adjust_digit_
-    (adjustD) {}
+NetSerfXORDecompressor::NetSerfXORDecompressor(int capacity) : kBlockSize(capacity) {}
 
 double NetSerfXORDecompressor::Decompress(Array<uint8_t> &bs) {
   input_bit_stream_->SetBuffer(bs);
-  return Double::LongBitsToDouble(ReadValue()) - adjust_digit_;
+  return Double::LongBitsToDouble(ReadValue());
 }
 
 uint64_t NetSerfXORDecompressor::ReadValue() {

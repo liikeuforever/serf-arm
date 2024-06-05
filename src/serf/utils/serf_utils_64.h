@@ -7,9 +7,7 @@
 
 class SerfUtils64 {
  public:
-  static uint64_t
-  FindAppLong(double min, double max, double v, uint64_t last_long,
-              double max_diff, double adjust_digit);
+  static uint64_t FindAppLong(double min, double max, double v, uint64_t last_long, double max_diff);
 
  private:
   static constexpr uint64_t kBitWeight[64] = {
@@ -36,10 +34,8 @@ class SerfUtils64 {
       4611686018427387904ULL, 9223372036854775808ULL
   };
 
-  static uint64_t
-  FindAppLong(double min_double, double max_double, uint64_t sign,
-              double original, uint64_t last_long, double max_diff,
-              double adjust_digit);
+  static uint64_t FindAppLong(double min_double, double max_double, uint64_t sign, double original,
+                              uint64_t last_long, double max_diff);
 };
 
 #endif  // SERF_64_UTILS_H
