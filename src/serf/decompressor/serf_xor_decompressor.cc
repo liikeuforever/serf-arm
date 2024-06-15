@@ -6,7 +6,7 @@ std::vector<double> SerfXORDecompressor::Decompress(const Array<uint8_t> &bs) {
   std::vector<double> values;
   uint64_t value;
   while ((value = ReadValue()) != Double::DoubleToLongBits(Double::kNan)) {
-    values.emplace_back(Double::LongBitsToDouble(value));
+    values.emplace_back(Double::LongBitsToDouble(value) - static_cast<double>(adjust_digit_));
     stored_val_ = value;
   }
   return values;

@@ -45,6 +45,23 @@ const static std::string kDataSetList32[] = {
     "PM10-dust.csv",
     "Wind-Speed.csv"
 };
+const static std::unordered_map<std::string, int> kFileToAdjustD {
+    {"init.csv", 0},
+    {"Air-pressure.csv", 0},
+    {"Air-sensor.csv", 128},
+    {"Bird-migration.csv", 60},
+    {"Bitcoin-price.csv", 511220},
+    {"Basel-temp.csv", 77},
+    {"Basel-wind.csv", 128},
+    {"City-temp.csv", 355},
+    {"Dew-point-temp.csv", 94},
+    {"IR-bio-temp.csv", 49},
+    {"PM10-dust.csv", 256},
+    {"Stocks-DE.csv", 253},
+    {"Stocks-UK.csv", 8047},
+    {"Stocks-USA.csv", 243},
+    {"Wind-Speed.csv", 2}
+};
 constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 constexpr static float kMaxDiff32[] = {1.0E-1f, 1.0E-2f, 1.0E-3f};
 
@@ -96,9 +113,10 @@ TEST(TestSerfXOR, CorrectnessTest) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
+    int adjust_digit = kFileToAdjustD.find(data_set)->second;
     for (const auto &max_diff : kMaxDiff) {
-      SerfXORCompressor xor_compressor(kBlockSize, max_diff);
-      SerfXORDecompressor xor_decompressor;
+      SerfXORCompressor xor_compressor(kBlockSize, max_diff, adjust_digit);
+      SerfXORDecompressor xor_decompressor(adjust_digit);
 
       std::vector<double> original_data;
       while ((original_data = ReadBlock(data_set_input_stream)).size() == kBlockSize) {
@@ -166,9 +184,10 @@ TEST(TestNetSerfXOR, CorrectnessTest) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
+    int adjust_digit = kFileToAdjustD.find(data_set)->second;
     for (const auto &max_diff : kMaxDiff) {
-      NetSerfXORCompressor net_serf_xor_compressor(kBlockSize, max_diff);
-      NetSerfXORDecompressor net_serf_xor_decompressor(kBlockSize);
+      NetSerfXORCompressor net_serf_xor_compressor(kBlockSize, max_diff, adjust_digit);
+      NetSerfXORDecompressor net_serf_xor_decompressor(kBlockSize, adjust_digit);
 
       double originalData;
       while (!data_set_input_stream.eof()) {

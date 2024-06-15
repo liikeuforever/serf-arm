@@ -13,7 +13,7 @@
 
 class SerfXORDecompressor {
  public:
-  SerfXORDecompressor() = default;
+  explicit SerfXORDecompressor(long adjust_digit) : adjust_digit_(adjust_digit) {};
 
   std::vector<double> Decompress(const Array<uint8_t> &bs);
 
@@ -27,6 +27,7 @@ class SerfXORDecompressor {
   int leading_bits_per_value_ = 3;
   int trailing_bits_per_value_ = 3;
   bool equal_win_ = false;
+  long adjust_digit_;
 
   uint64_t ReadValue();
   void UpdateFlagAndPositionsIfNeeded();

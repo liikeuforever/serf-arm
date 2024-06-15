@@ -13,12 +13,13 @@
 
 class NetSerfXORCompressor {
  public:
-  NetSerfXORCompressor(int capacity, double max_diff);
+  NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit);
   Array<uint8_t> Compress(double v);
 
  private:
   const int kBlockSize;
   const double kMaxDiff;
+  const long kAdjustDigit;
 
   uint64_t stored_val_ = Double::DoubleToLongBits(2);
   std::unique_ptr<OutputBitStream> output_bit_stream_;
