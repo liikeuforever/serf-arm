@@ -12,28 +12,30 @@
 
 class SerfXORCompressor {
  public:
-  SerfXORCompressor(int capacity, double max_diff, long adjust_digit);
+  SerfXORCompressor(int windows_size, double max_diff, long adjust_digit);
 
   void AddValue(double v);
 
-  long compressed_size_in_bits() const;
+  long compressed_size_last_block() const;
 
-  Array<uint8_t> compressed_bytes();
+  Array<uint8_t> compressed_bytes_last_block();
 
   void Close();
 
  private:
   const double kMaxDiff;
   const long kAdjustDigit;
+  const int kWindowSize;
   uint64_t stored_val_ = Double::DoubleToLongBits(2);
 
   std::unique_ptr<OutputBitStream> output_buffer_;
-  Array<uint8_t> compressed_bytes_ = Array<uint8_t>();
+  Array<uint8_t> compressed_bytes_last_block_ = Array<uint8_t>();
 
-  long compressed_size_in_bits_;
-  long stored_compressed_size_in_bits_ = 0;
-  int number_of_values_ = 0;
-  double stored_compression_ratio_ = 0;
+  long compressed_size_this_block_;
+  long compressed_size_last_block_ = 0;
+  long compressed_size_this_window_ = 0;
+  int number_of_values_this_window_ = 0;
+  double compression_ratio_last_window_ = 0;
 
   int equal_vote_ = 0;
   bool equal_win_ = false;

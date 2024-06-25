@@ -21,7 +21,7 @@ class SerfXORDecompressor {
   uint64_t stored_val_ = Double::DoubleToLongBits(2);
   int stored_leading_zeros_ = std::numeric_limits<int>::max();
   int stored_trailing_zeros_ = std::numeric_limits<int>::max();
-  std::unique_ptr<InputBitStream> input_bit_stream_ = std::make_unique<InputBitStream>();
+  InputBitStream input_bit_stream_;
   Array<int> leading_representation_ = {0, 8, 12, 16, 18, 20, 22, 24};
   Array<int> trailing_representation_ = {0, 22, 28, 32, 36, 40, 42, 46};
   int leading_bits_per_value_ = 3;
@@ -29,7 +29,8 @@ class SerfXORDecompressor {
   bool equal_win_ = false;
   long adjust_digit_;
 
-  uint64_t ReadValue();
+  uint64_t ReadValueEqualWinTrue();
+  uint64_t ReadValueEqualWinFalse();
   void UpdateFlagAndPositionsIfNeeded();
   void UpdateLeadingRepresentation();
   void UpdateTrailingRepresentation();

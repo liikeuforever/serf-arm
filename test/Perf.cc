@@ -80,7 +80,8 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
     {"Stocks-USA.csv", 243},
     {"Wind-Speed.csv", 2}
 };
-constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
+//constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
+constexpr static int kBlockSizeList[] = {50};
 //constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
 constexpr static double kMaxDiffList[] = {1.0E-4};
 //constexpr static float kMaxDiffList[] = {1.0E-3};
@@ -1254,7 +1255,7 @@ PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref,
                        const std::string &data_set) {
   PerfRecord perf_record;
 
-  SerfXORCompressor serf_xor_compressor(block_size, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
+  SerfXORCompressor serf_xor_compressor(1000, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
   SerfXORDecompressor serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
 
   int block_count = 0;
@@ -1268,8 +1269,8 @@ PerfRecord PerfSerfXOR(std::ifstream &data_set_input_stream_ref,
     serf_xor_compressor.Close();
     auto compression_end_time = std::chrono::steady_clock::now();
 
-    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_in_bits());
-    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes();
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_last_block());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes_last_block();
 
     auto decompression_start_time = std::chrono::steady_clock::now();
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
@@ -2059,9 +2060,32 @@ TEST(Perf, All) {
   }
 
   // Export all performance data
-    GenTableCR();
+    GenTableDT();
 //    ExportTotalExprTable();
 //  ExportExprTableWithCompressionRatioAvg();
 //    ExportExprTableWithCompressionTimeNoSpecificDataset();
-//    ExportExprTableWithDecompressionTimeNoSpecificDataset();
+//    ExportExprTableWithDecompressionAvg();
+}
+
+TEST(Tmp, FindMaxMin) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_set_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+    }
+
+    double min_value = std::numeric_limits<double>::max();
+    double max_value = std::numeric_limits<double>::min();
+    double cur_value;
+
+    while (!data_set_input_stream.eof()) {
+      data_set_input_stream >> cur_value;
+      min_value = std::min(min_value, cur_value);
+      max_value = std::max(max_value, cur_value);
+    }
+
+    std::cout << data_set << ": [" << min_value << ", " << max_value << "]" << std::endl;
+
+    data_set_input_stream.close();
+  }
 }

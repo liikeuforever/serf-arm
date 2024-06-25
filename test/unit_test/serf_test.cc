@@ -19,7 +19,7 @@
 #include "serf/compressor_32/serf_qt_compressor_32.h"
 #include "serf/decompressor_32/serf_qt_decompressor_32.h"
 
-const static int kBlockSize = 1000;
+const static int kBlockSize = 50;
 const static std::string kDataSetDirPrefix = "../../test/data_set/";
 const static std::string kDataSetList[] = {
     "init.csv",
@@ -115,7 +115,7 @@ TEST(TestSerfXOR, CorrectnessTest) {
 
     int adjust_digit = kFileToAdjustD.find(data_set)->second;
     for (const auto &max_diff : kMaxDiff) {
-      SerfXORCompressor xor_compressor(kBlockSize, max_diff, adjust_digit);
+      SerfXORCompressor xor_compressor(1000, max_diff, adjust_digit);
       SerfXORDecompressor xor_decompressor(adjust_digit);
 
       std::vector<double> original_data;
@@ -124,7 +124,7 @@ TEST(TestSerfXOR, CorrectnessTest) {
           xor_compressor.AddValue(datum);
         }
         xor_compressor.Close();
-        Array<uint8_t> result = xor_compressor.compressed_bytes();
+        Array<uint8_t> result = xor_compressor.compressed_bytes_last_block();
         std::vector<double> decompressed = xor_decompressor.Decompress(result);
         EXPECT_EQ(original_data.size(), decompressed.size());
         for (int i = 0; i < kBlockSize; ++i) {
