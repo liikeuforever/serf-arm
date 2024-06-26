@@ -16,7 +16,7 @@ add_subdirectory(baselines/alp)
 add_subdirectory(baselines/buff)
 add_subdirectory(baselines/sz_adt)
 
-include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 
 message(STATUS "[SelfCheck] Loading GoogleTest module")
 

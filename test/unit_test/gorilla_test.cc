@@ -3,8 +3,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "gorilla/gorilla_compressor.h"
-#include "gorilla/gorilla_decompressor.h"
+
+#include "baselines/gorilla/gorilla_compressor.h"
+#include "baselines/gorilla/gorilla_decompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

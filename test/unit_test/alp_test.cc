@@ -3,7 +3,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "alp/include/alp.hpp"
+
+#include "baselines/alp/include/alp.hpp"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

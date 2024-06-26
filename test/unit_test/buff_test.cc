@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "buff/buff_compressor.h"
-#include "buff/buff_decompressor.h"
+#include "baselines/buff/buff_compressor.h"
+#include "baselines/buff/buff_decompressor.h"
 
 const static int kBlockSize = 50;
 const static std::string kDataSetDirPrefix = "../../test/data_set/";
@@ -24,31 +24,7 @@ const static std::string kDataSetList[] = {
     "Stocks-USA.csv",
     "Wind-Speed.csv"
 };
-const static std::string kDataSetList32[] = {
-    "City-temp.csv",
-    "Dew-point-temp.csv",
-    "IR-bio-temp.csv",
-    "PM10-dust.csv",
-    "Wind-Speed.csv"
-};
-const static std::unordered_map<std::string, int> kFileToAdjustD {
-    {"Air-pressure.csv", 0},
-    {"Air-sensor.csv", 128},
-    {"Bird-migration.csv", 60},
-    {"Bitcoin-price.csv", 511220},
-    {"Basel-temp.csv", 77},
-    {"Basel-wind.csv", 128},
-    {"City-temp.csv", 355},
-    {"Dew-point-temp.csv", 94},
-    {"IR-bio-temp.csv", 49},
-    {"PM10-dust.csv", 256},
-    {"Stocks-DE.csv", 253},
-    {"Stocks-UK.csv", 8047},
-    {"Stocks-USA.csv", 243},
-    {"Wind-Speed.csv", 2}
-};
 constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
-constexpr static float kMaxDiff32[] = {1.0E-1f, 1.0E-2f, 1.0E-3f};
 
 /**
  * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE

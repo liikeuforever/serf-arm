@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "lzw/src/LZW.h"
+#include "baselines/lzw/src/LZW.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

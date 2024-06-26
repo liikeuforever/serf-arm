@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "machete/machete.h"
+#include "baselines/machete/machete.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

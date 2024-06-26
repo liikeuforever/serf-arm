@@ -6,18 +6,18 @@
 #include <unordered_map>
 #include <chrono>
 
-#include "serf/compressor/serf_xor_compressor.h"
-#include "serf/decompressor/serf_xor_decompressor.h"
-#include "serf/compressor/serf_qt_compressor.h"
-#include "serf/decompressor/serf_qt_decompressor.h"
-#include "serf/compressor_32/serf_xor_compressor_32.h"
-#include "serf/decompressor_32/serf_xor_decompressor_32.h"
-#include "serf/compressor/net_serf_xor_compressor.h"
-#include "serf/decompressor/net_serf_xor_decompressor.h"
-#include "serf/compressor/net_serf_qt_compressor.h"
-#include "serf/decompressor/net_serf_qt_decompressor.h"
-#include "serf/compressor_32/serf_qt_compressor_32.h"
-#include "serf/decompressor_32/serf_qt_decompressor_32.h"
+#include "compressor/serf_xor_compressor.h"
+#include "decompressor/serf_xor_decompressor.h"
+#include "compressor/serf_qt_compressor.h"
+#include "decompressor/serf_qt_decompressor.h"
+#include "compressor_32/serf_xor_compressor_32.h"
+#include "decompressor_32/serf_xor_decompressor_32.h"
+#include "compressor/net_serf_xor_compressor.h"
+#include "decompressor/net_serf_xor_decompressor.h"
+#include "compressor/net_serf_qt_compressor.h"
+#include "decompressor/net_serf_qt_decompressor.h"
+#include "compressor_32/serf_qt_compressor_32.h"
+#include "decompressor_32/serf_qt_decompressor_32.h"
 
 const static int kBlockSize = 50;
 const static std::string kDataSetDirPrefix = "../../test/data_set/";

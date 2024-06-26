@@ -3,10 +3,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-#include "deflate/DeflateCompressor.h"
-#include "deflate/DeflateDecompressor.h"
+#include "baselines/deflate/DeflateCompressor.h"
+#include "baselines/deflate/DeflateDecompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

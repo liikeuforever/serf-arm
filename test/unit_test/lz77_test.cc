@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "lz77/fastlz.h"
+#include "baselines/lz77/fastlz.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

@@ -3,10 +3,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-#include "fpc/FpcCompressor.h"
-#include "fpc/FpcDecompressor.h"
+#include "baselines/fpc/FpcCompressor.h"
+#include "baselines/fpc/FpcDecompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

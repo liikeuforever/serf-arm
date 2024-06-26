@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "elf/elf.h"
+#include "baselines/elf/elf.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

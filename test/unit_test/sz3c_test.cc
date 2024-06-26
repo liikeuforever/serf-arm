@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "sz3/tools/sz3c/include/sz3c.h"
+#include "baselines/sz3/tools/sz3c/include/sz3c.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";
