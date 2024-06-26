@@ -1,17 +1,19 @@
-message(STATUS "[Serf] Source Code Dir: " ${CMAKE_CURRENT_SOURCE_DIR})
+cmake_minimum_required(VERSION 3.20)
 
-find_package(OpenMP REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+project(Serf)
+
+# Set C++ standard version
+set(CMAKE_CXX_STANDARD 17)
+
+# -O3 Optimization for release version
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+# Set parallel compilation level as 4
+set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 # Scan and collect all source code file
 file(GLOB_RECURSE LIB_SRC *.cc)
-foreach(F ${LIB_SRC})
-    message(STATUS "[Serf] Collected source code file: " ${F})
-endforeach(F)
-
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 add_library(serf SHARED ${LIB_SRC})
-target_link_libraries(serf PRIVATE OpenMP::OpenMP_CXX)

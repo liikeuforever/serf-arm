@@ -18,8 +18,8 @@
 #include "fpc/FpcCompressor.h"
 #include "fpc/FpcDecompressor.h"
 #include "alp/include/alp.hpp"
-#include "chimp/ChimpCompressor.h"
-#include "chimp/ChimpDecompressor.h"
+#include "chimp128/ChimpCompressor.h"
+#include "chimp128/ChimpDecompressor.h"
 #include "elf/elf.h"
 #include "gorilla/gorilla_compressor.h"
 #include "gorilla/gorilla_decompressor.h"
@@ -28,7 +28,7 @@
 #include "lz77/fastlz.h"
 #include "lzw/src/LZW.h"
 #include "machete/machete.h"
-#include "sz/sz/include/sz.h"
+#include "sz3/tools/sz3c/include/sz3c.h"
 #include "serf/compressor_32/serf_xor_compressor_32.h"
 #include "serf/decompressor_32/serf_xor_decompressor_32.h"
 #include "serf/compressor_32/serf_qt_compressor_32.h"
@@ -503,30 +503,6 @@ std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref, int block_s
     ++entry_count;
   }
   return ret;
-}
-
-std::vector<double> ReadBlockWithPrecisionInfo(std::ifstream &file_input_stream_ref, int *precision, int block_size) {
-  std::vector<double> return_block;
-  int read_double_count = 0;
-  std::string double_value_raw_string;
-  size_t max_precision = 0;
-  size_t cur_precision;
-  while (!file_input_stream_ref.eof() && read_double_count < block_size) {
-    std::getline(file_input_stream_ref, double_value_raw_string);
-    if (double_value_raw_string.empty()) continue;
-    if (double_value_raw_string.find('.') == std::string::npos) {
-      cur_precision = 1;
-      max_precision = std::max(max_precision, cur_precision);
-    } else {
-      cur_precision = double_value_raw_string.size() - double_value_raw_string.find('.') - 1;
-      max_precision = std::max(max_precision, cur_precision);
-    }
-    double buffer = std::stod(double_value_raw_string);
-    return_block.emplace_back(buffer);
-    ++read_double_count;
-  }
-  *precision = (int) max_precision;
-  return return_block;
 }
 
 std::vector<std::string> ReadRawBlock(std::ifstream &file_input_stream_ref, int block_size) {
@@ -1035,7 +1011,7 @@ PerfRecord PerfGorilla(std::ifstream &data_set_input_stream_ref, int block_size)
   return perf_record;
 }
 
-PerfRecord PerfBuff(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
+PerfRecord PerfBuff(std::ifstream &data_set_input_stream_ref, int alpha, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
@@ -1047,7 +1023,7 @@ PerfRecord PerfBuff(std::ifstream &data_set_input_stream_ref, double max_diff, i
     for (int i = 0; i < block_size; ++i) {
       original_data_array[i] = original_data[i];
     }
-    BuffCompressor buff_compressor(block_size, );
+    BuffCompressor buff_compressor(block_size, alpha);
 
     auto compression_start_time = std::chrono::steady_clock::now();
     buff_compressor.compress(original_data_array);
@@ -1200,7 +1176,6 @@ PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff, int
   while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
     size_t compression_output_len;
-    auto decompression_output = new double[block_size];
 
     auto compression_start_time = std::chrono::steady_clock::now();
     auto compression_output = SZ_compress_args(SZ_DOUBLE, original_data.data(), &compression_output_len,
@@ -1210,9 +1185,9 @@ PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff, int
     perf_record.AddCompressedSize(compression_output_len * 8);
 
     auto decompression_start_time = std::chrono::steady_clock::now();
-    size_t decompression_output_len = SZ_decompress_args(SZ_DOUBLE, compression_output,
-                                                         compression_output_len, decompression_output, 0, 0,
-                                                         0, 0, block_size);
+    double* decompression_output = static_cast<double *>(SZ_decompress(SZ_DOUBLE, compression_output,
+                                                                       compression_output_len, 0, 0,
+                                                                       0, 0, block_size));
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1323,7 +1298,8 @@ TEST(Perf, All) {
                                        PerfMachete(data_set_input_stream, max_diff, global_block_size)));
       ResetFileStream(data_set_input_stream);
       expr_table.insert(
-          std::make_pair(ExprConf("SZ", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff, global_block_size)));
+          std::make_pair(ExprConf("SZ3", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff,
+                                                                     global_block_size)));
       ResetFileStream(data_set_input_stream);
     }
 

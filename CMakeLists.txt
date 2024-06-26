@@ -2,23 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 
 project(Serf)
 
-# Set C++ standard version
-set(CMAKE_CXX_STANDARD 17)
-
-# -O3 Optimization for release version
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-
-# Set parallel compilation level as 4
-set(CMAKE_BUILD_PARALLEL_LEVEL 4)
-
-# Print project self check info
-message(STATUS "[SelfCheck] Project Source Dir: " ${PROJECT_SOURCE_DIR})
-message(STATUS "[SelfCheck] Project Binary Dir: " ${PROJECT_BINARY_DIR})
-
-# Set executable file path and print it
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-message(STATUS "[SelfCheck] Project Executable Dir: " ${EXECUTABLE_OUTPUT_PATH})
-
 # Print system info
 if(WIN32)
     message(STATUS "[SelfCheck] Host System: Windows (32bit)")
@@ -65,11 +48,13 @@ add_subdirectory(src/gorilla)
 add_subdirectory(src/elf)
 add_subdirectory(src/machete)
 add_subdirectory(src/lz77)
-add_subdirectory(src/sz)
-add_subdirectory(src/most)
+add_subdirectory(src/sz3)
 add_subdirectory(src/lzw)
 add_subdirectory(src/alp)
 add_subdirectory(src/buff)
+add_subdirectory(src/sz_adt)
 add_subdirectory(test)
+
+# If Python API and JAVA API are needed
 # add_subdirectory(pywrapper)
 # add_subdirectory(jna)

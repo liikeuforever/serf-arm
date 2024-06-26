@@ -22,7 +22,6 @@ _Notes: By default, baselines will be compiled altogether with Serf. If you do n
 
 ## Baselines
 
-- ALP
 - Buff
 - Chimp128
 - Deflate
@@ -33,7 +32,8 @@ _Notes: By default, baselines will be compiled altogether with Serf. If you do n
 - LZ77
 - LZW
 - Machete
-- SZ2.0
+- SZ3.0
+- SZ_ADT
 
 ## Python interface & Java Interface
 
