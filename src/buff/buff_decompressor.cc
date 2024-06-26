@@ -118,7 +118,11 @@ Array<double> BuffDecompressor::mergeDoubles() {
         long sign = bit_pack >> (whole_width_ - 1);
         long bits = (sign << 63) | (exp << 52) | mantissa;
         double db = Double::LongBitsToDouble(bits);
-
+        double round_num = 0.5;
+        for (int j = 0; j < max_prec_; j++) {
+          round_num /= 10;
+        }
+        db += round_num;
         std::ostringstream convert_stream;
         convert_stream << std::fixed << std::setprecision(max_prec_) << db;
         db = std::stod(convert_stream.str());

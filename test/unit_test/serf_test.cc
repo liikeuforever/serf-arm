@@ -22,7 +22,6 @@
 const static int kBlockSize = 50;
 const static std::string kDataSetDirPrefix = "../../test/data_set/";
 const static std::string kDataSetList[] = {
-    "init.csv",
     "Air-pressure.csv",
     "Air-sensor.csv",
     "Bird-migration.csv",
@@ -46,7 +45,6 @@ const static std::string kDataSetList32[] = {
     "Wind-Speed.csv"
 };
 const static std::unordered_map<std::string, int> kFileToAdjustD {
-    {"init.csv", 0},
     {"Air-pressure.csv", 0},
     {"Air-sensor.csv", 128},
     {"Bird-migration.csv", 60},

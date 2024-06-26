@@ -33,7 +33,7 @@ int main() {
     return -1;
   }
 
-  std::ifstream data_set_input("../../test/data_set/init.csv");
+  std::ifstream data_set_input("../../test/data_set/Air-pressure.csv");
   NetSerfXORCompressor compressor(100, 1.0E-4, 0);
   double input_buffer;
   while (!data_set_input.eof()) {

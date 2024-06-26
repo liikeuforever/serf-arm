@@ -10,23 +10,6 @@
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";
-const static std::unordered_map<std::string, int> FILE_TO_ADJUST_D {
-        std::make_pair("init.csv", 0),
-        std::make_pair("Air-pressure.csv", 0),
-        std::make_pair("Air-sensor.csv", 128),
-        std::make_pair("Bird-migration.csv", 60),
-        std::make_pair("Bitcoin-price.csv", 511220),
-        std::make_pair("Basel-temp.csv", 77),
-        std::make_pair("Basel-wind.csv", 128),
-        std::make_pair("City-temp.csv", 355),
-        std::make_pair("Dew-point-temp.csv", 94),
-        std::make_pair("IR-bio-temp.csv", 49),
-        std::make_pair("PM10-dust.csv", 256),
-        std::make_pair("Stocks-DE.csv", 253),
-        std::make_pair("Stocks-UK.csv", 8047),
-        std::make_pair("Stocks-USA.csv", 243),
-        std::make_pair("Wind-Speed.csv", 2)
-};
 
 /**
  * @brief Scan all data set files in DATA_SET_DIR.

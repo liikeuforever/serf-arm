@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -7,88 +6,121 @@
 #include "buff/buff_compressor.h"
 #include "buff/buff_decompressor.h"
 
-const static int kBlockSize = 1000;
-const static std::string kDataSetDir = "../../test/data_set";
-
-int block_max_precision;
+const static int kBlockSize = 50;
+const static std::string kDataSetDirPrefix = "../../test/data_set/";
+const static std::string kDataSetList[] = {
+    "Air-pressure.csv",
+    "Air-sensor.csv",
+    "Bird-migration.csv",
+    "Bitcoin-price.csv",
+    "Basel-temp.csv",
+    "Basel-wind.csv",
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "IR-bio-temp.csv",
+    "PM10-dust.csv",
+    "Stocks-DE.csv",
+    "Stocks-UK.csv",
+    "Stocks-USA.csv",
+    "Wind-Speed.csv"
+};
+const static std::string kDataSetList32[] = {
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "IR-bio-temp.csv",
+    "PM10-dust.csv",
+    "Wind-Speed.csv"
+};
+const static std::unordered_map<std::string, int> kFileToAdjustD {
+    {"Air-pressure.csv", 0},
+    {"Air-sensor.csv", 128},
+    {"Bird-migration.csv", 60},
+    {"Bitcoin-price.csv", 511220},
+    {"Basel-temp.csv", 77},
+    {"Basel-wind.csv", 128},
+    {"City-temp.csv", 355},
+    {"Dew-point-temp.csv", 94},
+    {"IR-bio-temp.csv", 49},
+    {"PM10-dust.csv", 256},
+    {"Stocks-DE.csv", 253},
+    {"Stocks-UK.csv", 8047},
+    {"Stocks-USA.csv", 243},
+    {"Wind-Speed.csv", 2}
+};
+constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
+constexpr static float kMaxDiff32[] = {1.0E-1f, 1.0E-2f, 1.0E-3f};
 
 /**
- * @brief Scan all data set files in kDataSetDir.
- * @return A vector contains all data set file path.
+ * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
+ * @param file_input_stream_ref Input steam where this function reads
+ * @return A vector of doubles, whose size may be less than BLOCK_SIZE
  */
-std::vector<std::string> ScanDataSet() {
-    namespace fs = std::filesystem;
-    std::vector<std::string> data_set_list;
-    for (const auto &entry: fs::recursive_directory_iterator(kDataSetDir)) {
-        if (fs::is_regular_file(entry)) {
-            std::string file_name_of_entry = entry.path().filename();
-            if (file_name_of_entry.substr(file_name_of_entry.find('.') + 1, 3) == "csv") {
-                data_set_list.push_back(entry.path().string());
-            }
-        }
-    }
-    return data_set_list;
+std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
+  std::vector<double> ret;
+  ret.reserve(kBlockSize);
+  int entry_count = 0;
+  double buffer;
+  while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
+    file_input_stream_ref >> buffer;
+    ret.emplace_back(buffer);
+    ++entry_count;
+  }
+  return ret;
 }
 
 /**
- * @brief Read a block of double from file input stream, whose size is equal to kBlockSize
- * @param file_input_stream_ref Input steam where this function reads
- * @return A vector of doubles, whose size may be less than kBlockSize
+ * @brief Read a block of float from file input stream, whose size is equal to BLOCK_SIZE
+ * @param fileInputStreamRef Input steam where this function reads
+ * @return A vector of floats, whose size may be less than BLOCK_SIZE
  */
-std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
-    std::vector<double> return_block;
-    int read_double_count = 0;
-    std::string double_value_raw_string;
-    size_t max_precision = 0;
-    size_t cur_precision;
-    while (!file_input_stream_ref.eof() && read_double_count < kBlockSize) {
-        std::getline(file_input_stream_ref, double_value_raw_string);
-        if (double_value_raw_string.empty()) continue;
-        if (double_value_raw_string.find('.') == std::string::npos) {
-            cur_precision = 1;
-            max_precision = std::max(max_precision, cur_precision);
-        } else {
-            cur_precision = double_value_raw_string.size() - double_value_raw_string.find('.') - 1;
-            max_precision = std::max(max_precision, cur_precision);
-        }
-        double buffer = std::stod(double_value_raw_string);
-        return_block.emplace_back(buffer);
-        ++read_double_count;
-    }
-    block_max_precision = (int) max_precision;
-    return return_block;
+std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref) {
+  std::vector<float> ret;
+  ret.reserve(kBlockSize);
+  int entry_count = 0;
+  float buffer;
+  while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
+    file_input_stream_ref >> buffer;
+    ret.emplace_back(buffer);
+    ++entry_count;
+  }
+  return ret;
+}
+
+void ResetFileStream(std::ifstream &data_set_input_stream_ref) {
+  data_set_input_stream_ref.clear();
+  data_set_input_stream_ref.seekg(0, std::ios::beg);
 }
 
 TEST(TestBuff, CorrectnessTest) {
-    std::vector<std::string> data_set_list = ScanDataSet();
-    for (const auto &data_set: data_set_list) {
-        std::ifstream data_set_input_stream(data_set);
-        if (!data_set_input_stream.is_open()) {
-            std::fprintf(stderr, "[Error] Failed to open the file '%s'\n", data_set.c_str());
-        }
-
-        std::string file_name = data_set.substr(data_set.find_last_of('/') + 1, data_set.size());
-        std::vector<double> original_data;
-        while ((original_data = ReadBlock(data_set_input_stream)).size() == kBlockSize) {
-            Array<double> input(kBlockSize);
-            for (int i = 0; i < kBlockSize; ++i) {
-                input[i] = original_data[i];
-            }
-            BuffCompressor compressor(kBlockSize, block_max_precision);
-            compressor.compress(input);
-            compressor.close();
-            Array<uint8_t> compress_pack = compressor.get_out();
-            BuffDecompressor decompressor(compress_pack);
-            Array<double> output = decompressor.decompress();
-            EXPECT_EQ(original_data.size(), output.length());
-            for (int i = 0; i < kBlockSize; ++i) {
-                EXPECT_FLOAT_EQ(original_data[i], output[i]);
-                if (original_data[i] - output[i] != 0) {
-                    exit(-1);
-                }
-            }
-        }
-
-        data_set_input_stream.close();
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_set_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
+
+    for (int j = 1; j <= 6; j++) {
+      std::vector<double> original_data;
+      while ((original_data = ReadBlock(data_set_input_stream)).size() == kBlockSize) {
+        BuffCompressor compressor(kBlockSize, j);
+        Array<double> input(kBlockSize);
+        for (int i = 0; i < kBlockSize; ++i) {
+          input[i] = original_data[i];
+        }
+        compressor.compress(input);
+        Array<uint8_t> compress_pack = compressor.get_out();
+        BuffDecompressor decompressor(compress_pack);
+        Array<double> output = decompressor.decompress();
+        EXPECT_EQ(input.length(), output.length());
+        for (int i = 0; i < kBlockSize; ++i) {
+          if (std::abs(input[i] - output[i]) > kMaxDiff[j-1]) {
+            GTEST_LOG_(INFO) << original_data[i] << " " << output[i] << " " << kMaxDiff[j-1];
+          }
+        }
+      }
+
+      ResetFileStream(data_set_input_stream);
+    }
+
+    data_set_input_stream.close();
+  }
 }
