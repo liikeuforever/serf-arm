@@ -1,4 +1,4 @@
-#include "serf/compressor/net_serf_qt_compressor.h"
+#include "compressor/net_serf_qt_compressor.h"
 
 NetSerfQtCompressor::NetSerfQtCompressor(double error_bound) : kMaxDiff(error_bound * 0.999) {}
 

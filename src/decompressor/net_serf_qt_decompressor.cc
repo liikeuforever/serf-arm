@@ -1,4 +1,4 @@
-#include "serf/decompressor/net_serf_qt_decompressor.h"
+#include "decompressor/net_serf_qt_decompressor.h"
 
 NetSerfQtDecompressor::NetSerfQtDecompressor(double max_diff) : kMaxDiff(max_diff * 0.999) {}
 

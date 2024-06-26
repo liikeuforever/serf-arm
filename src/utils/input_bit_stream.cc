@@ -1,4 +1,4 @@
-#include "serf/utils/input_bit_stream.h"
+#include "utils/input_bit_stream.h"
 
 InputBitStream::InputBitStream(uint8_t *raw_data, size_t size) {
     data_ = Array<uint32_t>(std::ceil(static_cast<double>(size) / sizeof

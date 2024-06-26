@@ -1,4 +1,4 @@
-#include "serf"
+#include "compressor/net_serf_xor_compressor.h"
 
 NetSerfXORCompressor::NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit): kBlockSize(capacity),
                                                                                               kMaxDiff(max_diff), kAdjustDigit(adjust_digit) {

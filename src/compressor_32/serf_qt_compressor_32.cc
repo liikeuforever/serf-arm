@@ -1,4 +1,4 @@
-#include "serf/compressor_32/serf_qt_compressor_32.h"
+#include "compressor_32/serf_qt_compressor_32.h"
 
 SerfQtCompressor32::SerfQtCompressor32(int block_size, float max_diff): kBlockSize(block_size),
 kMaxDiff(max_diff * 0.99f) {

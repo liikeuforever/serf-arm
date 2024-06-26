@@ -5,10 +5,10 @@
 #include <memory>
 #include <cmath>
 
-#include "serf/src/utils/output_bit_stream.h"
-#include "serf/src/utils/float.h"
-#include "serf/src/utils/elias_delta_codec.h"
-#include "serf/src/utils/zig_zag_codec.h"
+#include "utils/output_bit_stream.h"
+#include "utils/float.h"
+#include "utils/elias_delta_codec.h"
+#include "utils/zig_zag_codec.h"
 
 class SerfQtCompressor32 {
  public:

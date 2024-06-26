@@ -1,4 +1,4 @@
-#include "serf/decompressor/serf_qt_decompressor.h"
+#include "decompressor/serf_qt_decompressor.h"
 
 std::vector<double> SerfQtDecompressor::Decompress(const Array<uint8_t> &bs) {
   input_bit_stream_->SetBuffer(bs);

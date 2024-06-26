@@ -1,4 +1,4 @@
-#include "serf/utils/output_bit_stream.h"
+#include "utils/output_bit_stream.h"
 
 OutputBitStream::OutputBitStream(uint32_t buffer_size) {
     data_ = Array<uint32_t>(buffer_size / 4 + 1);

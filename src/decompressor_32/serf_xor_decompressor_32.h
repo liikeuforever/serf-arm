@@ -5,10 +5,10 @@
 #include <memory>
 #include <vector>
 
-#include "serf/src/utils/serf_utils_32.h"
-#include "serf/src/utils/post_office_solver_32.h"
-#include "serf/src/utils/float.h"
-#include "serf/src/utils/input_bit_stream.h"
+#include "utils/serf_utils_32.h"
+#include "utils/post_office_solver_32.h"
+#include "utils/float.h"
+#include "utils/input_bit_stream.h"
 
 class SerfXORDecompressor32 {
  public:

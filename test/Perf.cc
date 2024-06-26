@@ -7,32 +7,44 @@
 #include <unordered_map>
 #include <chrono>
 
-#include "serf/compressor/serf_xor_compressor.h"
-#include "serf/decompressor/serf_xor_decompressor.h"
-#include "serf/compressor/serf_qt_compressor.h"
-#include "serf/decompressor/serf_qt_decompressor.h"
-#include "deflate/DeflateCompressor.h"
-#include "deflate/DeflateDecompressor.h"
-#include "lz4/LZ4Compressor.h"
-#include "lz4/LZ4Decompressor.h"
-#include "fpc/FpcCompressor.h"
-#include "fpc/FpcDecompressor.h"
-#include "alp/include/alp.hpp"
-#include "chimp128/ChimpCompressor.h"
-#include "chimp128/ChimpDecompressor.h"
-#include "elf/elf.h"
-#include "gorilla/gorilla_compressor.h"
-#include "gorilla/gorilla_decompressor.h"
-#include "buff/buff_compressor.h"
-#include "buff/buff_decompressor.h"
-#include "lz77/fastlz.h"
-#include "lzw/src/LZW.h"
-#include "machete/machete.h"
-#include "sz3/tools/sz3c/include/sz3c.h"
-#include "serf/compressor_32/serf_xor_compressor_32.h"
-#include "serf/decompressor_32/serf_xor_decompressor_32.h"
-#include "serf/compressor_32/serf_qt_compressor_32.h"
-#include "serf/decompressor_32/serf_qt_decompressor_32.h"
+#include "../src/compressor/serf_xor_compressor.h"
+#include "../src/decompressor/serf_xor_decompressor.h"
+#include "../src/compressor/serf_qt_compressor.h"
+#include "../src/decompressor/serf_qt_decompressor.h"
+#include "../src/compressor_32/serf_xor_compressor_32.h"
+#include "../src/decompressor_32/serf_xor_decompressor_32.h"
+#include "../src/compressor_32/serf_qt_compressor_32.h"
+#include "../src/decompressor_32/serf_qt_decompressor_32.h"
+
+#include "baselines/deflate/DeflateCompressor.h"
+#include "baselines/deflate/DeflateDecompressor.h"
+
+#include "baselines/lz4/LZ4Compressor.h"
+#include "baselines/lz4/LZ4Decompressor.h"
+
+#include "baselines/fpc/FpcCompressor.h"
+#include "baselines/fpc/FpcDecompressor.h"
+
+#include "baselines/alp/include/alp.hpp"
+
+#include "baselines/chimp128/ChimpCompressor.h"
+#include "baselines/chimp128/ChimpDecompressor.h"
+
+#include "baselines/elf/elf.h"
+
+#include "baselines/gorilla/gorilla_compressor.h"
+#include "baselines/gorilla/gorilla_decompressor.h"
+
+#include "baselines/buff/buff_compressor.h"
+#include "baselines/buff/buff_decompressor.h"
+
+#include "baselines/lz77/fastlz.h"
+
+#include "baselines/lzw/src/LZW.h"
+
+#include "baselines/machete/machete.h"
+
+#include "baselines/sz3/tools/sz3c/include/sz3c.h"
 
 // Remember to change this if you run single precision experiment
 const static size_t kDoubleSize = 64;
@@ -1214,7 +1226,6 @@ PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, float max_diff, in
   while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
     size_t compression_output_len;
-    auto decompression_output = new float[block_size];
 
     auto compression_start_time = std::chrono::steady_clock::now();
     auto compression_output = SZ_compress_args(SZ_FLOAT, original_data.data(), &compression_output_len,
@@ -1224,9 +1235,9 @@ PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, float max_diff, in
     perf_record.AddCompressedSize(compression_output_len * 8);
 
     auto decompression_start_time = std::chrono::steady_clock::now();
-    size_t decompression_output_len = SZ_decompress_args(SZ_FLOAT, compression_output,
-                                                         compression_output_len, decompression_output, 0, 0,
-                                                         0, 0, block_size);
+    auto decompression_output_len =
+        static_cast<double *>(SZ_decompress(SZ_FLOAT, compression_output, compression_output_len, 0, 0, 0, 0,
+                                            block_size));
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1236,8 +1247,6 @@ PerfRecord PerfSZ32(std::ifstream &data_set_input_stream_ref, float max_diff, in
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
     perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-
-    delete[] decompression_output;
   }
 
   perf_record.set_block_count(block_count);

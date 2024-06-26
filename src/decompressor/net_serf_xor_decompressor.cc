@@ -1,4 +1,4 @@
-#include "serf/decompressor/net_serf_xor_decompressor.h"
+#include "decompressor/net_serf_xor_decompressor.h"
 
 NetSerfXORDecompressor::NetSerfXORDecompressor(int capacity, long adjustD) : kBlockSize(capacity), adjust_digit_
     (adjustD) {}

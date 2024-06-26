@@ -5,11 +5,11 @@
 #include <cstdint>
 #include <memory>
 
-#include "serf/src/utils/output_bit_stream.h"
-#include "serf/src/utils/float.h"
-#include "serf/src/utils/array.h"
-#include "serf/src/utils/serf_utils_32.h"
-#include "serf/src/utils/post_office_solver_32.h"
+#include "utils/output_bit_stream.h"
+#include "utils/float.h"
+#include "utils/array.h"
+#include "utils/serf_utils_32.h"
+#include "utils/post_office_solver_32.h"
 
 class SerfXORCompressor32 {
  public:

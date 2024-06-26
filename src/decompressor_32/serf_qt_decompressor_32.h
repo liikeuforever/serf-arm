@@ -4,10 +4,10 @@
 #include <vector>
 #include <memory>
 
-#include "serf/src/utils/zig_zag_codec.h"
-#include "serf/src/utils/elias_delta_codec.h"
-#include "serf/src/utils/float.h"
-#include "serf/src/utils/input_bit_stream.h"
+#include "utils/zig_zag_codec.h"
+#include "utils/elias_delta_codec.h"
+#include "utils/float.h"
+#include "utils/input_bit_stream.h"
 
 class SerfQtDecompressor32 {
  public:

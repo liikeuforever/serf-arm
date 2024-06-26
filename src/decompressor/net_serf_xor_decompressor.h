@@ -5,9 +5,9 @@
 #include <memory>
 #include <limits>
 
-#include "serf/src/utils/double.h"
-#include "serf/src/utils/input_bit_stream.h"
-#include "serf/src/utils/post_office_solver.h"
+#include "utils/double.h"
+#include "utils/input_bit_stream.h"
+#include "utils/post_office_solver.h"
 
 class NetSerfXORDecompressor {
  public:

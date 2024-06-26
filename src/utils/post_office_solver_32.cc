@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "serf/utils/post_office_solver_32.h"
+#include "utils/post_office_solver_32.h"
 
 Array<int>
 PostOfficeSolver32::InitRoundAndRepresentation(Array<int> &distribution,

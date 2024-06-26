@@ -1,4 +1,4 @@
-#include "serf/compressor_32/serf_xor_compressor_32.h"
+#include "compressor_32/serf_xor_compressor_32.h"
 
 SerfXORCompressor32::SerfXORCompressor32(int capacity, float max_diff) : kMaxDiff(max_diff) {
   output_bit_stream_ = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 4 + capacity / 4 + 1) * 1.2));
