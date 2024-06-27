@@ -16,7 +16,9 @@ add_subdirectory(baselines/alp)
 add_subdirectory(baselines/buff)
 add_subdirectory(baselines/sz_adt)
 
-include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt)
+include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt/zstd/common/ ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt/sz/inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt/zstd/)
 
 message(STATUS "[SelfCheck] Loading GoogleTest module")
 
@@ -54,7 +56,7 @@ foreach(F ${TEST_SRC})
 endforeach(F)
 
 add_executable(PerformanceProgram Perf.cc)
-target_link_libraries(PerformanceProgram PRIVATE alp buff chimp deflate elf fpc gorilla lzw lz77 lz4 machete SZ3 serf
+target_link_libraries(PerformanceProgram PRIVATE alp buff chimp deflate elf fpc gorilla lzw lz77 lz4 machete SZ3 serf TSZ
         GTest::gtest_main)
 gtest_discover_tests(PerformanceProgram)
 
