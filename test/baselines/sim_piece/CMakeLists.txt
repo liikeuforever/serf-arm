@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(Gorilla)
+project(Sim-Piece)
 
 # Set C++ standard version
 set(CMAKE_CXX_STANDARD 17)
@@ -14,8 +14,6 @@ set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Scan and collect all source code file
-file(GLOB_RECURSE LIB_SRC *.cc *.c)
+file(GLOB_RECURSE LIB_SRC *.cc)
 
-add_library(gorilla SHARED ${LIB_SRC})
-
-target_link_libraries(gorilla)
+add_library(sim_piece SHARED ${LIB_SRC})
