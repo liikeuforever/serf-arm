@@ -46,6 +46,8 @@
 
 #include "baselines/sz3/include/SZ3/api/sz.hpp"
 
+#include "baselines/sz_adt/sz/include/sz.h"
+
 // Remember to change this if you run single precision experiment
 const static size_t kDoubleSize = 64;
 const static std::string kExportExprTablePrefix = "../../test/";
@@ -168,6 +170,14 @@ static std::string double_to_string_with_precision(double val, size_t precision)
   std::ostringstream stringBuffer;
   stringBuffer << std::fixed << std::setprecision(precision) << val;
   return stringBuffer.str();
+}
+
+static int GetAlpha(double max_diff) {
+  double max_diff_to_alpha_table[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
+  for (int i = 0; i < 8; ++i)
+    if (max_diff == max_diff_to_alpha_table[i])
+      return i + 1;
+  return -1;
 }
 
 class PerfRecord {
@@ -986,7 +996,7 @@ PerfRecord PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff
   return perf_record;
 }
 
-PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
+PerfRecord PerfSZ3(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
@@ -994,19 +1004,20 @@ PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff, int
 
   while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
+    SZ3::Config conf(block_size);
+    conf.cmprAlgo = SZ3::ALGO_INTERP_LORENZO;
+    conf.errorBoundMode = SZ3::EB_ABS;
+    conf.absErrorBound = max_diff;
     size_t compression_output_len;
 
     auto compression_start_time = std::chrono::steady_clock::now();
-    auto compression_output = SZ_compress_args(SZ_DOUBLE, original_data.data(), &compression_output_len,
-                                               ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
+    char *compression_output = SZ_compress<double>(conf, original_data.data(), compression_output_len);
     auto compression_end_time = std::chrono::steady_clock::now();
 
     perf_record.AddCompressedSize(compression_output_len * 8);
 
     auto decompression_start_time = std::chrono::steady_clock::now();
-    double* decompression_output = static_cast<double *>(SZ_decompress(SZ_DOUBLE, compression_output,
-                                                                       compression_output_len, 0, 0,
-                                                                       0, 0, block_size));
+    auto *decompression_output = SZ_decompress<double>(conf, compression_output, compression_output_len);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1022,6 +1033,10 @@ PerfRecord PerfSZ(std::ifstream &data_set_input_stream_ref, double max_diff, int
 
   perf_record.set_block_count(block_count);
   return perf_record;
+}
+
+PerfRecord PerfSZ_ADT() {
+
 }
 
 PerfRecord PerfLZW(std::ifstream &data_set_input_stream_ref, int block_size) {
@@ -1058,6 +1073,7 @@ PerfRecord PerfLZW(std::ifstream &data_set_input_stream_ref, int block_size) {
   return perf_record;
 }
 
+// Single Precision
 PerfRecord PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
   PerfRecord perf_record;
 
@@ -1244,7 +1260,7 @@ PerfRecord PerfLZ77_32(std::ifstream &data_set_input_stream_ref, int block_size)
   return perf_record;
 }
 
-PerfRecord PerfSZ_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
+PerfRecord PerfSZ3_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
   PerfRecord perf_record;
 
   int block_count = 0;
@@ -1252,19 +1268,20 @@ PerfRecord PerfSZ_32(std::ifstream &data_set_input_stream_ref, float max_diff, i
 
   while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
+    SZ3::Config conf(block_size);
+    conf.cmprAlgo = SZ3::ALGO_INTERP_LORENZO;
+    conf.errorBoundMode = SZ3::EB_ABS;
+    conf.absErrorBound = max_diff;
     size_t compression_output_len;
 
     auto compression_start_time = std::chrono::steady_clock::now();
-    auto compression_output = SZ_compress_args(SZ_FLOAT, original_data.data(), &compression_output_len,
-                                               ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
+    char *compression_output = SZ_compress<float>(conf, original_data.data(), compression_output_len);
     auto compression_end_time = std::chrono::steady_clock::now();
 
     perf_record.AddCompressedSize(compression_output_len * 8);
 
     auto decompression_start_time = std::chrono::steady_clock::now();
-    auto decompression_output_len =
-        static_cast<double *>(SZ_decompress(SZ_FLOAT, compression_output, compression_output_len, 0, 0, 0, 0,
-                                            block_size));
+    auto *decompression_output = SZ_decompress<float>(conf, compression_output, compression_output_len);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1274,6 +1291,8 @@ PerfRecord PerfSZ_32(std::ifstream &data_set_input_stream_ref, float max_diff, i
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
     perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] decompression_output;
   }
 
   perf_record.set_block_count(block_count);
@@ -1290,76 +1309,52 @@ TEST(Perf, All) {
 
     // Lossy
     for (const auto &max_diff : kMaxDiffList) {
-      expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
-                                       PerfSerfXOR(data_set_input_stream, max_diff, global_block_size, data_set)));
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff), PerfSerfXOR(data_set_input_stream,
+                                                                                            max_diff,
+                                                                                            global_block_size,
+                                                                                            data_set)));
       ResetFileStream(data_set_input_stream);
-      expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff),
-                                       PerfSerfQt(data_set_input_stream, max_diff, global_block_size)));
+      expr_table.insert(std::make_pair(ExprConf("SerfQt", data_set, max_diff), PerfSerfQt(data_set_input_stream,
+                                                                                          max_diff,
+                                                                                          global_block_size)));
       ResetFileStream(data_set_input_stream);
-      expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff),
-                                       PerfMachete(data_set_input_stream, max_diff, global_block_size)));
+      expr_table.insert(std::make_pair(ExprConf("Machete", data_set, max_diff), PerfMachete(data_set_input_stream,
+                                                                                            max_diff,
+                                                                                            global_block_size)));
       ResetFileStream(data_set_input_stream);
-      expr_table.insert(
-          std::make_pair(ExprConf("SZ3", data_set, max_diff), PerfSZ(data_set_input_stream, max_diff,
-                                                                     global_block_size)));
+      expr_table.insert(std::make_pair(ExprConf("SZ3", data_set, max_diff), PerfSZ3(data_set_input_stream, max_diff,
+                                                                                   global_block_size)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(std::make_pair(ExprConf("Buff", data_set, max_diff), PerfBuff(data_set_input_stream,
+                                                                                             GetAlpha(max_diff),
+                                                                                             global_block_size)));
       ResetFileStream(data_set_input_stream);
     }
 
     // Lossless
-//        expr_table.insert(std::make_pair(ExprConf("ALP", data_set, 0), PerfALP(data_set_input_stream)));
-//        ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("Buff", data_set, kMaxDiffList[0]), PerfBuff(data_set_input_stream,
-//                                                                                         global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, kMaxDiffList[0]), PerfChimp128(data_set_input_stream, global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, kMaxDiffList[0]), PerfDeflate(data_set_input_stream,
-//                                                                                   global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, kMaxDiffList[0]), PerfElf(data_set_input_stream, global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, kMaxDiffList[0]), PerfFPC(data_set_input_stream, global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, kMaxDiffList[0]), PerfGorilla(data_set_input_stream,
-//                                                                                   global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, kMaxDiffList[0]), PerfLZ4(data_set_input_stream, global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, kMaxDiffList[0]), PerfLZ77(data_set_input_stream, global_block_size)));
-//    ResetFileStream(data_set_input_stream);
-//    expr_table.insert(std::make_pair(ExprConf("LZW", data_set, kMaxDiffList[0]), PerfLZW(data_set_input_stream, global_block_size)));
-//    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Chimp", data_set, kMaxDiffList[0]), PerfChimp128(data_set_input_stream, global_block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, kMaxDiffList[0]), PerfDeflate(data_set_input_stream,
+                                                                                   global_block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, kMaxDiffList[0]), PerfElf(data_set_input_stream, global_block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, kMaxDiffList[0]), PerfFPC(data_set_input_stream, global_block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, kMaxDiffList[0]), PerfGorilla(data_set_input_stream,
+                                                                                   global_block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, kMaxDiffList[0]), PerfLZ4(data_set_input_stream, global_block_size)));
+    ResetFileStream(data_set_input_stream);
+    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, kMaxDiffList[0]), PerfLZ77(data_set_input_stream, global_block_size)));
+    ResetFileStream(data_set_input_stream);
 
     data_set_input_stream.close();
   }
 
-  // Export all performance data
-//    GenTableCR();
 //    ExportTotalExprTable();
-//  ExportExprTableWithCompressionRatioAvg();
+//    ExportExprTableWithCompressionRatioAvg();
 //    ExportExprTableWithCompressionTimeAvg();
-    ExportExprTableWithDecompressionTimeAvg();
-}
-
-TEST(Tmp, FindMaxMin) {
-  for (const auto &data_set : kDataSetList) {
-    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
-    if (!data_set_input_stream.is_open()) {
-      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
-    }
-
-    double min_value = std::numeric_limits<double>::max();
-    double max_value = std::numeric_limits<double>::min();
-    double cur_value;
-
-    while (!data_set_input_stream.eof()) {
-      data_set_input_stream >> cur_value;
-      min_value = std::min(min_value, cur_value);
-      max_value = std::max(max_value, cur_value);
-    }
-
-    std::cout << data_set << ": [" << min_value << ", " << max_value << "]" << std::endl;
-
-    data_set_input_stream.close();
-  }
+//    ExportExprTableWithDecompressionTimeAvg();
+//    GenTableCR();
 }
