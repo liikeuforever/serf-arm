@@ -12,7 +12,6 @@ const static std::string kDataSetList[] = {
     "Air-pressure.csv",
     "Air-sensor.csv",
     "Bird-migration.csv",
-    "Bitcoin-price.csv",
     "Basel-temp.csv",
     "Basel-wind.csv",
     "City-temp.csv",

@@ -3,37 +3,39 @@
 
 class SimPieceSegment {
  public:
-  SimPieceSegment(long init_timestamp, double aMin, double aMax, double b): kInitTimestamp(init_timestamp), kAMin
-      (aMin), kAMax(aMax), kA((aMin + aMax) / 2), kB(b) {}
+  SimPieceSegment(long init_timestamp, double aMin, double aMax, double b): init_timestamp_(init_timestamp),
+                                                                            a_min_(aMin), a_max_(aMax), a_((aMin + aMax) / 2), b_(b) {}
 
   SimPieceSegment(long init_timestamp, double a, double b): SimPieceSegment(init_timestamp, a, a, b) {}
 
-  long GetInitTimestamp() {
-    return kInitTimestamp;
+  SimPieceSegment(const SimPieceSegment& other) = default;
+
+  long getInitTimestamp() {
+    return init_timestamp_;
   }
 
-  double GetAMin() {
-    return kAMin;
+  double getAMin() {
+    return a_min_;
   }
 
-  double GetAMax() {
-    return kAMax;
+  double getAMax() {
+    return a_max_;
   }
 
-  double GetA() {
-    return kA;
+  double getA() {
+    return a_;
   }
 
-  double GetB() {
-    return kB;
+  double getB() {
+    return b_;
   }
 
  private:
-  const long kInitTimestamp;
-  const double kAMin;
-  const double kAMax;
-  const double kA;
-  const double kB;
+  long init_timestamp_;
+  double a_min_;
+  double a_max_;
+  double a_;
+  double b_;
 };
 
 #endif // SIM_PIECE_SIM_PIECE_SEGMENT_H_

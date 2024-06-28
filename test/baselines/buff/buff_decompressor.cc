@@ -1,5 +1,6 @@
 #include <sstream>
 #include <iomanip>
+#include <boost/multiprecision/cpp_dec_float.hpp>
 #include "buff_decompressor.h"
 
 BuffDecompressor::BuffDecompressor(Array<uint8_t> bs) {
