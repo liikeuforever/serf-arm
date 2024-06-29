@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "baselines/lz4/LZ4Compressor.h"
-#include "baselines/lz4/LZ4Decompressor.h"
+#include "baselines/lz4/lz4_compressor.h"
+#include "baselines/lz4/lz4_decompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

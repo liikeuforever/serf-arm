@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "baselines/fpc/FpcCompressor.h"
-#include "baselines/fpc/FpcDecompressor.h"
+#include "baselines/fpc/fpc_compressor.h"
+#include "baselines/fpc/fpc_decompressor.h"
 
 const static int BLOCK_SIZE = 1000;
 const static std::string DATA_SET_DIR = "../../test/data_set";

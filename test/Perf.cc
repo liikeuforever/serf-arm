@@ -16,17 +16,17 @@
 #include "../src/compressor_32/serf_qt_compressor_32.h"
 #include "../src/decompressor_32/serf_qt_decompressor_32.h"
 
-#include "baselines/deflate/DeflateCompressor.h"
-#include "baselines/deflate/DeflateDecompressor.h"
+#include "baselines/deflate/deflate_compressor.h"
+#include "baselines/deflate/deflate_decompressor.h"
 
-#include "baselines/lz4/LZ4Compressor.h"
-#include "baselines/lz4/LZ4Decompressor.h"
+#include "baselines/lz4/lz4_compressor.h"
+#include "baselines/lz4/lz4_decompressor.h"
 
-#include "baselines/fpc/FpcCompressor.h"
-#include "baselines/fpc/FpcDecompressor.h"
+#include "baselines/fpc/fpc_compressor.h"
+#include "baselines/fpc/fpc_decompressor.h"
 
-#include "baselines/chimp128/ChimpCompressor.h"
-#include "baselines/chimp128/ChimpDecompressor.h"
+#include "baselines/chimp128/chimp_compressor.h"
+#include "baselines/chimp128/chimp_decompressor.h"
 
 #include "baselines/elf/elf.h"
 

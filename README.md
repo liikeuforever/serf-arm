@@ -30,22 +30,17 @@ _Notes: By default, baselines will be compiled altogether with Serf. If you do n
 - Gorilla
 - LZ4
 - LZ77
-- LZW
 - Machete
-- SZ3.0
-- SZ_ADT
+- Snappy
+- SZ2.0
+- Zstd
 
-## Python interface & Java Interface
+## Python interface
 
 We port Serf to many language so people can use Serf in their projects.
 
 For Python, You can install pybind11 using pip and copy Serf shared library together with its Python module wrapper, 
 then import `pyserf`. Easy, isn't it?
-
-For Java, You can copy Serf JNA shared library and import it like import normal Java packages.
-
-Multi-languages support is what Serf makes difference to other compression algorithm, while Serf still keeps a 
-excellent compression performance. 
 
 ## Code Format Check
 Serf keeps Google C++ Style as Code of Conduct, which is accepted widely in industry. You should use `cpplint` to 

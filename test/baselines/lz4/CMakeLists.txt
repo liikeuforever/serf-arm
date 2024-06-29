@@ -14,6 +14,6 @@ set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Scan and collect all source code file
-file(GLOB_RECURSE LIB_SRC *.cpp *.c)
+file(GLOB_RECURSE LIB_SRC *.cc *.c)
 
 add_library(lz4 SHARED ${LIB_SRC})
