@@ -10,18 +10,15 @@ add_subdirectory(baselines/gorilla)
 add_subdirectory(baselines/elf)
 add_subdirectory(baselines/machete)
 add_subdirectory(baselines/lz77)
-add_subdirectory(baselines/sz3)
+add_subdirectory(baselines/sz2)
 add_subdirectory(baselines/lzw)
 add_subdirectory(baselines/alp)
 add_subdirectory(baselines/buff)
-add_subdirectory(baselines/sz_adt)
 add_subdirectory(baselines/snappy)
 add_subdirectory(baselines/zstd/build/cmake)
 add_subdirectory(baselines/sim_piece)
 
-include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt/zstd/common/ ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt/sz/inc
-        ${CMAKE_CURRENT_SOURCE_DIR}/baselines/sz_adt/zstd/)
+include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 
 message(STATUS "[SelfCheck] Loading GoogleTest module")
 
@@ -59,8 +56,8 @@ foreach(F ${TEST_SRC})
 endforeach(F)
 
 add_executable(PerformanceProgram Perf.cc)
-target_link_libraries(PerformanceProgram PRIVATE alp buff chimp deflate elf fpc gorilla lzw lz77 lz4 machete SZ3 serf
-        TSZ libzstd_shared snappy sim_piece GTest::gtest_main)
+target_link_libraries(PerformanceProgram PRIVATE chimp deflate elf fpc gorilla lz77 lz4 machete sz serf
+        libzstd_shared snappy sim_piece GTest::gtest_main)
 gtest_discover_tests(PerformanceProgram)
 
 add_executable(TransClient transmission/prog/client.cc)
