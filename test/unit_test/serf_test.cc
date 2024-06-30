@@ -235,14 +235,14 @@ TEST(TestNetSerfQt, CorrectnessTest) {
 }
 
 TEST(TestSerfXOR32, CorrectnessTest) {
-  for (const auto &data_set : kDataSetList) {
+  for (const auto &data_set : kDataSetList32) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
     for (const auto &max_diff : kMaxDiff32) {
-      SerfXORCompressor32 xor_compressor_32(kBlockSize, max_diff);
+      SerfXORCompressor32 xor_compressor_32(1000, max_diff);
       SerfXORDecompressor32 xor_decompressor_32;
 
       std::vector<float> original_data;

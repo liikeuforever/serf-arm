@@ -95,3 +95,33 @@ TEST(TestChimp, CorrectnessTest) {
     data_set_input_stream.close();
   }
 }
+
+TEST(TestChimp32, CorrectnessTest) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_set_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+    }
+
+    std::vector<double> original_data;
+    while ((original_data = ReadBlock(data_set_input_stream)).size() == kBlockSize) {
+      ChimpCompressor compressor(128);
+      for (const auto &item : original_data) {
+        compressor.addValue(item);
+      }
+      compressor.close();
+      Array<uint8_t> compressed = compressor.get_compress_pack();
+      ChimpDecompressor decompressor(compressed, 128);
+      std::vector<double> decompressed = decompressor.decompress();
+      EXPECT_EQ(original_data.size(), decompressed.size());
+      for (int i = 0; i < kBlockSize; ++i) {
+        if (original_data[i] - decompressed[i] != 0) {
+          GTEST_LOG_(INFO) << " " << original_data[i] << " " << decompressed[i];
+        }
+        EXPECT_TRUE(original_data[i] - decompressed[i] == 0);
+      }
+    }
+
+    data_set_input_stream.close();
+  }
+}

@@ -33,9 +33,6 @@
 #include "baselines/gorilla/gorilla_compressor.h"
 #include "baselines/gorilla/gorilla_decompressor.h"
 
-#include "baselines/buff/buff_compressor.h"
-#include "baselines/buff/buff_decompressor.h"
-
 #include "baselines/lz77/fastlz.h"
 
 #include "baselines/machete/machete.h"
@@ -1121,6 +1118,116 @@ PerfRecord PerfLZ77_32(std::ifstream &data_set_input_stream_ref, int block_size)
   perf_record.set_block_count(block_count);
   return perf_record;
 }
+
+PerfRecord PerfSnappy_32(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    std::string compression_output;
+    std::string decompression_output;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    size_t compression_output_len = snappy::Compress(reinterpret_cast<const char *>(original_data.data()),
+                                                     original_data.size() * 8, &compression_output);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    snappy::Uncompress(compression_output.data(), compression_output.size(), &decompression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfZstd_32(std::ifstream &data_set_input_stream_ref, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    char compression_output[block_size * 10];
+    double decompression_output[block_size];
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    size_t compression_output_len = ZSTD_compress(compression_output, block_size * 10, original_data.data(),
+                                                  original_data.size() * 8, 3);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    ZSTD_decompress(decompression_output, block_size * 8, compression_output, compression_output_len);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+PerfRecord PerfSZ2_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    size_t compression_output_len;
+    auto decompression_output = new float[block_size];
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    auto compression_output = SZ_compress_args(SZ_FLOAT, original_data.data(), &compression_output_len,
+                                               ABS, max_diff * 0.99, 0, 0, 0, 0, 0, 0, original_data.size());
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    size_t decompression_output_len = SZ_decompress_args(SZ_FLOAT, compression_output,
+                                                         compression_output_len, decompression_output, 0, 0,
+                                                         0, 0, block_size);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] decompression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
+
 
 TEST(Perf, All) {
   global_block_size = kBlockSizeList[0];

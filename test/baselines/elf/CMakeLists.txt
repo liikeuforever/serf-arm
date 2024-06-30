@@ -13,6 +13,6 @@ set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-file(GLOB_RECURSE LIB_SRC *.cpp *.c)
+file(GLOB_RECURSE LIB_SRC *.cpp *.c *.cc)
 
 add_library(elf SHARED ${LIB_SRC})
