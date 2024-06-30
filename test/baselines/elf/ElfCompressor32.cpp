@@ -94,8 +94,8 @@ class ElfXORCompressor32 {
       size += 37 - trailingZeros;
       return 37 - trailingZeros;
     } else {
-      size += 7;
-      return 7;
+      size += 6;
+      return 6;
     }
   }
 
