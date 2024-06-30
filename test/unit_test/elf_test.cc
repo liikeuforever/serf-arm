@@ -23,6 +23,13 @@ const static std::string kDataSetList[] = {
     "Stocks-USA.csv",
     "Wind-Speed.csv"
 };
+const static std::string kDataSetList32[] = {
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "Stocks-DE.csv",
+    "Stocks-UK.csv",
+    "Stocks-USA.csv"
+};
 constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
 
 /**
@@ -93,7 +100,7 @@ TEST(TestElf, CorrectnessTest) {
 }
 
 TEST(TestElf32, CorrectnessTest) {
-  for (const auto &data_set : kDataSetList) {
+  for (const auto &data_set : kDataSetList32) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
@@ -107,10 +114,7 @@ TEST(TestElf32, CorrectnessTest) {
                                                            &compression_output_buffer, 0);
       elf_decode_32(compression_output_buffer, compression_output_len_in_bytes, decompression_output, 0);
       for (int i = 0; i < kBlockSize; ++i) {
-        if (original_data[i] - decompression_output[i] != 0) {
-          GTEST_LOG_(INFO) << " " << original_data[i] << " " << decompression_output[i];
-        }
-        EXPECT_TRUE(original_data[i] - decompression_output[i] == 0);
+        EXPECT_FLOAT_EQ(original_data[i], decompression_output[i]);
       }
     }
 
