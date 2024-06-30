@@ -70,3 +70,12 @@ readLong(BitReader *reader, size_t len) {
   forward(reader, len);
   return result;
 }
+
+static inline uint32_t
+readInt(BitReader *reader, size_t len) {
+  if (len == 0) return 0;
+  uint32_t result = 0;
+  result |= peek(reader, len);
+  forward(reader, len);
+  return result;
+}
