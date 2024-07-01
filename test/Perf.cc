@@ -15,6 +15,8 @@
 #include "../src/decompressor_32/serf_xor_decompressor_32.h"
 #include "../src/compressor_32/serf_qt_compressor_32.h"
 #include "../src/decompressor_32/serf_qt_decompressor_32.h"
+#include "../src/compressor/serf_xor_compressor_no_ada_flag.h"
+#include "../src/decompressor/serf_xor_decompressor_no_ada_flag.h"
 
 #include "baselines/deflate/deflate_compressor.h"
 #include "baselines/deflate/deflate_decompressor.h"
@@ -87,7 +89,7 @@ const static std::string kMethodList[] = {
     "Elf", "SerfQt", "SerfXOR"
 };
 const static std::string kMethodListAblation[] = {
-    "SerfXOR", "SerfXOR-Shifter", "SerfXOR-AdaptiveFlag", "SerfXOR-OptApproximator"
+    "SerfXOR", "SerfXOR-Shifter", "SerfXOR-AdaptiveFlag"
 };
 const static std::string kMethodList32[] = {
     "LZ77", "Zstd", "Snappy", "SZ2", "Deflate", "LZ4", "Chimp128", "Elf", "SerfQt", "SerfXOR"
@@ -1429,6 +1431,44 @@ PerfRecord PerfSerfXOR_Without_Shifter(std::ifstream &data_set_input_stream_ref,
   return perf_record;
 }
 
+PerfRecord PerfSerfXOR_Without_AdaptiveFlag(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                       const std::string &data_set) {
+  PerfRecord perf_record;
+
+  SerfXORCompressorNoAdaFlag serf_xor_compressor(1000, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
+  SerfXORDecompressorNoAdaFlag serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_last_block());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes_last_block();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 TEST(Perf, All) {
   global_block_size = kBlockSizeList[0];
   for (const auto &data_set : kDataSetList) {
@@ -1567,6 +1607,10 @@ TEST(Ablation, Serf) {
       expr_table.insert(std::make_pair(ExprConf("SerfXOR-Shifter", data_set, max_diff),
                                        PerfSerfXOR_Without_Shifter(data_set_input_stream, max_diff,
                                                                    global_block_size)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR-AdaptiveFlag", data_set, max_diff),
+                                       PerfSerfXOR_Without_AdaptiveFlag(data_set_input_stream, max_diff,
+                                                                        global_block_size, data_set)));
       ResetFileStream(data_set_input_stream);
     }
 

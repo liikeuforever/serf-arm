@@ -11,6 +11,7 @@
 #include "utils/array.h"
 
 class SerfXORCompressorNoAdaFlag {
+ public:
   SerfXORCompressorNoAdaFlag(int windows_size, double max_diff, long adjust_digit);
 
   void AddValue(double v);
