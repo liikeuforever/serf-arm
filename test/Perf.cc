@@ -18,6 +18,7 @@
 #include "../src/compressor/serf_xor_compressor_no_ada_flag.h"
 #include "../src/decompressor/serf_xor_decompressor_no_ada_flag.h"
 #include "../src/compressor/serf_xor_compressor_no_opt_appr.h"
+#include "../src/compressor/serf_xor_compressor_no_fast_search.h"
 
 #include "baselines/deflate/deflate_compressor.h"
 #include "baselines/deflate/deflate_decompressor.h"
@@ -85,12 +86,15 @@ const static std::unordered_map<std::string, std::string> kAbbrToDataList {
     {"SUSA", "Stocks-USA.csv"},
     {"WS", "Wind-Speed.csv"}
 };
+//const static std::string kMethodList[] = {
+//    "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
+//    "Elf", "SerfQt", "SerfXOR"
+//};
 const static std::string kMethodList[] = {
-    "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
-    "Elf", "SerfQt", "SerfXOR"
+    "SZ2", "Machete", "SimPiece", "SerfQt", "SerfXOR"
 };
 const static std::string kMethodListAblation[] = {
-    "SerfXOR", "SerfXOR-Shifter", "SerfXOR-AdaptiveFlag", "SerfXOR-OptApproximator"
+    "SerfXOR", "SerfXOR-Shifter", "SerfXOR-AdaptiveFlag", "SerfXOR-PlusOneOpt", "SerfXOR-FastSearchOpt"
 };
 const static std::string kMethodList32[] = {
     "LZ77", "Zstd", "Snappy", "SZ2", "Deflate", "LZ4", "Chimp128", "Elf", "SerfQt", "SerfXOR"
@@ -1508,6 +1512,44 @@ PerfRecord PerfSerfXOR_Without_OptAppr(std::ifstream &data_set_input_stream_ref,
   return perf_record;
 }
 
+PerfRecord PerfSerfXOR_Without_FastSearch(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                                       const std::string &data_set) {
+  PerfRecord perf_record;
+
+  SerfXORCompressorNoFastSearch serf_xor_compressor(1000, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
+  SerfXORDecompressor serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_last_block());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes_last_block();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 TEST(Perf, All) {
   global_block_size = kBlockSizeList[0];
   for (const auto &data_set : kDataSetList) {
@@ -1541,29 +1583,29 @@ TEST(Perf, All) {
     }
 
     // Lossless
-    expr_table.insert(std::make_pair(ExprConf("Chimp128", data_set, kMaxDiffList[0]), PerfChimp128
-    (data_set_input_stream, global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, kMaxDiffList[0]), PerfDeflate(data_set_input_stream,
-                                                                                   global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, kMaxDiffList[0]), PerfElf(data_set_input_stream, global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, kMaxDiffList[0]), PerfFPC(data_set_input_stream, global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, kMaxDiffList[0]), PerfGorilla(data_set_input_stream,
-                                                                                   global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, kMaxDiffList[0]), PerfLZ4(data_set_input_stream, global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, kMaxDiffList[0]), PerfLZ77(data_set_input_stream, global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Zstd", data_set, kMaxDiffList[0]), PerfZstd(data_set_input_stream,
-                                                                                        global_block_size)));
-    ResetFileStream(data_set_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Snappy", data_set, kMaxDiffList[0]), PerfSnappy(data_set_input_stream,
-                                                                                           global_block_size)));
-    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Chimp128", data_set, kMaxDiffList[0]), PerfChimp128
+//    (data_set_input_stream, global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, kMaxDiffList[0]), PerfDeflate(data_set_input_stream,
+//                                                                                   global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, kMaxDiffList[0]), PerfElf(data_set_input_stream, global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, kMaxDiffList[0]), PerfFPC(data_set_input_stream, global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, kMaxDiffList[0]), PerfGorilla(data_set_input_stream,
+//                                                                                   global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, kMaxDiffList[0]), PerfLZ4(data_set_input_stream, global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, kMaxDiffList[0]), PerfLZ77(data_set_input_stream, global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Zstd", data_set, kMaxDiffList[0]), PerfZstd(data_set_input_stream,
+//                                                                                        global_block_size)));
+//    ResetFileStream(data_set_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Snappy", data_set, kMaxDiffList[0]), PerfSnappy(data_set_input_stream,
+//                                                                                           global_block_size)));
+//    ResetFileStream(data_set_input_stream);
 
     data_set_input_stream.close();
   }
@@ -1572,7 +1614,7 @@ TEST(Perf, All) {
 //    ExportExprTableWithCompressionRatioAvg();
 //    ExportExprTableWithCompressionTimeAvg();
 //    ExportExprTableWithDecompressionTimeAvg();
-//    GenTableDT();
+    GenTableDT();
 }
 
 TEST(Perf32, All) {
@@ -1651,8 +1693,12 @@ TEST(Ablation, Serf) {
                                        PerfSerfXOR_Without_AdaptiveFlag(data_set_input_stream, max_diff,
                                                                         global_block_size, data_set)));
       ResetFileStream(data_set_input_stream);
-      expr_table.insert(std::make_pair(ExprConf("SerfXOR-OptApproximator", data_set, max_diff),
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR-PlusOneOpt", data_set, max_diff),
                                        PerfSerfXOR_Without_OptAppr(data_set_input_stream, max_diff,
+                                                                   global_block_size, data_set)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR-FastSearchOpt", data_set, max_diff),
+                                       PerfSerfXOR_Without_FastSearch(data_set_input_stream, max_diff,
                                                                    global_block_size, data_set)));
       ResetFileStream(data_set_input_stream);
     }
@@ -1660,5 +1706,5 @@ TEST(Ablation, Serf) {
     data_set_input_stream.close();
   }
 
-  GenTableCR_ablation();
+  GenTableDT_ablation();
 }

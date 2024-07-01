@@ -1,18 +1,18 @@
-#include "serf_xor_compressor_no_opt_appr.h"
+#include "serf_xor_compressor_no_fast_search.h"
 
-SerfXORCompressorNoAppr::SerfXORCompressorNoAppr(int windows_size, double max_diff, long adjust_digit)
+SerfXORCompressorNoFastSearch::SerfXORCompressorNoFastSearch(int windows_size, double max_diff, long adjust_digit)
     : kWindowSize(windows_size), kMaxDiff(max_diff), kAdjustDigit(adjust_digit) {
   output_buffer_ = std::make_unique<OutputBitStream>(std::floor(((windows_size + 1) * 8 + windows_size / 8 + 1) * 1.2));
   compressed_size_this_block_ = output_buffer_->WriteInt(0, 2);
 }
 
-void SerfXORCompressorNoAppr::AddValue(double v) {
+void SerfXORCompressorNoFastSearch::AddValue(double v) {
   uint64_t this_val;
   // note we cannot let > max_diff_, because kNan - v > max_diff_ is always false
   if (__builtin_expect(std::abs(Double::LongBitsToDouble(stored_val_) - kAdjustDigit - v) > kMaxDiff, false)) {
     // in our implementation, we do not consider special cases and overflow case
     double adjust_value = v + kAdjustDigit;
-    this_val = SerfUtils64::FindAppLongNoPlus(adjust_value - kMaxDiff, adjust_value + kMaxDiff, v, stored_val_,
+    this_val = SerfUtils64::FindAppLongNoFast(adjust_value - kMaxDiff, adjust_value + kMaxDiff, v, stored_val_,
                                               kMaxDiff, kAdjustDigit);
   } else {
     // let current value be the last value, making an XORed value of 0.
@@ -24,15 +24,15 @@ void SerfXORCompressorNoAppr::AddValue(double v) {
   ++number_of_values_this_window_;
 }
 
-long SerfXORCompressorNoAppr::compressed_size_last_block() const {
+long SerfXORCompressorNoFastSearch::compressed_size_last_block() const {
   return compressed_size_last_block_;
 }
 
-Array<uint8_t> SerfXORCompressorNoAppr::compressed_bytes_last_block() {
+Array<uint8_t> SerfXORCompressorNoFastSearch::compressed_bytes_last_block() {
   return compressed_bytes_last_block_;
 }
 
-void SerfXORCompressorNoAppr::Close() {
+void SerfXORCompressorNoFastSearch::Close() {
   compressed_size_this_block_ += CompressValue(Double::DoubleToLongBits(Double::kNan));
   output_buffer_->Flush();
   compressed_bytes_last_block_ = output_buffer_->GetBuffer(std::ceil((double) compressed_size_this_block_ / 8.0));
@@ -41,7 +41,7 @@ void SerfXORCompressorNoAppr::Close() {
   compressed_size_this_block_ = UpdateFlagAndPositionsIfNeeded();
 }
 
-int SerfXORCompressorNoAppr::CompressValue(uint64_t value) {
+int SerfXORCompressorNoFastSearch::CompressValue(uint64_t value) {
   int this_size = 0;
   uint64_t xor_result = stored_val_ ^ value;
 
@@ -105,7 +105,7 @@ int SerfXORCompressorNoAppr::CompressValue(uint64_t value) {
   return this_size;
 }
 
-int SerfXORCompressorNoAppr::UpdateFlagAndPositionsIfNeeded() {
+int SerfXORCompressorNoFastSearch::UpdateFlagAndPositionsIfNeeded() {
   int len;
   equal_win_ = equal_vote_ > 0;
   if (number_of_values_this_window_ < kWindowSize) {
