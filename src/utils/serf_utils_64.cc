@@ -67,3 +67,46 @@ SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t sign,
   // we do not find a satisfied value, so we return the original value
   return Double::DoubleToLongBits(original + adjust_digit);
 }
+
+uint64_t SerfUtils64::FindAppLongBasic(double min, double max, double v, uint64_t last_long, double max_diff,
+                                       double adjust_digit) {
+  if (min >= 0) {
+    // both positive
+    return FindAppLongBasic(min, max, 0, v, last_long, max_diff, adjust_digit);
+  } else if (max <= 0) {
+    // both negative
+    return FindAppLongBasic(-max, -min, 0x8000000000000000ULL, v, last_long,
+                       max_diff, adjust_digit);
+  } else if (last_long >> 63 == 0) {
+    // consider positive part only, to make more leading zeros
+    return FindAppLongBasic(0, max, 0, v, last_long, max_diff, adjust_digit);
+  } else {
+    // consider negative part only, to make more leading zeros
+    return FindAppLongBasic(0, -min, 0x8000000000000000ULL, v, last_long,
+                       max_diff, adjust_digit);
+  }
+}
+
+uint64_t SerfUtils64::FindAppLongBasic(double min_double, double max_double, uint64_t sign, double original,
+                                       uint64_t last_long, double max_diff, double adjust_digit) {
+  uint64_t min = Double::DoubleToLongBits(min_double) & 0x7fffffffffffffffULL; // may be negative zero
+  uint64_t max = Double::DoubleToLongBits(max_diff);
+  int64_t frontMask = 0xffffffffffffffff;
+  uint64_t resultLong;
+  double diff;
+  uint64_t append;
+  for (int i = 1; i <= 64; ++i) {
+    uint64_t mask = frontMask << (64 - i);
+    append = (last_long & ~mask) | (min & mask);
+
+    if (min <= append && append <= max) {
+      resultLong = append ^ sign;
+      diff = Double::LongBitsToDouble(resultLong) - original;
+      if (diff >= -max_diff && diff <= max_diff) {
+        return resultLong;
+      }
+    }
+  }
+
+  return Double::DoubleToLongBits(original);    // we do not find a satisfied value, so we return the original value
+}
