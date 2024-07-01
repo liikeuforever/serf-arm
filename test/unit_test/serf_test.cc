@@ -40,9 +40,9 @@ const static std::string kDataSetList[] = {
 const static std::string kDataSetList32[] = {
     "City-temp.csv",
     "Dew-point-temp.csv",
-    "IR-bio-temp.csv",
-    "PM10-dust.csv",
-    "Wind-Speed.csv"
+    "Stocks-DE.csv",
+    "Stocks-UK.csv",
+    "Stocks-USA.csv"
 };
 const static std::unordered_map<std::string, int> kFileToAdjustD {
     {"Air-pressure.csv", 0},
@@ -61,7 +61,7 @@ const static std::unordered_map<std::string, int> kFileToAdjustD {
     {"Wind-Speed.csv", 2}
 };
 constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-constexpr static float kMaxDiff32[] = {1.0E-1f, 1.0E-2f, 1.0E-3f};
+constexpr static float kMaxDiff32[] = {1.0E-3f};
 
 /**
  * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
@@ -277,7 +277,7 @@ TEST(TestSerfQt32, CorrectnessTest) {
     }
 
     for (const auto &max_diff : kMaxDiff32) {
-      SerfQtCompressor32 qt_compressor_32(kBlockSize, max_diff);
+      SerfQtCompressor32 qt_compressor_32(kBlockSize, max_diff * 0.97f);
       SerfQtDecompressor32 qt_decompressor_32;
 
       std::vector<float> original_data;

@@ -23,7 +23,13 @@ const static std::string kDataSetList[] = {
     "Stocks-USA.csv",
     "Wind-Speed.csv"
 };
-constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
+const static std::string kDataSetList32[] = {
+    "City-temp.csv",
+    "Dew-point-temp.csv",
+    "Stocks-DE.csv",
+    "Stocks-UK.csv",
+    "Stocks-USA.csv"
+};
 
 /**
  * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
@@ -83,6 +89,36 @@ TEST(TestDeflate, CorrectnessTest) {
       Array<uint8_t> compressed = compressor.getBytes();
       DeflateDecompressor decompressor;
       std::vector<double> decompressed = decompressor.decompress(compressed);
+      EXPECT_EQ(original_data.size(), decompressed.size());
+      for (int i = 0; i < kBlockSize; ++i) {
+        if (original_data[i] - decompressed[i] != 0) {
+          GTEST_LOG_(INFO) << " " << original_data[i] << " " << decompressed[i];
+        }
+        EXPECT_TRUE(original_data[i] - decompressed[i] == 0);
+      }
+    }
+
+    data_set_input_stream.close();
+  }
+}
+
+TEST(TestDeflate32, CorrectnessTest) {
+  for (const auto &data_set : kDataSetList32) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_set_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+    }
+
+    std::vector<float> original_data;
+    while ((original_data = ReadBlock32(data_set_input_stream)).size() == kBlockSize) {
+      DeflateCompressor compressor(kBlockSize);
+      for (const auto &item : original_data) {
+        compressor.addValue32(item);
+      }
+      compressor.close();
+      Array<uint8_t> compressed = compressor.getBytes();
+      DeflateDecompressor decompressor;
+      std::vector<float> decompressed = decompressor.decompress32(compressed);
       EXPECT_EQ(original_data.size(), decompressed.size());
       for (int i = 0; i < kBlockSize; ++i) {
         if (original_data[i] - decompressed[i] != 0) {
