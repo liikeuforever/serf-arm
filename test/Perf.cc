@@ -48,7 +48,7 @@
 #include "baselines/sz2/sz/include/sz.h"
 
 // Remember to change this if you run single precision experiment
-const static size_t kDoubleSize = 32;
+const static size_t kDoubleSize = 64;
 const static std::string kExportExprTablePrefix = "../../test/";
 const static std::string kExportExprTableFileName = "perf_table.csv";
 const static std::string kDataSetDirPrefix = "../../test/data_set/";
@@ -85,6 +85,9 @@ const static std::unordered_map<std::string, std::string> kAbbrToDataList {
 const static std::string kMethodList[] = {
     "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
     "Elf", "SerfQt", "SerfXOR"
+};
+const static std::string kMethodListAblation[] = {
+    "SerfXOR", "SerfXOR-Shifter", "SerfXOR-AdaptiveFlag", "SerfXOR-OptApproximator"
 };
 const static std::string kMethodList32[] = {
     "LZ77", "Zstd", "Snappy", "SZ2", "Deflate", "LZ4", "Chimp128", "Elf", "SerfQt", "SerfXOR"
@@ -124,7 +127,7 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
 //constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 constexpr static int kBlockSizeList[] = {50};
 //constexpr static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-constexpr static float kMaxDiffList[] = {1.0E-3};
+constexpr static double kMaxDiffList[] = {1.0E-3};
 //constexpr static int kBlockSizeList[] = {50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
 static int global_block_size = 0;
@@ -363,12 +366,35 @@ void GenTableCT() {
 
   expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
 
-  for (const auto &method : kMethodList32) {
+  for (const auto &method : kMethodList) {
     expr_table_output_stream << method << ",";
-    for (const auto &data_set_abbr : kAbbrList32) {
+    for (const auto &data_set_abbr : kAbbrList) {
       expr_table_output_stream << expr_table.find(ExprConf(method, kAbbrToDataList.find(data_set_abbr)->second,
                                                            kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() <<
                                                            ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenTableCT_ablation() {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListAblation) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set_abbr : kAbbrList) {
+      expr_table_output_stream << expr_table.find(ExprConf(method, kAbbrToDataList.find(data_set_abbr)->second,
+                                                           kMaxDiffList[0]))->second.AvgCompressionTimePerBlock() <<
+                               ",";
     }
     expr_table_output_stream << std::endl;
   }
@@ -385,11 +411,32 @@ void GenTableCR() {
   }
   expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
 
-  for (const auto &method : kMethodList32) {
+  for (const auto &method : kMethodList) {
     expr_table_output_stream << method << ",";
-    for (const auto &data_set_abbr : kAbbrList32) {
+    for (const auto &data_set_abbr : kAbbrList) {
       expr_table_output_stream << expr_table.find(ExprConf(method, kAbbrToDataList.find(data_set_abbr)
-      ->second, kMaxDiffList[0]))->second.CalCompressionRatio_32() << ",";
+      ->second, kMaxDiffList[0]))->second.CalCompressionRatio() << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenTableCR_ablation() {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListAblation) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set_abbr : kAbbrList) {
+      expr_table_output_stream << expr_table.find(ExprConf(method, kAbbrToDataList.find(data_set_abbr)
+          ->second, kMaxDiffList[0]))->second.CalCompressionRatio() << ",";
     }
     expr_table_output_stream << std::endl;
   }
@@ -406,9 +453,31 @@ void GenTableDT() {
   }
   expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
 
-  for (const auto &method : kMethodList32) {
+  for (const auto &method : kMethodList) {
     expr_table_output_stream << method << ",";
-    for (const auto &data_set_abbr : kAbbrList32) {
+    for (const auto &data_set_abbr : kAbbrList) {
+      expr_table_output_stream << expr_table.find(ExprConf(method, kAbbrToDataList.find(data_set_abbr)->second,
+                                                           kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() <<
+                               ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenTableDT_ablation() {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + kExportExprTableFileName);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListAblation) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set_abbr : kAbbrList) {
       expr_table_output_stream << expr_table.find(ExprConf(method, kAbbrToDataList.find(data_set_abbr)->second,
                                                            kMaxDiffList[0]))->second.AvgDecompressionTimePerBlock() <<
                                ",";
@@ -1321,6 +1390,45 @@ PerfRecord PerfChimp128_32(std::ifstream &data_set_input_stream_ref, int block_s
   return perf_record;
 }
 
+// Ablation Study
+
+PerfRecord PerfSerfXOR_Without_Shifter(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size) {
+  PerfRecord perf_record;
+
+  SerfXORCompressor serf_xor_compressor(1000, max_diff, 0);
+  SerfXORDecompressor serf_xor_decompressor(0);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_last_block());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes_last_block();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  return perf_record;
+}
+
 TEST(Perf, All) {
   global_block_size = kBlockSizeList[0];
   for (const auto &data_set : kDataSetList) {
@@ -1381,11 +1489,11 @@ TEST(Perf, All) {
     data_set_input_stream.close();
   }
 
-    ExportTotalExprTable();
+//    ExportTotalExprTable();
 //    ExportExprTableWithCompressionRatioAvg();
 //    ExportExprTableWithCompressionTimeAvg();
 //    ExportExprTableWithDecompressionTimeAvg();
-    GenTableDT();
+//    GenTableDT();
 }
 
 TEST(Perf32, All) {
@@ -1442,4 +1550,28 @@ TEST(Perf32, All) {
 //    ExportExprTableWithCompressionTimeAvg();
 //    ExportExprTableWithDecompressionTimeAvg();
   GenTableDT();
+}
+
+TEST(Ablation, Serf) {
+  global_block_size = kBlockSizeList[0];
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_set_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+    }
+
+    for (const auto &max_diff : kMaxDiffList) {
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR", data_set, max_diff),
+                                       PerfSerfXOR(data_set_input_stream, max_diff, global_block_size, data_set)));
+      ResetFileStream(data_set_input_stream);
+      expr_table.insert(std::make_pair(ExprConf("SerfXOR-Shifter", data_set, max_diff),
+                                       PerfSerfXOR_Without_Shifter(data_set_input_stream, max_diff,
+                                                                   global_block_size)));
+      ResetFileStream(data_set_input_stream);
+    }
+
+    data_set_input_stream.close();
+  }
+
+  GenTableCR_ablation();
 }
