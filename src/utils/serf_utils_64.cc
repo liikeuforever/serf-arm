@@ -90,23 +90,23 @@ uint64_t SerfUtils64::FindAppLongBasic(double min, double max, double v, uint64_
 uint64_t SerfUtils64::FindAppLongBasic(double min_double, double max_double, uint64_t sign, double original,
                                        uint64_t last_long, double max_diff, double adjust_digit) {
   uint64_t min = Double::DoubleToLongBits(min_double) & 0x7fffffffffffffffULL; // may be negative zero
-  uint64_t max = Double::DoubleToLongBits(max_diff);
-  int64_t frontMask = 0xffffffffffffffff;
+  uint64_t max = Double::DoubleToLongBits(max_double);
+  int64_t front_mask = 0xffffffffffffffff;
   uint64_t resultLong;
   double diff;
   uint64_t append;
   for (int i = 1; i <= 64; ++i) {
-    uint64_t mask = frontMask << (64 - i);
+    uint64_t mask = front_mask << (64 - i);
     append = (last_long & ~mask) | (min & mask);
 
     if (min <= append && append <= max) {
       resultLong = append ^ sign;
-      diff = Double::LongBitsToDouble(resultLong) - original;
+      diff = Double::LongBitsToDouble(resultLong) - adjust_digit - original;
       if (diff >= -max_diff && diff <= max_diff) {
         return resultLong;
       }
     }
   }
 
-  return Double::DoubleToLongBits(original);    // we do not find a satisfied value, so we return the original value
+  return Double::DoubleToLongBits(original + adjust_digit);    // we do not find a satisfied value, so we return the original value
 }
