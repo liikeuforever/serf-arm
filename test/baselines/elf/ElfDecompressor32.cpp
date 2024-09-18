@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <assert.h>
 #include <math.h>
-#include <sys/types.h>s
+#include <sys/types.h>
 
 #include "elf.h"
 #include "defs.h"
