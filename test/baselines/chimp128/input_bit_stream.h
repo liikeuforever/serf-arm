@@ -1,7 +1,13 @@
 #ifndef SERF_INPUT_BIT_STREAM_H
 #define SERF_INPUT_BIT_STREAM_H
 
+#ifndef __APPLE__
 #include <endian.h>
+#else
+#include <machine/endian.h>
+#define htobe32(x) htonl(x)
+#define be32toh(x) ntohl(x)
+#endif
 
 #include <cstdlib>
 #include <cstring>

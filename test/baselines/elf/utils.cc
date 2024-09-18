@@ -41,7 +41,7 @@ static int *getSPAnd10iNFlag(double v);
 int getFAlpha(int alpha) {
   assert(alpha >= 0);
   if (alpha >= LENGTH_OF(f)) {
-    return (int) ceilf64(alpha * LOG_2_10);
+    return (int) ceil(alpha * LOG_2_10);
   } else {
     return f[alpha];
   }
@@ -72,7 +72,7 @@ int *getAlphaAndBetaStar_32(float v, int lastBetaStar) {
 double roundUp(double v, int alpha) {
   double scale = get10iP(alpha);
   if (v < 0) {
-    return floorf64(v * scale) / scale;
+    return floor(v * scale) / scale;
   } else {
     return ceil(v * scale) / scale;
   }
@@ -154,7 +154,7 @@ static int getSignificantCount_32(float v, int sp, int lastBetaStar) {
 static double get10iP(int i) {
   assert(i >= 0);
   if (i >= LENGTH_OF(map10iP)) {
-    return powf64(10, i);
+    return pow(10, i);
   } else {
     return map10iP[i];
   }
@@ -163,7 +163,7 @@ static double get10iP(int i) {
 static float get10iP_32(int i) {
   assert(i >= 0);
   if (i >= LENGTH_OF(map10iP)) {
-    return powf32(10, i);
+    return powf(10, i);
   } else {
     return map10iP_32[i];
   }
@@ -172,7 +172,7 @@ static float get10iP_32(int i) {
 double get10iN(int i) {
   assert(i >= 0);
   if (i >= LENGTH_OF(map10iN)) {
-    return powf64(10, -i);
+    return pow(10, -i);
   } else {
     return map10iN[i];
   }
@@ -181,7 +181,7 @@ double get10iN(int i) {
 float get10iN_32(int i) {
   assert(i >= 0);
   if (i >= LENGTH_OF(map10iN)) {
-    return powf32(10, -i);
+    return powf(10, -i);
   } else {
     return map10iN_32[i];
   }

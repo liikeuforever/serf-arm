@@ -1,6 +1,14 @@
 #ifndef SERF_OUTPUT_BIT_STREAM_H
 #define SERF_OUTPUT_BIT_STREAM_H
 
+#ifndef __APPLE__
+#include <endian.h>
+#else
+#include <machine/endian.h>
+#define htobe32(x) htonl(x)
+#define be32toh(x) ntohl(x)
+#endif
+
 #include <cstdint>
 
 #include "array.h"

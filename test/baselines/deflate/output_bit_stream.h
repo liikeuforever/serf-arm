@@ -1,5 +1,13 @@
-#ifndef OUTPUT_BIT_STREAM_H
-#define OUTPUT_BIT_STREAM_H
+#ifndef SERF_OUTPUT_BIT_STREAM_H
+#define SERF_OUTPUT_BIT_STREAM_H
+
+#ifndef __APPLE__
+#include <endian.h>
+#else
+#include <machine/endian.h>
+#define htobe32(x) htonl(x)
+#define be32toh(x) ntohl(x)
+#endif
 
 #include <cstdint>
 
@@ -30,4 +38,4 @@ class OutputBitStream {
     uint64_t buffer_;
 };
 
-#endif  // OUTPUT_BIT_STREAM_H
+#endif  // SERF_OUTPUT_BIT_STREAM_H
