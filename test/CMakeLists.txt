@@ -62,3 +62,5 @@ add_executable(TransClient transmission/prog/client.cc)
 add_executable(TransServer transmission/prog/server.cc)
 target_link_libraries(TransClient serf)
 target_link_libraries(TransServer serf)
+
+add_executable(AdjustDigitCalculator adjust_digit_calculator.cpp)

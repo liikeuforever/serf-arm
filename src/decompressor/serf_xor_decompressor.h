@@ -1,5 +1,5 @@
-#ifndef SERF_XOR_DECOMPRESSOR_H
-#define SERF_XOR_DECOMPRESSOR_H
+#ifndef SERF_XOR_DECOMPRESSOR_H_
+#define SERF_XOR_DECOMPRESSOR_H_
 
 #include <cstdint>
 #include <memory>
@@ -26,7 +26,6 @@ class SerfXORDecompressor {
   Array<int> trailing_representation_ = {0, 22, 28, 32, 36, 40, 42, 46};
   int leading_bits_per_value_ = 3;
   int trailing_bits_per_value_ = 3;
-  bool equal_win_ = false;
   long adjust_digit_;
 
   uint64_t ReadValueEqualWinTrue();
@@ -36,4 +35,4 @@ class SerfXORDecompressor {
   void UpdateTrailingRepresentation();
 };
 
-#endif  // SERF_XOR_DECOMPRESSOR_H
+#endif // SERF_XOR_DECOMPRESSOR_H_

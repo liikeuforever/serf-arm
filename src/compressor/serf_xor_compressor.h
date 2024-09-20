@@ -1,5 +1,5 @@
-#ifndef SERF_XOR_COMPRESSOR_H
-#define SERF_XOR_COMPRESSOR_H
+#ifndef SERF_XOR_COMPRESSOR_H_
+#define SERF_XOR_COMPRESSOR_H_
 
 #include <cstdint>
 #include <cmath>
@@ -36,9 +36,6 @@ class SerfXORCompressor {
   long compressed_size_this_window_ = 0;
   int number_of_values_this_window_ = 0;
   double compression_ratio_last_window_ = 0;
-
-  int equal_vote_ = 0;
-  bool equal_win_ = false;
 
   Array<int> leading_representation_ = {
       0, 0, 0, 0, 0, 0, 0, 0,
@@ -92,4 +89,4 @@ class SerfXORCompressor {
   int UpdateFlagAndPositionsIfNeeded();
 };
 
-#endif  // SERF_XOR_COMPRESSOR_H
+#endif // SERF_XOR_COMPRESSOR_H_
