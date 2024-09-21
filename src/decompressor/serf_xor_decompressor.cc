@@ -2,17 +2,17 @@
 
 std::vector<double> SerfXORDecompressor::Decompress(const Array<uint8_t> &bs) {
   input_bit_stream_.SetBuffer(bs);
-  UpdateFlagAndPositionsIfNeeded();
+  UpdatePositionsIfNeeded();
   std::vector<double> values; values.reserve(1000);
   uint64_t value;
-  while ((value = ReadValueEqualWinFalse()) != Double::DoubleToLongBits(Double::kNan)) {
+  while ((value = ReadValue()) != Double::DoubleToLongBits(Double::kNan)) {
     values.emplace_back(Double::LongBitsToDouble(value) - static_cast<double>(adjust_digit_));
     stored_val_ = value;
   }
   return values;
 }
 
-uint64_t SerfXORDecompressor::ReadValueEqualWinFalse() {
+uint64_t SerfXORDecompressor::ReadValue() {
   uint64_t value = stored_val_;
   int center_bits;
   if (input_bit_stream_.ReadInt(1) == 1) {
@@ -37,7 +37,7 @@ uint64_t SerfXORDecompressor::ReadValueEqualWinFalse() {
   return value;
 }
 
-void SerfXORDecompressor::UpdateFlagAndPositionsIfNeeded() {
+void SerfXORDecompressor::UpdatePositionsIfNeeded() {
   if (input_bit_stream_.ReadBit()) {
     UpdateLeadingRepresentation();
     UpdateTrailingRepresentation();

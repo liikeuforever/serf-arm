@@ -38,7 +38,7 @@ void SerfXORCompressor::Close() {
   compressed_bytes_last_block_ = output_buffer_->GetBuffer(std::ceil((double) compressed_size_this_block_ / 8.0));
   output_buffer_->Refresh();
   compressed_size_last_block_ = compressed_size_this_block_;
-  compressed_size_this_block_ = UpdateFlagAndPositionsIfNeeded();
+  compressed_size_this_block_ = UpdatePositionsIfNeeded();
 }
 
 int SerfXORCompressor::CompressValue(uint64_t value) {
@@ -92,7 +92,7 @@ int SerfXORCompressor::CompressValue(uint64_t value) {
   return this_size;
 }
 
-int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
+int SerfXORCompressor::UpdatePositionsIfNeeded() {
   int len;
   if (number_of_values_this_window_ < kWindowSize) {
     // Only Check if update flag
@@ -102,18 +102,17 @@ int SerfXORCompressor::UpdateFlagAndPositionsIfNeeded() {
     double compression_ratio_this_window_ = (double) compressed_size_this_window_ / (number_of_values_this_window_ * 64);
     if (compression_ratio_last_window_ < compression_ratio_this_window_) {
       // update positions
-      Array<int> lead_positions =
-          PostOfficeSolver::InitRoundAndRepresentation(lead_distribution_, leading_representation_, leading_round_);
+      Array<int> lead_positions = PostOfficeSolver::InitRoundAndRepresentation(lead_distribution_,
+                                                                               leading_representation_,
+                                                                               leading_round_);
       leading_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[lead_positions.length()];
       Array<int> trail_positions = PostOfficeSolver::InitRoundAndRepresentation(trail_distribution_,
                                                                                 trailing_representation_,
                                                                                 trailing_round_);
       trailing_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[trail_positions.length()];
       len = output_buffer_->WriteInt(1, 1)
-          + PostOfficeSolver::WritePositions(lead_positions,
-                                             output_buffer_.get())
-          + PostOfficeSolver::WritePositions(trail_positions,
-                                             output_buffer_.get());
+          + PostOfficeSolver::WritePositions(lead_positions, output_buffer_.get())
+          + PostOfficeSolver::WritePositions(trail_positions, output_buffer_.get());
     } else {
       len = output_buffer_->WriteInt(0, 1);
     }

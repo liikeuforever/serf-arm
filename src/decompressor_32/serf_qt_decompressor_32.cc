@@ -12,7 +12,7 @@ std::vector<float> SerfQtDecompressor32::Decompress(const Array<uint8_t> &bs) {
 }
 
 float SerfQtDecompressor32::NextValue() {
-  int64_t decodeValue = ZigZagCodec::Decode(EliasDeltaCodec::Decode(input_bit_stream_.get()) - 1);
+  int64_t decodeValue = ZigZagCodec::Decode(EliasGammaCodec::Decode(input_bit_stream_.get()) - 1);
   float recoverValue = pre_value_ + 2 * max_diff_ * static_cast<float>(decodeValue);
   pre_value_ = recoverValue;
   return recoverValue;

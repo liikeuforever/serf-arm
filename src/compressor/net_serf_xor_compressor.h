@@ -1,8 +1,7 @@
-#ifndef NET_XOR_COMPRESSOR_H
-#define NET_XOR_COMPRESSOR_H
+#ifndef NET_SERF_XOR_COMPRESSOR_H
+#define NET_SERF_XOR_COMPRESSOR_H
 
 #include <cmath>
-#include <memory>
 #include <cstdint>
 
 #include "utils/array.h"
@@ -13,23 +12,21 @@
 
 class NetSerfXORCompressor {
  public:
-  NetSerfXORCompressor(int capacity, double max_diff, long adjust_digit);
+  NetSerfXORCompressor(int window_size, double max_diff, long adjust_digit);
+
   Array<uint8_t> Compress(double v);
 
  private:
-  const int kBlockSize;
   const double kMaxDiff;
   const long kAdjustDigit;
+  const int kWindowSize;
 
   uint64_t stored_val_ = Double::DoubleToLongBits(2);
-  std::unique_ptr<OutputBitStream> output_bit_stream_;
+  std::unique_ptr<OutputBitStream> output_buffer_;
 
-  int compressed_size_in_bits_ = 0;
-  int number_of_values_ = 0;
-  double stored_compression_ratio_ = 0;
-
-  int equal_vote_ = 0;
-  bool equal_win_ = false;
+  long compressed_size_this_window_ = 0;
+  int number_of_values_this_window_ = 0;
+  double compression_ratio_last_window_ = 0;
 
   Array<int> leading_representation_ = {
       0, 0, 0, 0, 0, 0, 0, 0,
@@ -82,7 +79,7 @@ class NetSerfXORCompressor {
 
   int CompressValue(uint64_t value);
 
-  int UpdateFlagAndPositionsIfNeeded();
+  int UpdatePositionsIfNeeded();
 };
 
-#endif  // NET_XOR_COMPRESSOR_H
+#endif  // NET_SERF_XOR_COMPRESSOR_H

@@ -86,7 +86,7 @@ class SerfXORCompressor {
   int stored_trailing_zeros_ = std::numeric_limits<int>::max();
 
   int CompressValue(uint64_t value);
-  int UpdateFlagAndPositionsIfNeeded();
+  int UpdatePositionsIfNeeded();
 };
 
 #endif // SERF_XOR_COMPRESSOR_H_

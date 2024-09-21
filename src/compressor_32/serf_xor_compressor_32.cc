@@ -1,41 +1,42 @@
 #include "compressor_32/serf_xor_compressor_32.h"
 
-SerfXORCompressor32::SerfXORCompressor32(int capacity, float max_diff): kMaxDiff(max_diff) {
-  output_bit_stream_ = std::make_unique<OutputBitStream>(std::floor(((capacity + 1) * 4 + capacity / 4 + 1) * 1.2));
-  compressed_size_in_bits_ = output_bit_stream_->WriteInt(0, 2);
+SerfXORCompressor32::SerfXORCompressor32(int window_size, float max_diff)
+    : kWindowSize(window_size), kMaxDiff(max_diff) {
+  output_buffer_ = std::make_unique<OutputBitStream>(std::floor(((window_size + 1) * 4 + window_size / 4 + 1) * 1.2));
+  compressed_size_this_block_ = output_buffer_->WriteInt(0, 1);
 }
 
 void SerfXORCompressor32::AddValue(float v) {
-  uint32_t thisVal;
+  uint32_t this_val;
   // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
   if (std::abs(Float::IntBitsToFloat(stored_val_) - v) > kMaxDiff) {
     // in our implementation, we do not consider special cases and overflow case
-    thisVal = SerfUtils32::FindAppInt(v - kMaxDiff, v + kMaxDiff, v, stored_val_, kMaxDiff);
+    this_val = SerfUtils32::FindAppInt(v - kMaxDiff, v + kMaxDiff, v, stored_val_, kMaxDiff);
   } else {
     // let current value be the last value, making an XORed value of 0.
-    thisVal = stored_val_;
+    this_val = stored_val_;
   }
 
-  compressed_size_in_bits_ += CompressValue(thisVal);
-  stored_val_ = thisVal;
-  ++number_of_values_;
+  compressed_size_this_block_ += CompressValue(this_val);
+  stored_val_ = this_val;
+  ++number_of_values_this_window_;
 }
 
-long SerfXORCompressor32::compressed_size_in_bits() const {
-  return stored_compressed_size_in_bits;
+long SerfXORCompressor32::compressed_size_last_block() const {
+  return compressed_size_last_block_;
 }
 
-Array<uint8_t> SerfXORCompressor32::compressed_bytes() {
-  return compressed_bytes_;
+Array<uint8_t> SerfXORCompressor32::compressed_bytes_last_block() {
+  return compressed_bytes_last_block_;
 }
 
 void SerfXORCompressor32::Close() {
-  compressed_size_in_bits_ += CompressValue(Float::FloatToIntBits(Float::kNan));
-  output_bit_stream_->Flush();
-  compressed_bytes_ = output_bit_stream_->GetBuffer(std::ceil(compressed_size_in_bits_ / 8.0));
-  output_bit_stream_->Refresh();
-  stored_compressed_size_in_bits = compressed_size_in_bits_;
-  compressed_size_in_bits_ = UpdateFlagAndPositionsIfNeeded();
+  compressed_size_this_block_ += CompressValue(Float::FloatToIntBits(Float::kNan));
+  output_buffer_->Flush();
+  compressed_bytes_last_block_ = output_buffer_->GetBuffer(std::ceil((double) compressed_size_this_block_ / 8.0));
+  output_buffer_->Refresh();
+  compressed_size_last_block_ = compressed_size_this_block_;
+  compressed_size_this_block_ = UpdateFlagAndPositionsIfNeeded();
 }
 
 int SerfXORCompressor32::CompressValue(uint32_t value) {
@@ -43,13 +44,7 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
   uint32_t xor_result = stored_val_ ^ value;
 
   if (xor_result == 0) {
-    // case 01
-    if (equal_win_) {
-      this_size += static_cast<int>(output_bit_stream_->WriteBit(true));
-    } else {
-      this_size += static_cast<int>(output_bit_stream_->WriteInt(1, 2));
-    }
-    equal_vote_++;
+    this_size += static_cast<int>(output_buffer_->WriteInt(1, 2));
   } else {
     int leading_count = __builtin_clz(xor_result);
     int trailing_count = __builtin_ctz(xor_result);
@@ -63,30 +58,14 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
             < 1 + leading_bits_per_value_ + trailing_bits_per_value_) {
       // case 1
       int center_bits = 32 - stored_leading_zeros_ - stored_trailing_zeros_;
-      int len;
-      if (equal_win_) {
-        len = 2 + center_bits;
-        if (len > 32) {
-          output_bit_stream_->WriteInt(1, 2);
-          output_bit_stream_->WriteInt(xor_result >> stored_trailing_zeros_, center_bits);
-        } else {
-          output_bit_stream_->WriteInt((1 << center_bits) |
-                                           (xor_result >> stored_trailing_zeros_),
-                                       2 + center_bits);
-        }
+      int len = 1 + center_bits;
+      if (len > 32) {
+        output_buffer_->WriteInt(1, 1);
+        output_buffer_->WriteInt(xor_result >> stored_trailing_zeros_, center_bits);
       } else {
-        len = 1 + center_bits;
-        if (len > 32) {
-          output_bit_stream_->WriteInt(1, 1);
-          output_bit_stream_->WriteInt(xor_result >> stored_trailing_zeros_, center_bits);
-        } else {
-          output_bit_stream_->WriteInt((1 << center_bits) |
-                                           (xor_result >> stored_trailing_zeros_),
-                                       1 + center_bits);
-        }
+        output_buffer_->WriteInt((1 << center_bits) | (xor_result >> stored_trailing_zeros_), 1 + center_bits);
       }
       this_size += len;
-      equal_vote_--;
     } else {
       stored_leading_zeros_ = leading_zeros;
       stored_trailing_zeros_ = trailing_zeros;
@@ -95,17 +74,15 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
       // case 00
       int len = 2 + leading_bits_per_value_ + trailing_bits_per_value_ + center_bits;
       if (len > 32) {
-        output_bit_stream_->WriteInt((leading_representation_[stored_leading_zeros_]
+        output_buffer_->WriteInt((leading_representation_[stored_leading_zeros_]
                                          << trailing_bits_per_value_)
                                          | trailing_representation_[stored_trailing_zeros_],
                                      2 + leading_bits_per_value_ + trailing_bits_per_value_);
-        output_bit_stream_->WriteInt(xor_result >> stored_trailing_zeros_, center_bits);
+        output_buffer_->WriteInt(xor_result >> stored_trailing_zeros_, center_bits);
       } else {
-        output_bit_stream_->WriteInt((((leading_representation_[stored_leading_zeros_]
-            << trailing_bits_per_value_)
-            | trailing_representation_[stored_trailing_zeros_])
-            << center_bits)
-                                         | (xor_result >> stored_trailing_zeros_), len);
+        output_buffer_->WriteInt((((leading_representation_[stored_leading_zeros_]
+            << trailing_bits_per_value_) | trailing_representation_[stored_trailing_zeros_])
+            << center_bits) | (xor_result >> stored_trailing_zeros_), len);
       }
       this_size += len;
     }
@@ -113,28 +90,36 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
   return this_size;
 }
 
-int SerfXORCompressor32::UpdateFlagAndPositionsIfNeeded() {
+int SerfXORCompressor32::UpdatePositionsIfNeeded() {
   int len;
-  equal_win_ = equal_vote_ > 0;
-  double this_compression_ratio = static_cast<double>(compressed_size_in_bits_) / (number_of_values_);
-  if (stored_compression_ratio_ < this_compression_ratio) {
-    // update positions
-    Array<int> lead_positions = PostOfficeSolver32::InitRoundAndRepresentation(
-        lead_distribution_, leading_representation_, leading_round_);
-    leading_bits_per_value_ = PostOfficeSolver32::kPositionLength2Bits[lead_positions.length()];
-    Array<int> trail_positions = PostOfficeSolver32::InitRoundAndRepresentation(
-        trail_distribution_, trailing_representation_, trailing_round_);
-    trailing_bits_per_value_ = PostOfficeSolver32::kPositionLength2Bits[trail_positions.length()];
-    len = static_cast<int>(output_bit_stream_->WriteInt(equal_win_ ? 3 : 1, 2))
-        + PostOfficeSolver32::WritePositions(lead_positions, output_bit_stream_.get())
-        + PostOfficeSolver32::WritePositions(trail_positions, output_bit_stream_.get());
+  if (number_of_values_this_window_ < kWindowSize) {
+    // Only Check if update flag
+    compressed_size_this_window_ += compressed_size_last_block_;
+    len = output_buffer_->WriteInt(0, 1);
   } else {
-    len = static_cast<int>(output_bit_stream_->WriteInt(equal_win_ ? 2 : 0, 2));
+    double
+        compression_ratio_this_window_ = (double) compressed_size_this_window_ / (number_of_values_this_window_ * 64);
+    if (compression_ratio_last_window_ < compression_ratio_this_window_) {
+      // update positions
+      Array<int> lead_positions = PostOfficeSolver32::InitRoundAndRepresentation(lead_distribution_,
+                                                                                 leading_representation_,
+                                                                                 leading_round_);
+      leading_bits_per_value_ = PostOfficeSolver32::kPositionLength2Bits[lead_positions.length()];
+      Array<int> trail_positions = PostOfficeSolver32::InitRoundAndRepresentation(trail_distribution_,
+                                                                                  trailing_representation_,
+                                                                                  trailing_round_);
+      trailing_bits_per_value_ = PostOfficeSolver32::kPositionLength2Bits[trail_positions.length()];
+      len = output_buffer_->WriteInt(1, 1)
+          + PostOfficeSolver32::WritePositions(lead_positions, output_buffer_.get())
+          + PostOfficeSolver32::WritePositions(trail_positions, output_buffer_.get());
+    } else {
+      len = output_buffer_->WriteInt(0, 1);
+    }
+    compression_ratio_last_window_ = compression_ratio_this_window_;
+    __builtin_memset(lead_distribution_.begin(), 0, 32 * sizeof(int));
+    __builtin_memset(trail_distribution_.begin(), 0, 32 * sizeof(int));
+    compressed_size_this_window_ = 0;
+    number_of_values_this_window_ = 0;
   }
-  equal_vote_ = 0;
-  stored_compression_ratio_ = this_compression_ratio;
-  number_of_values_ = 0;
-  __builtin_memset(lead_distribution_.begin(), 0, 32 * sizeof(int));
-  __builtin_memset(trail_distribution_.begin(), 0, 32 * sizeof(int));
   return len;
 }

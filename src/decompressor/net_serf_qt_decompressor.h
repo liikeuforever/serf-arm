@@ -6,7 +6,7 @@
 
 #include "utils/input_bit_stream.h"
 #include "utils/zig_zag_codec.h"
-#include "utils/elias_delta_codec.h"
+#include "utils/elias_gamma_codec.h"
 
 class NetSerfQtDecompressor {
  public:

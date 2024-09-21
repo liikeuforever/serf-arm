@@ -9,10 +9,12 @@
 #include "utils/post_office_solver_32.h"
 #include "utils/float.h"
 #include "utils/input_bit_stream.h"
+#include "utils/serf_utils_32.h"
 
 class SerfXORDecompressor32 {
  public:
   SerfXORDecompressor32() = default;
+
   std::vector<float> Decompress(const Array<uint8_t> &bs);
 
  private:
@@ -27,7 +29,7 @@ class SerfXORDecompressor32 {
   bool equal_win_ = false;
 
   uint32_t ReadValue();
-  void UpdateFlagAndPositionsIfNeeded();
+  void UpdatePositionsIfNeeded();
   void UpdateLeadingRepresentation();
   void UpdateTrailingRepresentation();
 };

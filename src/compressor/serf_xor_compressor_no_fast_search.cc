@@ -3,7 +3,7 @@
 SerfXORCompressorNoFastSearch::SerfXORCompressorNoFastSearch(int windows_size, double max_diff, long adjust_digit)
     : kWindowSize(windows_size), kMaxDiff(max_diff), kAdjustDigit(adjust_digit) {
   output_buffer_ = std::make_unique<OutputBitStream>(std::floor(((windows_size + 1) * 8 + windows_size / 8 + 1) * 1.2));
-  compressed_size_this_block_ = output_buffer_->WriteInt(0, 2);
+  compressed_size_this_block_ = output_buffer_->WriteInt(0, 1);
 }
 
 void SerfXORCompressorNoFastSearch::AddValue(double v) {
@@ -38,7 +38,7 @@ void SerfXORCompressorNoFastSearch::Close() {
   compressed_bytes_last_block_ = output_buffer_->GetBuffer(std::ceil((double) compressed_size_this_block_ / 8.0));
   output_buffer_->Refresh();
   compressed_size_last_block_ = compressed_size_this_block_;
-  compressed_size_this_block_ = UpdateFlagAndPositionsIfNeeded();
+  compressed_size_this_block_ = UpdatePositionsIfNeeded();
 }
 
 int SerfXORCompressorNoFastSearch::CompressValue(uint64_t value) {
@@ -47,8 +47,7 @@ int SerfXORCompressorNoFastSearch::CompressValue(uint64_t value) {
 
   if (__builtin_expect(xor_result == 0, true)) {
     // case 01
-    this_size += equal_win_ ? output_buffer_->WriteBit(true) : output_buffer_->WriteInt(1, 2);
-    equal_vote_++;
+    this_size += output_buffer_->WriteInt(1, 2);
   } else {
     int leading_count = __builtin_clzll(xor_result);
     int trailing_count = __builtin_ctzll(xor_result);
@@ -62,26 +61,14 @@ int SerfXORCompressorNoFastSearch::CompressValue(uint64_t value) {
             1 + leading_bits_per_value_ + trailing_bits_per_value_) {
       // case 1
       int center_bits = 64 - stored_leading_zeros_ - stored_trailing_zeros_;
-      int len;
-      if (equal_win_) {
-        len = 2 + center_bits;
-        if (len > 64) {
-          output_buffer_->WriteInt(1, 2);
-          output_buffer_->WriteLong(xor_result >> stored_trailing_zeros_, center_bits);
-        } else {
-          output_buffer_->WriteLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 2 + center_bits);
-        }
+      int len = 1 + center_bits;
+      if (len > 64) {
+        output_buffer_->WriteInt(1, 1);
+        output_buffer_->WriteLong(xor_result >> stored_trailing_zeros_, center_bits);
       } else {
-        len = 1 + center_bits;
-        if (len > 64) {
-          output_buffer_->WriteInt(1, 1);
-          output_buffer_->WriteLong(xor_result >> stored_trailing_zeros_, center_bits);
-        } else {
-          output_buffer_->WriteLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 1 + center_bits);
-        }
+        output_buffer_->WriteLong((1ULL << center_bits) | (xor_result >> stored_trailing_zeros_), 1 + center_bits);
       }
       this_size += len;
-      equal_vote_--;
     } else {
       stored_leading_zeros_ = leading_zeros;
       stored_trailing_zeros_ = trailing_zeros;
@@ -105,31 +92,29 @@ int SerfXORCompressorNoFastSearch::CompressValue(uint64_t value) {
   return this_size;
 }
 
-int SerfXORCompressorNoFastSearch::UpdateFlagAndPositionsIfNeeded() {
+int SerfXORCompressorNoFastSearch::UpdatePositionsIfNeeded() {
   int len;
-  equal_win_ = equal_vote_ > 0;
   if (number_of_values_this_window_ < kWindowSize) {
     // Only Check if update flag
     compressed_size_this_window_ += compressed_size_last_block_;
-    len = output_buffer_->WriteInt(equal_win_ ? 2 : 0, 2);
+    len = output_buffer_->WriteInt(0, 1);
   } else {
     double compression_ratio_this_window_ = (double) compressed_size_this_window_ / (number_of_values_this_window_ * 64);
     if (compression_ratio_last_window_ < compression_ratio_this_window_) {
       // update positions
-      Array<int> lead_positions =
-          PostOfficeSolver::InitRoundAndRepresentation(lead_distribution_, leading_representation_, leading_round_);
+      Array<int> lead_positions = PostOfficeSolver::InitRoundAndRepresentation(lead_distribution_,
+                                                                               leading_representation_,
+                                                                               leading_round_);
       leading_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[lead_positions.length()];
       Array<int> trail_positions = PostOfficeSolver::InitRoundAndRepresentation(trail_distribution_,
                                                                                 trailing_representation_,
                                                                                 trailing_round_);
       trailing_bits_per_value_ = PostOfficeSolver::kPositionLength2Bits[trail_positions.length()];
-      len = output_buffer_->WriteInt(equal_win_ ? 3 : 1, 2)
-          + PostOfficeSolver::WritePositions(lead_positions,
-                                             output_buffer_.get())
-          + PostOfficeSolver::WritePositions(trail_positions,
-                                             output_buffer_.get());
+      len = output_buffer_->WriteInt(1, 1)
+          + PostOfficeSolver::WritePositions(lead_positions, output_buffer_.get())
+          + PostOfficeSolver::WritePositions(trail_positions, output_buffer_.get());
     } else {
-      len = output_buffer_->WriteInt(equal_win_ ? 2 : 0, 2);
+      len = output_buffer_->WriteInt(0, 1);
     }
     compression_ratio_last_window_ = compression_ratio_this_window_;
     __builtin_memset(lead_distribution_.begin(), 0, 64 * sizeof(int));
@@ -137,6 +122,5 @@ int SerfXORCompressorNoFastSearch::UpdateFlagAndPositionsIfNeeded() {
     compressed_size_this_window_ = 0;
     number_of_values_this_window_ = 0;
   }
-  equal_vote_ = 0;
   return len;
 }

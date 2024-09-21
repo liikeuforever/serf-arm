@@ -5,7 +5,7 @@ NetSerfQtDecompressor::NetSerfQtDecompressor(double max_diff) : kMaxDiff(max_dif
 double NetSerfQtDecompressor::Decompress(Array<uint8_t> &bs) {
   input_bit_stream_->SetBuffer(bs);
   input_bit_stream_->ReadInt(4);
-  long decodeValue = ZigZagCodec::Decode(EliasDeltaCodec::Decode(input_bit_stream_.get()) - 1);
+  long decodeValue = ZigZagCodec::Decode(EliasGammaCodec::Decode(input_bit_stream_.get()) - 1);
   pre_value_ = pre_value_ + 2 * kMaxDiff * static_cast<double>(decodeValue);
   return pre_value_;
 }

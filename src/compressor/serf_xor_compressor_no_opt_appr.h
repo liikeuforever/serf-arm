@@ -38,9 +38,6 @@ class SerfXORCompressorNoAppr {
   int number_of_values_this_window_ = 0;
   double compression_ratio_last_window_ = 0;
 
-  int equal_vote_ = 0;
-  bool equal_win_ = false;
-
   Array<int> leading_representation_ = {
       0, 0, 0, 0, 0, 0, 0, 0,
       1, 1, 1, 1, 2, 2, 2, 2,
@@ -90,7 +87,7 @@ class SerfXORCompressorNoAppr {
   int stored_trailing_zeros_ = std::numeric_limits<int>::max();
 
   int CompressValue(uint64_t value);
-  int UpdateFlagAndPositionsIfNeeded();
+  int UpdatePositionsIfNeeded();
 };
 
 #endif // SERF_XOR_COMPRESSOR_NO_OPT_APPR_H_

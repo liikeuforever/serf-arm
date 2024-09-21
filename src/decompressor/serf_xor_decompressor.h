@@ -28,9 +28,8 @@ class SerfXORDecompressor {
   int trailing_bits_per_value_ = 3;
   long adjust_digit_;
 
-  uint64_t ReadValueEqualWinTrue();
-  uint64_t ReadValueEqualWinFalse();
-  void UpdateFlagAndPositionsIfNeeded();
+  uint64_t ReadValue();
+  void UpdatePositionsIfNeeded();
   void UpdateLeadingRepresentation();
   void UpdateTrailingRepresentation();
 };
