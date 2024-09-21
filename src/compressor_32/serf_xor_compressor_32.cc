@@ -36,7 +36,7 @@ void SerfXORCompressor32::Close() {
   compressed_bytes_last_block_ = output_buffer_->GetBuffer(std::ceil((double) compressed_size_this_block_ / 8.0));
   output_buffer_->Refresh();
   compressed_size_last_block_ = compressed_size_this_block_;
-  compressed_size_this_block_ = UpdateFlagAndPositionsIfNeeded();
+  compressed_size_this_block_ = UpdatePositionsIfNeeded();
 }
 
 int SerfXORCompressor32::CompressValue(uint32_t value) {

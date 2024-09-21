@@ -26,7 +26,7 @@ Array<uint8_t> NetSerfXORCompressor::AddValue(uint64_t value) {
   // Reserve 4 bits for transition header
   int this_size = output_buffer_->WriteInt(0, 4);
   if (number_of_values_this_window_ >= kWindowSize) {
-    this_size += UpdateFlagAndPositionsIfNeeded();
+    this_size += UpdatePositionsIfNeeded();
   }
   this_size += CompressValue(value);
   compressed_size_this_window_ += this_size;
