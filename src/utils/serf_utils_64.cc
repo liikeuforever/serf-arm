@@ -30,34 +30,42 @@ uint64_t SerfUtils64::FindAppLong(double min_double, double max_double, uint64_t
   uint64_t result_long;
   double diff;
   uint64_t append;
-  while (shift >= 0) {
+  for (; shift >= 0; --shift) {
+    // 计算 front 和 rear，无分支
     uint64_t front = front_mask & min;
     uint64_t rear = (~front_mask) & last_long;
 
     append = rear | front;
-    if (append >= min && append <= max) {
-      result_long = append ^ sign;
-      diff = Double::LongBitsToDouble(result_long) - adjust_digit -
-          original;
-      if (diff >= -max_diff && diff <= max_diff) {
-        return result_long;
-      }
+
+    // 条件判断优化为掩码操作
+    bool condition1 = (append >= min && append <= max);
+    result_long = condition1 ? (append ^ sign) : 0;
+
+    // 无分支计算 diff，并验证是否满足 diff 条件
+    diff = Double::LongBitsToDouble(result_long) - adjust_digit - original;
+    bool diff_satisfied = (diff >= -max_diff && diff <= max_diff);
+
+    // 如果满足条件，直接返回
+    if (condition1 && diff_satisfied) {
+      return result_long;
     }
 
-    // may be overflow
-    append = (append + kBitWeight[shift]) & 0x7fffffffffffffffL;
-    if (append <= max) {
-      // append must be greater than min
-      result_long = append ^ sign;
-      diff = Double::LongBitsToDouble(result_long) - adjust_digit - original;
-      if (diff >= -max_diff && diff <= max_diff) {
-        return result_long;
-      }
+    // 尝试避免溢出操作
+    append = (append + kBitWeight[shift]) & 0x7fffffffffffffffULL;
+
+    bool condition2 = append <= max;
+    result_long = condition2 ? (append ^ sign) : 0;
+
+    // 再次检查 diff
+    diff = Double::LongBitsToDouble(result_long) - adjust_digit - original;
+    diff_satisfied = (diff >= -max_diff && diff <= max_diff);
+
+    if (condition2 && diff_satisfied) {
+      return result_long;
     }
 
-    front_mask = front_mask >> 1;
-
-    --shift;
+    // 更新前置掩码
+    front_mask >>= 1;
   }
 
   // we do not find a satisfied value, so we return the original value
