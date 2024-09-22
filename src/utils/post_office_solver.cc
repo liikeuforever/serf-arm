@@ -15,12 +15,10 @@ PostOfficeSolver::InitRoundAndRepresentation(Array<int> &distribution, Array<int
   int total_cost = std::numeric_limits<int>::max();
   Array<int> positions = {};
 
-  for (int z = 0; z <= max_z; ++z) {
-    int present_cost = total_count_and_non_zeros_counts[0] * z;
-    if (present_cost >= total_cost) {
-      break;
-    }
-    int num = PostOfficeSolver::kPow2z[z];     // 邮局的总数量
+  int present_cost;
+  for (int z = 0; z <= max_z && (present_cost = total_count_and_non_zeros_counts[0] * z) < total_cost; ++z) {
+    // 邮局的总数量
+    int num = PostOfficeSolver::kPow2z[z];
     PostOfficeResult por = PostOfficeSolver::BuildPostOffice(distribution, num,
                                                              total_count_and_non_zeros_counts[1],
                                                              pre_non_zeros_count, post_non_zeros_count);
@@ -35,14 +33,19 @@ PostOfficeSolver::InitRoundAndRepresentation(Array<int> &distribution, Array<int
   round[0] = 0;
   int i = 1;
   for (int j = 1; j < distribution.length(); ++j) {
-    if (i < positions.length() && j == positions[i]) {
-      representation[j] = representation[j - 1] + 1;
-      round[j] = j;
-      ++i;
-    } else {
-      representation[j] = representation[j - 1];
-      round[j] = round[j - 1];
-    }
+    // Bad but useful code
+    int magic_code = (i < positions.length() && j == positions[i]);
+    representation[j] = representation[j - 1] + magic_code;
+    round[j] = magic_code ? j : round[j - 1];
+    i += magic_code;
+//    if (i < positions.length() && j == positions[i]) {
+//      representation[j] = representation[j - 1] + 1;
+//      round[j] = j;
+//      ++i;
+//    } else {
+//      representation[j] = representation[j - 1];
+//      round[j] = round[j - 1];
+//    }
   }
 
   return positions;
@@ -56,12 +59,17 @@ PostOfficeSolver::CalTotalCountAndNonZerosCounts(Array<int> &arr, Array<int> &ou
   out_pre_non_zeros_count[0] = 1;            // 第一个视为非零
   for (int i = 1; i < arr.length(); ++i) {
     total_count += arr[i];
-    if (arr[i] == 0) {
-      --non_zeros_count;
-      out_pre_non_zeros_count[i] = out_pre_non_zeros_count[i - 1];
-    } else {
-      out_pre_non_zeros_count[i] = out_pre_non_zeros_count[i - 1] + 1;
-    }
+    // Bad but useful code
+    int magic_code = (arr[i] == 0);
+    non_zeros_count -= magic_code;
+    out_pre_non_zeros_count[i] = out_pre_non_zeros_count[i - 1] + !magic_code;
+    // Equivalent logic below
+    //if (arr[i] == 0) {
+    //  --non_zeros_count;
+    //  out_pre_non_zeros_count[i] = out_pre_non_zeros_count[i - 1];
+    //} else {
+    //  out_pre_non_zeros_count[i] = out_pre_non_zeros_count[i - 1] + 1;
+    //}
   }
   for (int i = 0; i < arr.length(); ++i) {
     out_post_non_zeros_count[i] = non_zeros_count - out_pre_non_zeros_count[i];
@@ -69,9 +77,8 @@ PostOfficeSolver::CalTotalCountAndNonZerosCounts(Array<int> &arr, Array<int> &ou
   return Array<int>{total_count, non_zeros_count};
 }
 
-PostOfficeResult
-PostOfficeSolver::BuildPostOffice(Array<int> &arr, int num, int non_zeros_count, Array<int> &pre_non_zeros_count,
-                                  Array<int> &post_non_zeros_count) {
+PostOfficeResult PostOfficeSolver::BuildPostOffice(Array<int> &arr, int num, int non_zeros_count,
+                                                   Array<int> &pre_non_zeros_count, Array<int> &post_non_zeros_count) {
   int original_num = num;
   num = std::min(num, non_zeros_count);
 
@@ -92,8 +99,7 @@ PostOfficeSolver::BuildPostOffice(Array<int> &arr, int num, int non_zeros_count,
     if (arr[i] == 0) {
       continue;
     }
-    for (int j = std::max(1, num + i - arr.length());
-         j <= i && j < num; ++j) {
+    for (int j = std::max(1, num + i - arr.length()); j <= i && j < num; ++j) {
       // arr.length - i < num - j，
       // 表示i后面的居民数（arr.length - i）不足以构建剩下的num - j个邮局
       if (i > 1 && j == 1) {
@@ -179,8 +185,7 @@ PostOfficeSolver::BuildPostOffice(Array<int> &arr, int num, int non_zeros_count,
   return {office_positions, temp_total_app_cost};
 }
 
-int
-PostOfficeSolver::WritePositions(Array<int> &positions, OutputBitStream *out) {
+int PostOfficeSolver::WritePositions(Array<int> &positions, OutputBitStream *out) {
   int this_size = out->WriteInt(static_cast<int>(positions.length()), 5);
   for (const auto &position : positions)
     this_size += out->WriteInt(position, 6);

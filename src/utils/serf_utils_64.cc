@@ -2,7 +2,7 @@
 
 uint64_t SerfUtils64::FindAppLong(double min, double max, double v, uint64_t last_long, double max_diff,
                                   double adjust_digit) {
-  if (min >= 0) {
+  if (SERF_LIKELY(min >= 0)) {
     // both positive
     return FindAppLong(min, max, 0, v, last_long, max_diff, adjust_digit);
   } else if (max <= 0) {
