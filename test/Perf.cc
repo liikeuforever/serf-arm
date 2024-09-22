@@ -99,7 +99,7 @@ const static std::string kMethodList32[] = {
     "LZ77", "Zstd", "Snappy", "SZ2", "Deflate", "LZ4", "Chimp128", "Elf", "SerfQt", "SerfXOR"
 };
 const static std::string kAbbrList[] = {
-    "AP", "AS", "BM", "BT", "BW", "CT", "DT", "IR", "PM10", "SDE", "SUK", "SUSA", "WS"
+    "AP", "BT", "BW", "CDTR", "CT", "DT", "IR", "MT", "PM10", "SG", "SUSA", "TD", "WS"
 };
 const static std::string kAbbrList32[] = {
     "CT", "DT", "SDE", "SUK", "SUSA"
@@ -1538,42 +1538,38 @@ TEST(Perf, All) {
     }
 
     // Lossless Compression
-    expr_table.insert(std::make_pair(ExprConf("Chimp128", data_set, kMaxDiffList[0]),
-                                     PerfChimp128(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, kMaxDiffList[0]),
-                                     PerfDeflate(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, kMaxDiffList[0]),
-                                     PerfElf(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, kMaxDiffList[0]),
-                                     PerfFPC(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, kMaxDiffList[0]),
-                                     PerfGorilla(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, kMaxDiffList[0]),
-                                     PerfLZ4(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, kMaxDiffList[0]),
-                                     PerfLZ77(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Zstd", data_set, kMaxDiffList[0]),
-                                     PerfZstd(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
-    expr_table.insert(std::make_pair(ExprConf("Snappy", data_set, kMaxDiffList[0]),
-                                     PerfSnappy(data_input_stream, global_block_size)));
-    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Chimp128", data_set, kMaxDiffList[0]),
+//                                     PerfChimp128(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Deflate", data_set, kMaxDiffList[0]),
+//                                     PerfDeflate(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Elf", data_set, kMaxDiffList[0]),
+//                                     PerfElf(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("FPC", data_set, kMaxDiffList[0]),
+//                                     PerfFPC(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Gorilla", data_set, kMaxDiffList[0]),
+//                                     PerfGorilla(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("LZ4", data_set, kMaxDiffList[0]),
+//                                     PerfLZ4(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("LZ77", data_set, kMaxDiffList[0]),
+//                                     PerfLZ77(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Zstd", data_set, kMaxDiffList[0]),
+//                                     PerfZstd(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
+//    expr_table.insert(std::make_pair(ExprConf("Snappy", data_set, kMaxDiffList[0]),
+//                                     PerfSnappy(data_input_stream, global_block_size)));
+//    ResetFileStream(data_input_stream);
 
     data_input_stream.close();
   }
 
-  ExportTotalExprTable();
-//    ExportExprTableWithCompressionRatioAvg();
-//    ExportExprTableWithCompressionTimeAvg();
-//    ExportExprTableWithDecompressionTimeAvg();
-//    GenTableDT();
+  GenTableDT();
 }
 
 TEST(Perf32, All) {
