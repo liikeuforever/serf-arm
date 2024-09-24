@@ -16,4 +16,4 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # Scan and collect all source code file
 file(GLOB_RECURSE LIB_SRC *.cc)
 
-add_library(serf SHARED ${LIB_SRC})
+add_library(serf STATIC ${LIB_SRC})
