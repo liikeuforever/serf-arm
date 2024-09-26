@@ -80,5 +80,7 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
     {"T-drive.csv", 0},
     {"Wind-Speed.csv", 8}
 };
+// Lambda config
+const static double kLambdaFactorList[] = {0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8};
 
 #endif //SERF_ALL_TEST_PERF_EXPR_CONFIG_HPP_
