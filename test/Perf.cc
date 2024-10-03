@@ -1428,6 +1428,127 @@ void PerfSerfXORLambda(std::ifstream &data_set_input_stream_ref, double max_diff
   ResetFileStream(data_set_input_stream_ref);
 }
 
+// Beta experiment
+void PerfSerfXORBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
+                     int block_size, int beta, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  SerfXORCompressor serf_xor_compressor(1000, max_diff, kFileNameToAdjustDigit.find(data_set)->second);
+  SerfXORDecompressor serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlockUsingBeta(data_set_input_stream_ref, block_size, beta)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_last_block());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes_last_block();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("SerfXOR", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
+                    int block_size, int beta, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  SerfQtCompressor serf_qt_compressor(block_size, max_diff);
+  SerfQtDecompressor serf_qt_decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlockUsingBeta(data_set_input_stream_ref, block_size, beta)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_qt_compressor.AddValue(value);
+    serf_qt_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_qt_compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = serf_qt_compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfElfBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
+                 int block_size, int beta, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlockUsingBeta(data_set_input_stream_ref, block_size, beta)).size() == block_size) {
+    ++block_count;
+
+    uint8_t *compression_output_buffer;
+    double *decompression_output = new double[block_size];
+    ssize_t compression_output_len_in_bytes;
+    ssize_t decompression_len;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    compression_output_len_in_bytes = elf_encode(original_data.data(), original_data.size(),
+                                                 &compression_output_buffer, 0);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len_in_bytes * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    decompression_len = elf_decode(compression_output_buffer, compression_output_len_in_bytes, decompression_output,
+                                   0);
+    delete[] decompression_output;
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
 TEST(Perf, Overall) {
   ExprTable expr_table_overall;
 
@@ -1582,5 +1703,38 @@ TEST(Perf, Lambda) {
       result_output << data_set << "," << factor << ","
                     << expr_table_lambda.find(this_conf)->second.CalCompressionRatio(this_conf) << std::endl;
     }
+  }
+}
+
+TEST(Perf, Beta) {
+  const static std::string chosen_data_set = "Motor-temp.csv";
+  const static int min_beta = 1;
+  const static int max_beta = 15;
+
+  std::ofstream result_output(kExportExprTablePrefix + "beta_cr" + kExportExprTableSuffix);
+  if (!result_output.is_open()) std::cout << "Failed to creat perf result file." << std::endl;
+
+  std::ifstream data_set_input_stream(kDataSetDirPrefix + chosen_data_set);
+  if (!data_set_input_stream.is_open()) {
+    std::cerr << "Failed to open the file [" << chosen_data_set << "]" << std::endl;
+  }
+
+  for (int beta = min_beta; beta <= max_beta; beta++) {
+    ExprTable expr_table_beta;
+    PerfSerfXORBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
+    PerfSerfQtBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
+    PerfElfBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
+    ExprConf serf_xor_conf = ExprConf("SerfXOR", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+    ExprConf serf_qt_conf = ExprConf("SerfQt", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+    ExprConf elf_conf = ExprConf("Elf", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+    result_output << beta << "," << "SerfXOR,"
+                  << expr_table_beta.find(serf_xor_conf)->second.CalCompressionRatio(serf_xor_conf)
+                  << std::endl;
+    result_output << beta << "," << "SerfQt,"
+                  << expr_table_beta.find(serf_qt_conf)->second.CalCompressionRatio(serf_qt_conf)
+                  << std::endl;
+    result_output << beta << "," << "Elf,"
+                  << expr_table_beta.find(elf_conf)->second.CalCompressionRatio(elf_conf)
+                  << std::endl;
   }
 }
