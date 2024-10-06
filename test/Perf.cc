@@ -445,7 +445,7 @@ void PerfZstd(std::ifstream &data_set_input_stream_ref, double max_diff, int blo
 
     auto compression_start_time = std::chrono::steady_clock::now();
     size_t compression_output_len = ZSTD_compress(compression_output, block_size * 10, original_data.data(),
-                                                  original_data.size() * sizeof(double), 3);
+                                                  original_data.size() * sizeof(double), ZSTD_defaultCLevel());
     auto compression_end_time = std::chrono::steady_clock::now();
 
     perf_record.AddCompressedSize(compression_output_len * 8);
