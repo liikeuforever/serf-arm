@@ -1761,14 +1761,14 @@ TEST(Perf, Lambda) {
   std::ofstream result_output(kExportExprTablePrefix + "lambda_cr" + kExportExprTableSuffix);
   if (!result_output.is_open()) std::cout << "Failed to creat perf result file." << std::endl;
 
-  for (const auto &data_set : kDataSetList) {
-    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
-    if (!data_set_input_stream.is_open()) {
-      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
-    }
-
-    int lambda_for_this_data_set = kFileNameToAdjustDigit.find(data_set)->second;
-    for (const auto &factor : kLambdaFactorList) {
+  for (const auto &factor : kLambdaFactorList) {
+    result_output << factor << ",";
+    for (const auto &data_set : kDataSetList) {
+      std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+      if (!data_set_input_stream.is_open()) {
+        std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+      }
+      int lambda_for_this_data_set = kFileNameToAdjustDigit.find(data_set)->second;
       ExprTable expr_table_lambda;
       ExprConf this_conf = ExprConf("SerfXOR", data_set, kBlockSizeOverall, kMaxDiffOverall);
       int test_lambda = static_cast<int>((factor * lambda_for_this_data_set));
@@ -1778,9 +1778,10 @@ TEST(Perf, Lambda) {
                         data_set,
                         test_lambda,
                         expr_table_lambda);
-      result_output << data_set << "," << factor << ","
-                    << expr_table_lambda.find(this_conf)->second.CalCompressionRatio(this_conf) << std::endl;
+      result_output << expr_table_lambda.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+      data_set_input_stream.close();
     }
+    result_output << std::endl;
   }
 }
 
