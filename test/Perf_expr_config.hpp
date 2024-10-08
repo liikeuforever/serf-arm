@@ -32,7 +32,7 @@ const static double kMaxDiffOverall = 1.0E-3;
 const static int kBlockSizeOverall = 50;
 // Rel diff experiment config
 const static std::string kMethodListRel[] = {
-    "SZ2", "SerfXOR"
+    "SZ2_Rel", "SerfXOR_Rel"
 };
 const static double kMaxDiffRel[] = {
     0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5

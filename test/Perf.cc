@@ -101,7 +101,7 @@ void GenOverallTableDT(ExprTable &expr_table) {
 // Auto-Gen for the Param(Abs MaxDiff) Experiment
 
 void GenParamAbsDiffTableCR(ExprTable &expr_table) {
-  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_max_diff" + kExportExprTableSuffix);
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_abs_diff_cr" + kExportExprTableSuffix);
   if (!expr_table_output_stream.is_open()) {
     std::cerr << "Failed to export performance data." << std::endl;
     exit(-1);
@@ -125,7 +125,7 @@ void GenParamAbsDiffTableCR(ExprTable &expr_table) {
 }
 
 void GenParamAbsDiffTableCT(ExprTable &expr_table) {
-  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "overall_ct" + kExportExprTableSuffix);
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_abs_diff_ct" + kExportExprTableSuffix);
   if (!expr_table_output_stream.is_open()) {
     std::cerr << "Failed to export performance data." << std::endl;
     exit(-1);
@@ -147,7 +147,7 @@ void GenParamAbsDiffTableCT(ExprTable &expr_table) {
 }
 
 void GenParamAbsDiffTableDT(ExprTable &expr_table) {
-  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "overall_dt" + kExportExprTableSuffix);
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_abs_diff_dt" + kExportExprTableSuffix);
   if (!expr_table_output_stream.is_open()) {
     std::cerr << "Failed to export performance data." << std::endl;
     exit(-1);
@@ -162,6 +162,80 @@ void GenParamAbsDiffTableDT(ExprTable &expr_table) {
       expr_table_output_stream << expr_table.find(this_conf)->second.AvgDecompressionTimePerBlock() << ",";
     }
     expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+// Auto-Gen for the Param(Rel MaxDiff) Experiment
+
+void GenParamRelDiffTableCR(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_rel_diff_cr" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &max_diff : kMaxDiffRel) {
+    for (const auto &method : kMethodListRel) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, kBlockSizeRel, max_diff);
+        expr_table_output_stream << expr_table.find(this_conf)->second.CalCompressionRatio(this_conf) << ",";
+      }
+      expr_table_output_stream << std::endl;
+    }
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenParamRelDiffTableCT(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_rel_diff_ct" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &max_diff : kMaxDiffRel) {
+    for (const auto &method : kMethodListRel) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, kBlockSizeRel, max_diff);
+        expr_table_output_stream << expr_table.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+      }
+      expr_table_output_stream << std::endl;
+    }
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenParamRelDiffTableDT(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_rel_diff_dt" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &max_diff : kMaxDiffRel) {
+    for (const auto &method : kMethodListRel) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, kBlockSizeRel, max_diff);
+        expr_table_output_stream << expr_table.find(this_conf)->second.AvgDecompressionTimePerBlock() << ",";
+      }
+      expr_table_output_stream << std::endl;
+    }
   }
 
   expr_table_output_stream.flush();
@@ -1620,6 +1694,10 @@ TEST(Perf, Rel) {
 
     data_input_stream.close();
   }
+
+  GenParamRelDiffTableCR(expr_table_rel);
+  GenParamRelDiffTableCT(expr_table_rel);
+  GenParamRelDiffTableDT(expr_table_rel);
 }
 
 TEST(Perf, SinglePrecision) {
