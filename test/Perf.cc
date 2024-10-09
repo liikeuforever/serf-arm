@@ -98,6 +98,74 @@ void GenOverallTableDT(ExprTable &expr_table) {
   expr_table_output_stream.close();
 }
 
+// Auto-Gen for the SinglePrecision Experiment
+
+void GenSinglePrecisionTableCR(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "single_precision_cr" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodList32) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set : kDataSetList32) {
+      ExprConf this_conf = ExprConf(method, data_set, kBlockSize32, kMaxDiff32, true);
+      expr_table_output_stream << expr_table.find(this_conf)->second.CalCompressionRatio(this_conf) << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenSinglePrecisionTableCT(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "single_precision_ct" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodList32) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set : kDataSetList32) {
+      ExprConf this_conf = ExprConf(method, data_set, kBlockSize32, kMaxDiff32, true);
+      expr_table_output_stream << expr_table.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenSinglePrecisionTableDT(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "single_precision_dt" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodList32) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set : kDataSetList32) {
+      ExprConf this_conf = ExprConf(method, data_set, kBlockSize32, kMaxDiff32, true);
+      expr_table_output_stream << expr_table.find(this_conf)->second.AvgDecompressionTimePerBlock() << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
 // Auto-Gen for the Param(Abs MaxDiff) Experiment
 
 void GenParamAbsDiffTableCR(ExprTable &expr_table) {
@@ -901,7 +969,7 @@ void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, in
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("SerfXOR", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("SerfXOR", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -940,7 +1008,7 @@ void PerfSerfQt_32(std::ifstream &data_set_input_stream_ref, float max_diff, int
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -979,7 +1047,7 @@ void PerfDeflate_32(std::ifstream &data_set_input_stream_ref, float max_diff, in
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("Deflate", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("Deflate", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1018,7 +1086,7 @@ void PerfLZ4_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("LZ4", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("LZ4", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1058,7 +1126,7 @@ void PerfLZ77_32(std::ifstream &data_set_input_stream_ref, float max_diff, int b
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("LZ77", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("LZ77", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1094,7 +1162,7 @@ void PerfSnappy_32(std::ifstream &data_set_input_stream_ref, float max_diff, int
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("Snappy", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("Snappy", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1131,7 +1199,7 @@ void PerfZstd_32(std::ifstream &data_set_input_stream_ref, float max_diff, int b
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("Zstd", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("Zstd", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1172,7 +1240,7 @@ void PerfSZ2_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("SZ2", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("SZ2", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1214,7 +1282,7 @@ void PerfElf_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1255,7 +1323,7 @@ void PerfChimp128_32(std::ifstream &data_set_input_stream_ref, float max_diff, i
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("Chimp128", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("Chimp128", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1725,6 +1793,10 @@ TEST(Perf, SinglePrecision) {
 
     data_set_input_stream.close();
   }
+
+  GenSinglePrecisionTableCR(expr_table_32);
+  GenSinglePrecisionTableCT(expr_table_32);
+  GenSinglePrecisionTableDT(expr_table_32);
 }
 
 TEST(Perf, Serf_Ablation) {
