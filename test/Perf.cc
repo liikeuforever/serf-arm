@@ -1885,11 +1885,11 @@ TEST(Perf, Lambda) {
       }
       int lambda_for_this_data_set = kFileNameToAdjustDigit.find(data_set)->second;
       ExprTable expr_table_lambda;
-      ExprConf this_conf = ExprConf("SerfXOR_Rel", data_set, kBlockSizeOverall, kMaxDiffRel[1]);
+      ExprConf this_conf = ExprConf("SerfXOR_Rel", data_set, kBlockSizeOverall, kMaxDiffOverall);
       int test_lambda = static_cast<int>((factor * lambda_for_this_data_set));
-      PerfSerfXORLambdaRel(data_set_input_stream, kMaxDiffRel[1], kBlockSizeOverall, data_set, test_lambda,
+      PerfSerfXORLambdaRel(data_set_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, test_lambda,
                            expr_table_lambda);
-      result_output << expr_table_lambda.find(this_conf)->second.CalCompressionRatio(this_conf) << ",";
+      result_output << expr_table_lambda.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
       data_set_input_stream.close();
     }
     result_output << std::endl;
