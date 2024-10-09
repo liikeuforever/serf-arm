@@ -8,8 +8,8 @@
 #define SERF_LIKELY(c) (__builtin_expect(!!(c), 1))
 #define SERF_UNLIKELY(c) (__builtin_expect(!!(c), 0))
 #else
-#define FASTLZ_LIKELY(c) (c)
-#define FASTLZ_UNLIKELY(c) (c)
+#define SERF_LIKELY(c) (c)
+#define SERF_UNLIKELY(c) (c)
 #endif
 
 #include <cstdint>

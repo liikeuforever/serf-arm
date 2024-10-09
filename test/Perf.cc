@@ -1536,7 +1536,7 @@ void PerfSerfXORLambda(std::ifstream &data_set_input_stream_ref, double max_diff
   PerfRecord perf_record;
 
   SerfXORCompressor serf_xor_compressor(1000, max_diff, lambda);
-  SerfXORDecompressor serf_xor_decompressor(kFileNameToAdjustDigit.find(data_set)->second);
+  SerfXORDecompressor serf_xor_decompressor(lambda);
 
   int block_count = 0;
   std::vector<double> original_data;
@@ -1567,6 +1567,45 @@ void PerfSerfXORLambda(std::ifstream &data_set_input_stream_ref, double max_diff
 
   perf_record.set_block_count(block_count);
   table_to_insert.insert(std::make_pair(ExprConf("SerfXOR", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfSerfXORLambdaRel(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                       const std::string &data_set, int lambda, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  SerfXORCompressorRel serf_xor_compressor(1000, max_diff, lambda);
+  SerfXORDecompressor serf_xor_decompressor(lambda);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) serf_xor_compressor.AddValue(value);
+    serf_xor_compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(serf_xor_compressor.compressed_size_last_block());
+    Array<uint8_t> compression_output = serf_xor_compressor.compressed_bytes_last_block();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("SerfXOR_Rel", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1842,15 +1881,11 @@ TEST(Perf, Lambda) {
       }
       int lambda_for_this_data_set = kFileNameToAdjustDigit.find(data_set)->second;
       ExprTable expr_table_lambda;
-      ExprConf this_conf = ExprConf("SerfXOR", data_set, kBlockSizeOverall, kMaxDiffOverall);
+      ExprConf this_conf = ExprConf("SerfXOR_Rel", data_set, kBlockSizeOverall, kMaxDiffRel[1]);
       int test_lambda = static_cast<int>((factor * lambda_for_this_data_set));
-      PerfSerfXORLambda(data_set_input_stream,
-                        kMaxDiffOverall,
-                        kBlockSizeOverall,
-                        data_set,
-                        test_lambda,
-                        expr_table_lambda);
-      result_output << expr_table_lambda.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+      PerfSerfXORLambdaRel(data_set_input_stream, kMaxDiffRel[1], kBlockSizeOverall, data_set, test_lambda,
+                           expr_table_lambda);
+      result_output << expr_table_lambda.find(this_conf)->second.CalCompressionRatio(this_conf) << ",";
       data_set_input_stream.close();
     }
     result_output << std::endl;
