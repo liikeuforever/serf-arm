@@ -9,7 +9,7 @@ SerfXORCompressor32::SerfXORCompressor32(int window_size, float max_diff)
 void SerfXORCompressor32::AddValue(float v) {
   uint32_t this_val;
   // note we cannot let > maxDiff, because kNan - v > maxDiff is always false
-  if (std::abs(Float::IntBitsToFloat(stored_val_) - v) > kMaxDiff) {
+  if (SERF_LIKELY(std::abs(Float::IntBitsToFloat(stored_val_) - v) > kMaxDiff)) {
     // in our implementation, we do not consider special cases and overflow case
     this_val = SerfUtils32::FindAppInt(v - kMaxDiff, v + kMaxDiff, v, stored_val_, kMaxDiff);
   } else {
@@ -43,7 +43,7 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
   int this_size = 0;
   uint32_t xor_result = stored_val_ ^ value;
 
-  if (xor_result == 0) {
+  if (SERF_UNLIKELY(xor_result == 0)) {
     this_size += static_cast<int>(output_buffer_->WriteInt(1, 2));
   } else {
     int leading_count = __builtin_clz(xor_result);
@@ -53,13 +53,13 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
     ++lead_distribution_[leading_count];
     ++trail_distribution_[trailing_count];
 
-    if (leading_zeros >= stored_leading_zeros_ && trailing_zeros >= stored_trailing_zeros_ &&
+    if (SERF_UNLIKELY(leading_zeros >= stored_leading_zeros_ && trailing_zeros >= stored_trailing_zeros_ &&
         (leading_zeros - stored_leading_zeros_) + (trailing_zeros - stored_trailing_zeros_)
-            < 1 + leading_bits_per_value_ + trailing_bits_per_value_) {
+            < 1 + leading_bits_per_value_ + trailing_bits_per_value_)) {
       // case 1
       int center_bits = 32 - stored_leading_zeros_ - stored_trailing_zeros_;
       int len = 1 + center_bits;
-      if (len > 32) {
+      if (SERF_UNLIKELY(len > 32)) {
         output_buffer_->WriteInt(1, 1);
         output_buffer_->WriteInt(xor_result >> stored_trailing_zeros_, center_bits);
       } else {
@@ -73,7 +73,7 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
 
       // case 00
       int len = 2 + leading_bits_per_value_ + trailing_bits_per_value_ + center_bits;
-      if (len > 32) {
+      if (SERF_UNLIKELY(len > 32)) {
         output_buffer_->WriteInt((leading_representation_[stored_leading_zeros_]
                                          << trailing_bits_per_value_)
                                          | trailing_representation_[stored_trailing_zeros_],
@@ -92,14 +92,14 @@ int SerfXORCompressor32::CompressValue(uint32_t value) {
 
 int SerfXORCompressor32::UpdatePositionsIfNeeded() {
   int len;
-  if (number_of_values_this_window_ < kWindowSize) {
+  if (SERF_LIKELY(number_of_values_this_window_ < kWindowSize)) {
     // Only Check if update flag
     compressed_size_this_window_ += compressed_size_last_block_;
     len = output_buffer_->WriteInt(0, 1);
   } else {
     double
         compression_ratio_this_window_ = (double) compressed_size_this_window_ / (number_of_values_this_window_ * 32);
-    if (compression_ratio_last_window_ < compression_ratio_this_window_) {
+    if (SERF_UNLIKELY(compression_ratio_last_window_ < compression_ratio_this_window_)) {
       // update positions
       Array<int> lead_positions = PostOfficeSolver32::InitRoundAndRepresentation(lead_distribution_,
                                                                                  leading_representation_,
