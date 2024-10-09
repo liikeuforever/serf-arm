@@ -938,7 +938,7 @@ void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, in
                     const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
 
-  SerfXORCompressor32 serf_xor_compressor(block_size, max_diff);
+  SerfXORCompressor32 serf_xor_compressor(1000, max_diff);
   SerfXORDecompressor32 serf_xor_decompressor;
 
   int block_count = 0;

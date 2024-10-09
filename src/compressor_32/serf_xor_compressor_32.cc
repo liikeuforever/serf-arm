@@ -98,7 +98,7 @@ int SerfXORCompressor32::UpdatePositionsIfNeeded() {
     len = output_buffer_->WriteInt(0, 1);
   } else {
     double
-        compression_ratio_this_window_ = (double) compressed_size_this_window_ / (number_of_values_this_window_ * 64);
+        compression_ratio_this_window_ = (double) compressed_size_this_window_ / (number_of_values_this_window_ * 32);
     if (compression_ratio_last_window_ < compression_ratio_this_window_) {
       // update positions
       Array<int> lead_positions = PostOfficeSolver32::InitRoundAndRepresentation(lead_distribution_,
