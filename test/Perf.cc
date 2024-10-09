@@ -1866,6 +1866,10 @@ TEST(Perf, Serf_Ablation) {
 
     data_set_input_stream.close();
   }
+
+  GenAblationTableCR(expr_table_ablation);
+  GenAblationTableCT(expr_table_ablation);
+  GenAblationTableDT(expr_table_ablation);
 }
 
 TEST(Perf, Lambda) {

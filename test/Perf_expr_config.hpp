@@ -60,7 +60,7 @@ const static int kBlockSize32 = kBlockSizeOverall;
 const static double kMaxDiff32 = kMaxDiffOverall;
 // Ablation experiment config
 const static std::string kMethodListAblation[] = {
-    "SerfXOR", "SerfXOR-Shifter", "SerfXOR-PlusOneOpt", "SerfXOR-FastSearchOpt"
+    "SerfXOR", "SerfXOR_w/o_Shifter", "SerfXOR_w/o_OptAppr", "SerfXOR_w/o_FastSearch"
 };
 const static int kBlockSizeAblation = kBlockSizeOverall;
 const static double kMaxDiffAblation = kMaxDiffOverall;
