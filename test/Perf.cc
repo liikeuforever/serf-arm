@@ -1873,7 +1873,7 @@ TEST(Perf, Serf_Ablation) {
 }
 
 TEST(Perf, Lambda) {
-  std::ofstream result_output(kExportExprTablePrefix + "lambda_cr" + kExportExprTableSuffix);
+  std::ofstream result_output(kExportExprTablePrefix + "lambda_ct" + kExportExprTableSuffix);
   if (!result_output.is_open()) std::cout << "Failed to creat perf result file." << std::endl;
 
   for (const auto &factor : kLambdaFactorList) {
@@ -1885,9 +1885,9 @@ TEST(Perf, Lambda) {
       }
       int lambda_for_this_data_set = kFileNameToAdjustDigit.find(data_set)->second;
       ExprTable expr_table_lambda;
-      ExprConf this_conf = ExprConf("SerfXOR_Rel", data_set, kBlockSizeOverall, kMaxDiffOverall);
+      ExprConf this_conf = ExprConf("SerfXOR", data_set, kBlockSizeOverall, kMaxDiffOverall);
       int test_lambda = static_cast<int>((factor * lambda_for_this_data_set));
-      PerfSerfXORLambdaRel(data_set_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, test_lambda,
+      PerfSerfXORLambda(data_set_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, test_lambda,
                            expr_table_lambda);
       result_output << expr_table_lambda.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
       data_set_input_stream.close();
