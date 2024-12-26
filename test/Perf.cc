@@ -932,6 +932,45 @@ void PerfSimPiece(std::ifstream &data_set_input_stream_ref, double max_diff, int
   ResetFileStream(data_set_input_stream_ref);
 }
 
+void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+             const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    DoubleSprintzCompressor sprintz_compressor(max_diff);
+    auto *compression_output = new int16_t [1024];
+    DoubleSprintzDecompressor sprintz_decompressor;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    int compression_size = sprintz_compressor.compress(original_data, compression_output);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_size * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    sprintz_decompressor.decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    delete[] compression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("Sprintz", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
 // Single Precision
 
 void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
@@ -1745,6 +1784,7 @@ TEST(Perf, Overall) {
     PerfMachete(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfSZ2(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfSimPiece(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+    PerfSprintz(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 
     // Lossless Compression
     PerfGorilla(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);

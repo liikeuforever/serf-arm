@@ -25,7 +25,7 @@ const static std::string kDataSetList[] = {
 };
 // Overall experiment config
 const static std::string kMethodListOverall[] = {
-    "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
+    "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Sprintz", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
     "Elf", "SerfQt", "SerfXOR"
 };
 const static double kMaxDiffOverall = 1.0E-3;

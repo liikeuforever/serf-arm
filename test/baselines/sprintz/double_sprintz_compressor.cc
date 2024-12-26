@@ -15,5 +15,5 @@ int DoubleSprintzCompressor::compress(std::vector<double> data, int16_t *compres
   // compression_size returns the len of compression_output
   int compression_size = sprintz_compress_xff_16b((uint16_t *)quant_buffer, data.size() * (64 / 16),
                                                   compression_output + (64 / 16), (64 / 16));
-  return compression_size * 16;
+  return compression_size * 2;
 }
