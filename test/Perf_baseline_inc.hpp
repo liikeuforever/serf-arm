@@ -47,4 +47,7 @@
 
 #include "baselines/sz2/sz/include/sz.h"
 
+#include "baselines/sprintz/double_sprintz_compressor.h"
+#include "baselines/sprintz/double_sprintz_decompressor.h"
+
 #endif //SERF_ALL_TEST_PERF_BASELINE_INC_HPP_

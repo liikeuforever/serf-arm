@@ -16,5 +16,5 @@ int EliasGammaCodec::Encode(int64_t number, OutputBitStream *output_bit_stream_p
 int64_t EliasGammaCodec::Decode(InputBitStream *input_bit_stream_ptr) {
   int n = 0;
   while (!input_bit_stream_ptr->ReadBit()) n++;
-  return (1 << n) | input_bit_stream_ptr->ReadInt(n);
+  return n == 0 ? 1 :  (1 << n) | input_bit_stream_ptr->ReadInt(n);
 }

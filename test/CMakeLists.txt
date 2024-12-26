@@ -15,6 +15,7 @@ add_subdirectory(baselines/buff)
 add_subdirectory(baselines/snappy)
 add_subdirectory(baselines/zstd/build/cmake)
 add_subdirectory(baselines/sim_piece)
+add_subdirectory(baselines/sprintz)
 
 include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -55,7 +56,7 @@ endforeach(F)
 
 add_executable(PerformanceProgram Perf.cc)
 target_link_libraries(PerformanceProgram PRIVATE chimp deflate elf fpc gorilla lz77 lz4 machete sz serf
-        libzstd_shared snappy sim_piece GTest::gtest_main)
+        libzstd_shared snappy sim_piece GTest::gtest_main sprintz)
 gtest_discover_tests(PerformanceProgram)
 
 add_executable(TransClient transmission/prog/client.cc)

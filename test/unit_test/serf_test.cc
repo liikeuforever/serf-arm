@@ -1,10 +1,7 @@
 #include <gtest/gtest.h>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <unordered_map>
-#include <chrono>
+
+#include "Perf_expr_config.hpp"
+#include "Perf_file_utils.hpp"
 
 #include "compressor/serf_xor_compressor.h"
 #include "decompressor/serf_xor_decompressor.h"
@@ -19,117 +16,29 @@
 #include "compressor_32/serf_qt_compressor_32.h"
 #include "decompressor_32/serf_qt_decompressor_32.h"
 
-const static int kBlockSize = 50;
-const static std::string kDataSetDirPrefix = "../../test/data_set/";
-const static std::string kDataSetList[] = {
-    "Air-pressure.csv",
-    "Air-sensor.csv",
-    "Bird-migration.csv",
-    "Bitcoin-price.csv",
-    "Basel-temp.csv",
-    "Basel-wind.csv",
-    "City-temp.csv",
-    "Dew-point-temp.csv",
-    "IR-bio-temp.csv",
-    "PM10-dust.csv",
-    "Stocks-DE.csv",
-    "Stocks-UK.csv",
-    "Stocks-USA.csv",
-    "Wind-Speed.csv"
-};
-const static std::string kDataSetList32[] = {
-    "City-temp.csv",
-    "Dew-point-temp.csv",
-    "Stocks-DE.csv",
-    "Stocks-UK.csv",
-    "Stocks-USA.csv"
-};
-const static std::unordered_map<std::string, int> kFileToAdjustD {
-    {"Air-pressure.csv", 0},
-    {"Air-sensor.csv", 128},
-    {"Bird-migration.csv", 60},
-    {"Bitcoin-price.csv", 511220},
-    {"Basel-temp.csv", 77},
-    {"Basel-wind.csv", 128},
-    {"City-temp.csv", 355},
-    {"Dew-point-temp.csv", 94},
-    {"IR-bio-temp.csv", 49},
-    {"PM10-dust.csv", 256},
-    {"Stocks-DE.csv", 253},
-    {"Stocks-UK.csv", 8047},
-    {"Stocks-USA.csv", 243},
-    {"Wind-Speed.csv", 2}
-};
-constexpr static double kMaxDiff[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6, 1.0E-7, 1.0E-8};
-constexpr static float kMaxDiff32[] = {1.0E-3f};
-
-/**
- * @brief Read a block of double from file input stream, whose size is equal to BLOCK_SIZE
- * @param file_input_stream_ref Input steam where this function reads
- * @return A vector of doubles, whose size may be less than BLOCK_SIZE
- */
-std::vector<double> ReadBlock(std::ifstream &file_input_stream_ref) {
-  std::vector<double> ret;
-  ret.reserve(kBlockSize);
-  int entry_count = 0;
-  double buffer;
-  while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
-    file_input_stream_ref >> buffer;
-    ret.emplace_back(buffer);
-    ++entry_count;
-  }
-  return ret;
-}
-
-/**
- * @brief Read a block of float from file input stream, whose size is equal to BLOCK_SIZE
- * @param fileInputStreamRef Input steam where this function reads
- * @return A vector of floats, whose size may be less than BLOCK_SIZE
- */
-std::vector<float> ReadBlock32(std::ifstream &file_input_stream_ref) {
-  std::vector<float> ret;
-  ret.reserve(kBlockSize);
-  int entry_count = 0;
-  float buffer;
-  while (!file_input_stream_ref.eof() && entry_count < kBlockSize) {
-    file_input_stream_ref >> buffer;
-    ret.emplace_back(buffer);
-    ++entry_count;
-  }
-  return ret;
-}
-
-void ResetFileStream(std::ifstream &data_set_input_stream_ref) {
-  data_set_input_stream_ref.clear();
-  data_set_input_stream_ref.seekg(0, std::ios::beg);
-}
-
-TEST(TestSerfXOR, CorrectnessTest) {
+TEST(Correctness, SerfXOR) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    int adjust_digit = kFileToAdjustD.find(data_set)->second;
-    for (const auto &max_diff : kMaxDiff) {
+    int adjust_digit = kFileNameToAdjustDigit.find(data_set)->second;
+    for (const auto &max_diff : kMaxDiffList) {
       SerfXORCompressor xor_compressor(1000, max_diff, adjust_digit);
       SerfXORDecompressor xor_decompressor(adjust_digit);
 
       std::vector<double> original_data;
-      while ((original_data = ReadBlock(data_set_input_stream)).size() == kBlockSize) {
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
         for (const auto &datum : original_data) {
           xor_compressor.AddValue(datum);
         }
         xor_compressor.Close();
         Array<uint8_t> result = xor_compressor.compressed_bytes_last_block();
         std::vector<double> decompressed = xor_decompressor.Decompress(result);
-        EXPECT_EQ(original_data.size(), decompressed.size());
-        for (int i = 0; i < kBlockSize; ++i) {
-          if (std::abs(original_data[i] - decompressed[i]) > max_diff) {
-            GTEST_LOG_(INFO) << original_data[i] << " " << decompressed[i] << " " << max_diff;
-          }
-          EXPECT_TRUE(std::abs(original_data[i] - decompressed[i]) <= max_diff);
+        ASSERT_EQ(original_data.size(), decompressed.size());
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          ASSERT_NEAR(original_data[i], decompressed[i], max_diff);
         }
       }
 
@@ -140,31 +49,27 @@ TEST(TestSerfXOR, CorrectnessTest) {
   }
 }
 
-TEST(TestSerfQt, CorrectnessTest) {
+TEST(Correctness, SerfQt) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    for (const auto &max_diff : kMaxDiff) {
-      SerfQtCompressor qt_compressor(kBlockSize, max_diff);
-      SerfQtDecompressor qt_decompressor;
-
+    for (const auto &max_diff : kMaxDiffList) {
       std::vector<double> original_data;
-      while ((original_data = ReadBlock(data_set_input_stream)).size() == kBlockSize) {
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
+        SerfQtCompressor qt_compressor(kBlockSizeOverall, max_diff);
+        SerfQtDecompressor qt_decompressor;
         for (const auto &datum : original_data) {
           qt_compressor.AddValue(datum);
         }
         qt_compressor.Close();
         Array<uint8_t> result = qt_compressor.compressed_bytes();
         std::vector<double> decompressed = qt_decompressor.Decompress(result);
-        EXPECT_EQ(original_data.size(), decompressed.size());
-        for (int i = 0; i < kBlockSize; ++i) {
-          if (std::abs(original_data[i] - decompressed[i]) > max_diff) {
-            GTEST_LOG_(INFO) << original_data[i] << " " << decompressed[i] << " " << max_diff;
-          }
-          EXPECT_TRUE(std::abs(original_data[i] - decompressed[i]) <= max_diff);
+        ASSERT_EQ(original_data.size(), decompressed.size());
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          ASSERT_NEAR(original_data[i], decompressed[i], max_diff) << data_set << i;
         }
       }
 
@@ -175,17 +80,17 @@ TEST(TestSerfQt, CorrectnessTest) {
   }
 }
 
-TEST(TestNetSerfXOR, CorrectnessTest) {
+TEST(Correctness, NetSerfXOR) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    int adjust_digit = kFileToAdjustD.find(data_set)->second;
-    for (const auto &max_diff : kMaxDiff) {
-      NetSerfXORCompressor net_serf_xor_compressor(kBlockSize, max_diff, adjust_digit);
-      NetSerfXORDecompressor net_serf_xor_decompressor(kBlockSize, adjust_digit);
+    int adjust_digit = kFileNameToAdjustDigit.find(data_set)->second;
+    for (const auto &max_diff : kMaxDiffList) {
+      NetSerfXORCompressor net_serf_xor_compressor(kBlockSizeOverall, max_diff, adjust_digit);
+      NetSerfXORDecompressor net_serf_xor_decompressor(kBlockSizeOverall, adjust_digit);
 
       double originalData;
       while (!data_set_input_stream.eof()) {
@@ -195,7 +100,7 @@ TEST(TestNetSerfXOR, CorrectnessTest) {
         if (std::abs(originalData - decompressed) > max_diff) {
           GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
         }
-        EXPECT_TRUE(std::abs(originalData - decompressed) <= max_diff);
+        ASSERT_TRUE(std::abs(originalData - decompressed) <= max_diff);
       }
 
       ResetFileStream(data_set_input_stream);
@@ -205,14 +110,14 @@ TEST(TestNetSerfXOR, CorrectnessTest) {
   }
 }
 
-TEST(TestNetSerfQt, CorrectnessTest) {
+TEST(Correctness, TestNetSerfQt) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    for (const auto &max_diff : kMaxDiff) {
+    for (const auto &max_diff : kMaxDiffList) {
       NetSerfQtCompressor net_serf_qt_compressor(max_diff);
       NetSerfQtDecompressor net_serf_qt_decompressor(max_diff);
 
@@ -224,7 +129,7 @@ TEST(TestNetSerfQt, CorrectnessTest) {
         if (std::abs(originalData - decompressed) > max_diff) {
           GTEST_LOG_(INFO) << originalData << " " << decompressed << " " << max_diff;
         }
-        EXPECT_TRUE(std::abs(originalData - decompressed) <= max_diff);
+        ASSERT_TRUE(std::abs(originalData - decompressed) <= max_diff);
       }
 
       ResetFileStream(data_set_input_stream);
@@ -234,71 +139,67 @@ TEST(TestNetSerfQt, CorrectnessTest) {
   }
 }
 
-TEST(TestSerfXOR32, CorrectnessTest) {
+TEST(Correctness, SerfXOR32) {
   for (const auto &data_set : kDataSetList32) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    for (const auto &max_diff : kMaxDiff32) {
-      SerfXORCompressor32 xor_compressor_32(1000, max_diff);
-      SerfXORDecompressor32 xor_decompressor_32;
+    SerfXORCompressor32 xor_compressor_32(1000, kMaxDiff32);
+    SerfXORDecompressor32 xor_decompressor_32;
 
-      std::vector<float> original_data;
-      while ((original_data = ReadBlock32(data_set_input_stream)).size() == kBlockSize) {
-        for (const auto &datum : original_data) {
-          xor_compressor_32.AddValue(datum);
-        }
-        xor_compressor_32.Close();
-        Array<uint8_t> result = xor_compressor_32.compressed_bytes();
-        std::vector<float> decompressed = xor_decompressor_32.Decompress(result);
-        EXPECT_EQ(original_data.size(), decompressed.size());
-        for (int i = 0; i < kBlockSize; ++i) {
-          if (std::abs(original_data[i] - decompressed[i]) > max_diff) {
-            GTEST_LOG_(INFO) << original_data[i] << " " << decompressed[i] << " " << max_diff;
-          }
-          EXPECT_TRUE(std::abs(original_data[i] - decompressed[i]) <= max_diff);
-        }
+    std::vector<float> original_data;
+    while ((original_data = ReadBlock32(data_set_input_stream, kBlockSize32)).size() == kBlockSize32) {
+      for (const auto &datum : original_data) {
+        xor_compressor_32.AddValue(datum);
       }
-
-      ResetFileStream(data_set_input_stream);
+      xor_compressor_32.Close();
+      Array<uint8_t> result = xor_compressor_32.compressed_bytes_last_block();
+      std::vector<float> decompressed = xor_decompressor_32.Decompress(result);
+      EXPECT_EQ(original_data.size(), decompressed.size());
+      for (int i = 0; i < kBlockSize32; ++i) {
+        if (std::abs(original_data[i] - decompressed[i]) > kMaxDiff32) {
+          GTEST_LOG_(INFO) << original_data[i] << " " << decompressed[i] << " " << kMaxDiff32;
+        }
+        ASSERT_TRUE(std::abs(original_data[i] - decompressed[i]) <= kMaxDiff32);
+      }
     }
+
+    ResetFileStream(data_set_input_stream);
 
     data_set_input_stream.close();
   }
 }
 
-TEST(TestSerfQt32, CorrectnessTest) {
+TEST(Correctness, SerfQt32) {
   for (const auto &data_set : kDataSetList32) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     if (!data_set_input_stream.is_open()) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    for (const auto &max_diff : kMaxDiff32) {
-      SerfQtCompressor32 qt_compressor_32(kBlockSize, max_diff * 0.97f);
-      SerfQtDecompressor32 qt_decompressor_32;
+    SerfQtCompressor32 qt_compressor_32(kBlockSize32, kMaxDiff32);
+    SerfQtDecompressor32 qt_decompressor_32;
 
-      std::vector<float> original_data;
-      while ((original_data = ReadBlock32(data_set_input_stream)).size() == kBlockSize) {
-        for (const auto &datum : original_data) {
-          qt_compressor_32.AddValue(datum);
-        }
-        qt_compressor_32.Close();
-        Array<uint8_t> result = qt_compressor_32.compressed_bytes();
-        std::vector<float> decompressed = qt_decompressor_32.Decompress(result);
-        EXPECT_EQ(original_data.size(), decompressed.size());
-        for (int i = 0; i < kBlockSize; ++i) {
-          if (std::abs(original_data[i] - decompressed[i]) > max_diff) {
-            GTEST_LOG_(INFO) << original_data[i] << " " << decompressed[i] << " " << max_diff;
-          }
-          EXPECT_TRUE(std::abs(original_data[i] - decompressed[i]) <= max_diff);
-        }
+    std::vector<float> original_data;
+    while ((original_data = ReadBlock32(data_set_input_stream, kBlockSize32)).size() == kBlockSize32) {
+      for (const auto &datum : original_data) {
+        qt_compressor_32.AddValue(datum);
       }
-
-      ResetFileStream(data_set_input_stream);
+      qt_compressor_32.Close();
+      Array<uint8_t> result = qt_compressor_32.compressed_bytes();
+      std::vector<float> decompressed = qt_decompressor_32.Decompress(result);
+      EXPECT_EQ(original_data.size(), decompressed.size());
+      for (int i = 0; i < kBlockSize32; ++i) {
+        if (std::abs(original_data[i] - decompressed[i]) > kMaxDiff32) {
+          GTEST_LOG_(INFO) << original_data[i] << " " << decompressed[i] << " " << kMaxDiff32;
+        }
+        ASSERT_TRUE(std::abs(original_data[i] - decompressed[i]) <= kMaxDiff32);
+      }
     }
+
+    ResetFileStream(data_set_input_stream);
 
     data_set_input_stream.close();
   }
