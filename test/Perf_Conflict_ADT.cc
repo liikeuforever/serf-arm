@@ -39,6 +39,7 @@ void PerfADT(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
     auto decompression_start_time = std::chrono::steady_clock::now();
     size_t decompression_out_size = SZ_decompress(SZ_DOUBLE, compression_output, compression_out_size, block_size,
                                                   (unsigned char* ) decompression_output);
+    ASSERT_EQ(decompression_out_size, 8 * block_size);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
     auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -62,12 +63,64 @@ void PerfADT(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
   delete[] decompression_output;
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("ADT-FSE", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("SZ-ADT", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
+void GenParamBlockSizeTable(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_block_size_results" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &block_size : kBlockSizeList_ADT) {
+    expr_table_output_stream << block_size << std::endl;
+    expr_table_output_stream << "Compression Ratio" << std::endl;
+    for (const auto &method : kMethodListParamBlockSize) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, block_size, kAbsMaxDiffParamBlockSize);
+        auto result = expr_table.find(this_conf);
+        if (result != expr_table.end()) {
+          expr_table_output_stream << result->second.CalCompressionRatio(this_conf) << ",";
+        }
+      }
+      expr_table_output_stream << std::endl;
+    }
+    expr_table_output_stream << "Compression Time" << std::endl;
+    for (const auto &method : kMethodListParamBlockSize) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, block_size, kAbsMaxDiffParamBlockSize);
+        auto result = expr_table.find(this_conf);
+        if (result != expr_table.end()) {
+          expr_table_output_stream << result->second.AvgCompressionTimePerBlock() << ",";
+        }
+      }
+      expr_table_output_stream << std::endl;
+    }
+    expr_table_output_stream << "Decompression Time" << std::endl;
+    for (const auto &method : kMethodListParamBlockSize) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, block_size, kAbsMaxDiffParamBlockSize);
+        auto result = expr_table.find(this_conf);
+        if (result != expr_table.end()) {
+          expr_table_output_stream << result->second.AvgDecompressionTimePerBlock() << ",";
+        }
+      }
+      expr_table_output_stream << std::endl;
+    }
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
 TEST(Perf, SZ_ADT) {
-  const static int kBlockSizeList[] = {100, 200, 400};
   ExprTable expr_table_sz_adt;
 
   for (const auto &data_set : kDataSetList) {
@@ -76,10 +129,12 @@ TEST(Perf, SZ_ADT) {
       std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
     }
 
-    for (const auto &block_size : kBlockSizeList) {
-      PerfADT(data_input_stream, kBlockSizeParamAbsMaxDiff, block_size, data_set, expr_table_sz_adt);
+    for (const auto &block_size : kBlockSizeList_ADT) {
+      PerfADT(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_sz_adt);
     }
 
     data_input_stream.close();
   }
+
+  GenParamBlockSizeTable(expr_table_sz_adt);
 }
