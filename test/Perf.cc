@@ -166,6 +166,74 @@ void GenSinglePrecisionTableDT(ExprTable &expr_table) {
   expr_table_output_stream.close();
 }
 
+// Auto-Gen for the TSBS Experiment
+
+void GenTSBSTableCR(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "tsbs_cr" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListTSBS) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set : kDataSetListTSBS) {
+      ExprConf this_conf = ExprConf(method, data_set, kBlockSizeTSBS, kMaxDiffTSBS);
+      expr_table_output_stream << expr_table.find(this_conf)->second.CalCompressionRatio(this_conf) << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenTSBSTableCT(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "tsbs_ct" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListTSBS) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set : kDataSetListTSBS) {
+      ExprConf this_conf = ExprConf(method, data_set, kBlockSizeTSBS, kMaxDiffTSBS);
+      expr_table_output_stream << expr_table.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+void GenTSBSTableDT(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "tsbs_dt" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListTSBS) {
+    expr_table_output_stream << method << ",";
+    for (const auto &data_set : kDataSetListTSBS) {
+      ExprConf this_conf = ExprConf(method, data_set, kBlockSizeTSBS, kMaxDiffTSBS);
+      expr_table_output_stream << expr_table.find(this_conf)->second.AvgDecompressionTimePerBlock() << ",";
+    }
+    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
 // Auto-Gen for the Param(Abs MaxDiff) Experiment
 
 void GenParamAbsDiffTableCR(ExprTable &expr_table) {
@@ -968,6 +1036,44 @@ void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int 
 
   perf_record.set_block_count(block_count);
   table_to_insert.insert(std::make_pair(ExprConf("Sprintz", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+             const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    uint8_t compress_output_buffer[(block_size * sizeof(double)) + 8096];
+    auto decompress_buffer_size = alp::AlpApiUtils::align_value<size_t, alp::config::VECTOR_SIZE>(block_size);
+    double decompress_output_buffer[decompress_buffer_size];
+    alp::AlpCompressor compressor;
+    alp::AlpDecompressor decompressor;
+    auto compression_start_time = std::chrono::steady_clock::now();
+    compressor.compress(original_data.data(), original_data.size(), compress_output_buffer);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_size() * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    decompressor.decompress(compress_output_buffer, block_size, decompress_output_buffer);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("ALP", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
@@ -1967,4 +2073,41 @@ TEST(Perf, Beta) {
                   << expr_table_beta.find(elf_conf)->second.CalCompressionRatio(elf_conf)
                   << std::endl;
   }
+}
+
+TEST(Perf, TSBS) {
+  ExprTable expr_table_tsbs;
+
+  for (const auto &data_set : kDataSetListTSBS) {
+    std::ifstream data_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+    }
+
+    // Lossy Compression
+    PerfSerfXOR(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfMachete(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfSZ2(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfSimPiece(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfSprintz(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+
+    // Lossless Compression
+    PerfGorilla(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfChimp128(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfDeflate(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfElf(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfFPC(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfLZ4(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfSerfXOR(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfLZ77(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfZstd(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfSnappy(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+
+    data_input_stream.close();
+  }
+
+  GenTSBSTableCR(expr_table_tsbs);
+  GenTSBSTableCT(expr_table_tsbs);
+  GenTSBSTableDT(expr_table_tsbs);
 }

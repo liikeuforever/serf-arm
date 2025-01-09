@@ -58,6 +58,17 @@ const static std::string kMethodList32[] = {
 };
 const static int kBlockSize32 = kBlockSizeOverall;
 const static double kMaxDiff32 = kMaxDiffOverall;
+// TSBS experiment config
+const static std::string kDataSetListTSBS[] = {
+    "Tsbs-iot-latitude.csv",
+    "Tsbs-iot-longitude.csv"
+};
+const static std::string kMethodListTSBS[] = {
+    "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Sprintz", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
+    "Elf", "SerfQt", "SerfXOR"
+};
+const static int kBlockSizeTSBS = kBlockSizeOverall;
+const static double kMaxDiffTSBS = kMaxDiffOverall;
 // Ablation experiment config
 const static std::string kMethodListAblation[] = {
     "SerfXOR", "SerfXOR_w/o_Shifter", "SerfXOR_w/o_OptAppr", "SerfXOR_w/o_FastSearch"
@@ -78,7 +89,9 @@ const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
     {"Smart-grid.csv", 4},
     {"Stocks-USA.csv", 245},
     {"T-drive.csv", 0},
-    {"Wind-Speed.csv", 8}
+    {"Wind-Speed.csv", 8},
+    {"Tsbs-iot-latitude.csv", 0},
+    {"Tsbs-iot-longitude.csv", 0}
 };
 // Lambda config
 const static double kLambdaFactorList[] = {0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8};

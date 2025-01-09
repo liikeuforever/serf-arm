@@ -50,4 +50,6 @@
 #include "baselines/sprintz/double_sprintz_compressor.h"
 #include "baselines/sprintz/double_sprintz_decompressor.h"
 
+#include "baselines/alp/include/alp.hpp"
+
 #endif //SERF_ALL_TEST_PERF_BASELINE_INC_HPP_

@@ -16,6 +16,8 @@ add_subdirectory(baselines/snappy)
 add_subdirectory(baselines/zstd/build/cmake)
 add_subdirectory(baselines/sim_piece)
 add_subdirectory(baselines/sprintz)
+add_subdirectory(baselines/alp)
+add_subdirectory(baselines/sz_adt)
 
 include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -55,13 +57,13 @@ foreach(F ${TEST_SRC})
 endforeach(F)
 
 add_executable(PerformanceProgram Perf.cc)
-target_link_libraries(PerformanceProgram PRIVATE chimp deflate elf fpc gorilla lz77 lz4 machete sz serf
-        libzstd_shared snappy sim_piece GTest::gtest_main sprintz)
-gtest_discover_tests(PerformanceProgram)
+add_executable(PerformanceProgram_ADT Perf_Conflict_ADT.cc)
 
-add_executable(TransClient transmission/prog/client.cc)
-add_executable(TransServer transmission/prog/server.cc)
-target_link_libraries(TransClient serf)
-target_link_libraries(TransServer serf)
+target_link_libraries(PerformanceProgram PRIVATE chimp deflate elf fpc gorilla lz77 lz4 machete sz serf
+        libzstd_shared snappy sim_piece GTest::gtest_main sprintz alp)
+target_link_libraries(PerformanceProgram_ADT PRIVATE TSZ GTest::gtest_main)
+
+gtest_discover_tests(PerformanceProgram)
+gtest_discover_tests(PerformanceProgram_ADT)
 
 add_executable(AdjustDigitCalculator adjust_digit_calculator.cpp)
