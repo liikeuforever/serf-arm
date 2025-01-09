@@ -246,7 +246,8 @@ void GenParamAbsDiffTableCR(ExprTable &expr_table) {
   expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
 
   for (const auto &max_diff : kMaxDiffList) {
-    for (const auto &method : kMethodListParam) {
+    expr_table_output_stream << max_diff << std::endl;
+    for (const auto &method : kMethodListParamAbsMaxDiff) {
       expr_table_output_stream << method << ",";
       for (const auto &data_set : kDataSetList) {
         ExprConf this_conf = ExprConf(method, data_set, kBlockSizeParamAbsMaxDiff, max_diff);
@@ -269,13 +270,16 @@ void GenParamAbsDiffTableCT(ExprTable &expr_table) {
 
   expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
 
-  for (const auto &method : kMethodListOverall) {
-    expr_table_output_stream << method << ",";
-    for (const auto &data_set : kDataSetList) {
-      ExprConf this_conf = ExprConf(method, data_set, kBlockSizeOverall, kMaxDiffOverall);
-      expr_table_output_stream << expr_table.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+  for (const auto &max_diff : kMaxDiffList) {
+    expr_table_output_stream << max_diff << std::endl;
+    for (const auto &method : kMethodListParamAbsMaxDiff) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, kBlockSizeParamAbsMaxDiff, max_diff);
+        expr_table_output_stream << expr_table.find(this_conf)->second.AvgCompressionTimePerBlock() << ",";
+      }
+      expr_table_output_stream << std::endl;
     }
-    expr_table_output_stream << std::endl;
   }
 
   expr_table_output_stream.flush();
@@ -291,13 +295,71 @@ void GenParamAbsDiffTableDT(ExprTable &expr_table) {
 
   expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
 
-  for (const auto &method : kMethodListOverall) {
-    expr_table_output_stream << method << ",";
-    for (const auto &data_set : kDataSetList) {
-      ExprConf this_conf = ExprConf(method, data_set, kBlockSizeOverall, kMaxDiffOverall);
-      expr_table_output_stream << expr_table.find(this_conf)->second.AvgDecompressionTimePerBlock() << ",";
+  for (const auto &max_diff : kMaxDiffList) {
+    expr_table_output_stream << max_diff << std::endl;
+    for (const auto &method : kMethodListParamAbsMaxDiff) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, kBlockSizeParamAbsMaxDiff, max_diff);
+        expr_table_output_stream << expr_table.find(this_conf)->second.AvgDecompressionTimePerBlock() << ",";
+      }
+      expr_table_output_stream << std::endl;
     }
-    expr_table_output_stream << std::endl;
+  }
+
+  expr_table_output_stream.flush();
+  expr_table_output_stream.close();
+}
+
+// Auto-Gen for the Param(Block Size) Experiment
+
+void GenParamBlockSizeTable(ExprTable &expr_table) {
+  std::ofstream expr_table_output_stream(kExportExprTablePrefix + "param_block_size_results" + kExportExprTableSuffix);
+  if (!expr_table_output_stream.is_open()) {
+    std::cerr << "Failed to export performance data." << std::endl;
+    exit(-1);
+  }
+
+  expr_table_output_stream << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &block_size : kBlockSizeList) {
+    expr_table_output_stream << block_size << std::endl;
+    expr_table_output_stream << "Compression Ratio" << std::endl;
+    for (const auto &method : kMethodListParamBlockSize) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, block_size, kAbsMaxDiffParamBlockSize);
+        auto result = expr_table.find(this_conf);
+        if (result != expr_table.end()) {
+          expr_table_output_stream << result->second.CalCompressionRatio(this_conf) << ",";
+        }
+      }
+      expr_table_output_stream << std::endl;
+    }
+    expr_table_output_stream << "Compression Time" << std::endl;
+    for (const auto &method : kMethodListParamBlockSize) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, block_size, kAbsMaxDiffParamBlockSize);
+        auto result = expr_table.find(this_conf);
+        if (result != expr_table.end()) {
+          expr_table_output_stream << result->second.AvgCompressionTimePerBlock() << ",";
+        }
+      }
+      expr_table_output_stream << std::endl;
+    }
+    expr_table_output_stream << "Decompression Time" << std::endl;
+    for (const auto &method : kMethodListParamBlockSize) {
+      expr_table_output_stream << method << ",";
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, block_size, kAbsMaxDiffParamBlockSize);
+        auto result = expr_table.find(this_conf);
+        if (result != expr_table.end()) {
+          expr_table_output_stream << result->second.AvgDecompressionTimePerBlock() << ",";
+        }
+      }
+      expr_table_output_stream << std::endl;
+    }
   }
 
   expr_table_output_stream.flush();
@@ -1929,6 +1991,34 @@ TEST(Perf, ParamAbsMaxDiff) {
       PerfMachete(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
     }
   }
+
+  GenParamAbsDiffTableCR(expr_table_abs_diff);
+  GenParamAbsDiffTableCT(expr_table_abs_diff);
+  GenParamAbsDiffTableDT(expr_table_abs_diff);
+}
+
+TEST(Perf, ParamBlockSize) {
+  ExprTable expr_table_block_size;
+
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+    }
+
+    for (const auto & block_size : kBlockSizeList) {
+      PerfSerfXOR(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfSerfQt(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfSimPiece(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfSZ2(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfMachete(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      if (block_size >= 600) {
+        PerfALP(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      }
+    }
+  }
+
+  GenParamBlockSizeTable(expr_table_block_size);
 }
 
 TEST(Perf, Rel) {
