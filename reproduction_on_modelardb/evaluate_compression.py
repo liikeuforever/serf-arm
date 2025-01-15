@@ -9,30 +9,27 @@ from prettytable import PrettyTable
 from pyarrow import flight
 from tqdm import tqdm
 
-# Configuration.
+# Configuration
+MODELAR_GITHUB_REPO = "https://github.com/ModelarData/ModelarDB-RS"
 TABLE_NAME = "evaluate"
 STDOUT = subprocess.PIPE
 STDERR = subprocess.PIPE
-# DATA_SET_LIST = {"AP": "Air-pressure.csv", "BT": "Basel-temp.csv",
-#                  "BW": "Basel-wind.csv", "CDT": "Chengdu-traj.csv",
-#                  "CT": "City-temp.csv", "DT": "Dew-point-temp.csv",
-#                  "IR": "IR-bio-temp.csv", "MT": "Motor-temp.csv",
-#                  "PM10": "PM10-dust.csv", "SG": "Smart-grid.csv",
-#                  "SUSA": "Stocks-USA.csv", "TD": "T-drive.csv",
-#                  "WS": "Wind-Speed.csv"}
-DATA_SET_LIST = {"TLat": "Tsbs-iot-latitude.csv", "TLng": "Tsbs-iot-longitude.csv"}
-ERROR_BOUND_LIST = [0.001]
-# BLOCK_SIZE_LIST = [1000, 5000, 10000, 20000, 50000, 100000]
-BLOCK_SIZE_LIST = [230000]
-DATA_SET_PREFIX = "data_set/"
+DATA_SET_LIST = {"AP": "Air-pressure.csv", "BT": "Basel-temp.csv",
+                 "BW": "Basel-wind.csv", "CDT": "Chengdu-traj.csv",
+                 "CT": "City-temp.csv", "DT": "Dew-point-temp.csv",
+                 "IR": "IR-bio-temp.csv", "MT": "Motor-temp.csv",
+                 "PM10": "PM10-dust.csv", "SG": "Smart-grid.csv",
+                 "SUSA": "Stocks-USA.csv", "TD": "T-drive.csv",
+                 "WS": "Wind-Speed.csv"}
+DATA_SET_LIST_TSBS = {"TLat": "Tsbs-iot-latitude.csv",
+                      "TLng": "Tsbs-iot-longitude.csv"}
+ERROR_BOUND_LIST = [0.1, 0.001, 0.001]
+BLOCK_SIZE_LIST = [1000, 5000, 10000, 20000, 50000, 100000]
+BLOCK_SIZE_LIST_TSBS = [230000]
+DATA_SET_PREFIX = "../test/data_set/"
 
 
 # Helper Functions.
-def extract_repository_name(url):
-    # The plus operator is used instead of an fstring as it was more readable.
-    return url[url.rfind("/") + 1: url.rfind(".")] + "/"
-
-
 def git_clone(url):
     subprocess.run(["git", "clone", url], stdout=STDOUT, stderr=STDERR)
 
@@ -136,6 +133,8 @@ if __name__ == "__main__":
         print(f"ERROR: {sys.argv[0]} only supports Linux")
         sys.exit(1)
 
+    git_clone(MODELAR_GITHUB_REPO)
+
     modelardb_folder = "ModelarDB-RS"
 
     print("Start building ModelarDB-RS...")
@@ -171,9 +170,9 @@ if __name__ == "__main__":
                     send_sigint_to_process(modelardbd)  # Flush.
                     compressed_file_size_in_bytes += measure_data_folder_size_in_kib(
                         data_folder) * 1024
-                this_row.append(compressed_file_size_in_bytes / (block_count * block_size * 4))
+                this_row.append(compressed_file_size_in_bytes /
+                                (block_count * block_size * 4))
         result_table.add_row(this_row)
     print(result_table)
     with open("results.csv", "w+", encoding="utf-8") as csv_file:
         csv_file.write(result_table.get_csv_string())
-    
