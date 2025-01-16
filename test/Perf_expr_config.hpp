@@ -40,7 +40,7 @@ const static double kMaxDiffRel[] = {
 const static int kBlockSizeRel = kBlockSizeOverall;
 // Param experiment (abs max_diff) config
 const static std::string kMethodListParamAbsMaxDiff[] = {
-    "SZ2", "Machete", "SimPiece", "SerfQt", "SerfXOR"
+    "SZ2", "Machete", "SimPiece", "SerfQt", "SerfXOR", "Sprintz"
 };
 const static int kBlockSizeParamAbsMaxDiff = kBlockSizeOverall;
 const static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
