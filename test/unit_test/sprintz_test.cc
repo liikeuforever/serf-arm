@@ -15,7 +15,7 @@ TEST(Correctness, Sprintz) {
 
     std::vector<double> original_data;
     while ((original_data = ReadBlock(data_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
-      auto *pack = new int16_t [1024];
+      auto *pack = new int16_t [original_data.size() * 8];
       DoubleSprintzCompressor sprintz_compressor(kMaxDiffOverall);
       sprintz_compressor.compress(original_data, pack);
       DoubleSprintzDecompressor sprintz_decompressor;

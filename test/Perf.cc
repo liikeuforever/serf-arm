@@ -1072,7 +1072,7 @@ void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int 
   while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
     ++block_count;
     DoubleSprintzCompressor sprintz_compressor(max_diff);
-    auto *compression_output = new int16_t [1024];
+    auto *compression_output = new int16_t [original_data.size() * 8];
     DoubleSprintzDecompressor sprintz_decompressor;
 
     auto compression_start_time = std::chrono::steady_clock::now();
@@ -2012,6 +2012,7 @@ TEST(Perf, ParamBlockSize) {
       PerfSimPiece(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSZ2(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfMachete(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfSprintz(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       if (block_size >= 600) {
         PerfALP(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       }

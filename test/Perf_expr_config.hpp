@@ -46,7 +46,7 @@ const static int kBlockSizeParamAbsMaxDiff = kBlockSizeOverall;
 const static double kMaxDiffList[] = {1.0E-1, 1.0E-2, 1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
 // Param experiment (block size) config
 const static std::string kMethodListParamBlockSize[] = {
-    "SZ2", "Machete", "SimPiece", "SerfQt", "SerfXOR", "ALP", "SZ-ADT"
+    "SZ2", "Machete", "SimPiece", "SerfQt", "SerfXOR", "ALP", "SZ-ADT", "Sprintz"
 };
 const static double kAbsMaxDiffParamBlockSize = kMaxDiffOverall;
 const static int kBlockSizeList[] = {50, 100, 200, 400, 600, 800, 1000};
