@@ -7,6 +7,9 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(pyserf, m) {
+  py::class_<Array<unsigned char>>(m, "ArrayOfBytes")
+    .def(py::init<int>(), py::arg("length"));
+
   py::class_<SerfXORCompressor>(m, "PySerfXORCompressor")
     .def(py::init<int, double, long>(),
       py::arg("window_size"), py::arg("max_diff"), py::arg("adjust"))

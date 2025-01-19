@@ -1,5 +1,3 @@
-message(STATUS "[PySerf] Source Code Dir: " ${CMAKE_CURRENT_SOURCE_DIR})
-
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 find_package(Python 3.10 COMPONENTS Interpreter Development REQUIRED)
