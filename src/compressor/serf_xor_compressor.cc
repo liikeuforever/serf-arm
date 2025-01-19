@@ -32,6 +32,10 @@ Array<uint8_t> SerfXORCompressor::compressed_bytes_last_block() {
   return compressed_bytes_last_block_;
 }
 
+Array<uint8_t>& SerfXORCompressor::compressed_bytes() {
+  return compressed_bytes_last_block_;
+}
+
 void SerfXORCompressor::Close() {
   compressed_size_this_block_ += CompressValue(Double::DoubleToLongBits(Double::kNan));
   output_buffer_->Flush();

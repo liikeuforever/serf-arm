@@ -31,6 +31,8 @@ class SerfXORCompressor {
 
   Array<uint8_t> compressed_bytes_last_block();
 
+  Array<uint8_t> &compressed_bytes();
+
   void Close();
 
  private:

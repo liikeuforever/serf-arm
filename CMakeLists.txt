@@ -24,5 +24,5 @@ add_subdirectory(src)
 add_subdirectory(test)
 
 # If Python API and JAVA API are needed
-# add_subdirectory(pywrapper)
+add_subdirectory(pywrapper)
 # add_subdirectory(jna)
