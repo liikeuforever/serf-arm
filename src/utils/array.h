@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <memory>
+#include <vector>
 
 template<typename T>
 class Array {
@@ -12,6 +13,11 @@ class Array {
 
   explicit Array<T>(int length) : length_(length) {
     data_ = std::make_unique<T[]>(length_);
+  }
+
+  explicit Array<T>(const std::vector<T> &vec) : length_(vec.size()) {
+    data_ = std::make_unique<T[]>(length_);
+    std::copy(vec.begin(), vec.end(), begin());
   }
 
   Array<T>(std::initializer_list<T> list) : length_(list.size()) {
