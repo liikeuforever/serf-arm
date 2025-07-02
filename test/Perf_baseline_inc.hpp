@@ -32,6 +32,8 @@
 
 #include "baselines/elf/elf.h"
 
+#include "baselines/elf_star/elf_star.h"
+
 #include "baselines/gorilla/gorilla_compressor.h"
 #include "baselines/gorilla/gorilla_decompressor.h"
 
