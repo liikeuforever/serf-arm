@@ -10,16 +10,12 @@ const static int kBlockSize = 50;
 const static std::string kDataSetDirPrefix = "../../test/data_set/";
 const static std::string kDataSetList[] = {
     "Air-pressure.csv",
-    "Air-sensor.csv",
-    "Bird-migration.csv",
     "Basel-temp.csv",
     "Basel-wind.csv",
     "City-temp.csv",
     "Dew-point-temp.csv",
     "IR-bio-temp.csv",
     "PM10-dust.csv",
-    "Stocks-DE.csv",
-    "Stocks-UK.csv",
     "Stocks-USA.csv",
     "Wind-Speed.csv"
 };

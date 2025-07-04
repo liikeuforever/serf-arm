@@ -14,11 +14,9 @@
 #include "macros.h"
 #include "query.hpp"
 
-#define USE_X86_INTRINSICS
-#define USE_AVX2
-
-#ifdef USE_AVX2
-    static_assert(__AVX2__, "AVX 2 is required! Try --march=native or -mavx2");
+// Only define USE_AVX2 and USE_X86_INTRINSICS when actually available
+#ifdef __AVX2__
+    #define USE_AVX2
     #define USE_X86_INTRINSICS
 #endif
 

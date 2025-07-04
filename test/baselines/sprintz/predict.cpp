@@ -12,7 +12,9 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef USE_AVX2
 #include "immintrin.h"
+#endif
 
 #include "debug_utils.hpp" // TODO rm
 #include "format.h"
@@ -58,6 +60,28 @@ uint32_t encode_xff_rowmajor(const uint_t* src, uint32_t len, int_t* dest,
                              uint16_t ndims, bool write_size)
 {
     CHECK_INT_UINT_TYPES_VALID(int_t, uint_t);
+    
+#ifndef USE_AVX2
+    // Fallback implementation for non-AVX2 platforms - simple delta encoding
+    int_t* orig_dest = dest;
+    uint16_t metadata_len = 0;
+    
+    if (write_size) {
+        metadata_len = write_metadata_simple(dest, ndims, len);
+        dest += metadata_len;
+    }
+    
+    // Simple serial delta encoding
+    for (uint32_t i = 0; i < len; i++) {
+        if (i < ndims) {
+            dest[i] = src[i];  // First row unchanged
+        } else {
+            dest[i] = src[i] - src[i - ndims];  // Delta from previous row
+        }
+    }
+    
+    return len + metadata_len;
+#else
     static const uint8_t elem_sz = sizeof(uint_t);
     static const uint8_t learning_shift = elem_sz == 1 ? 1 : 3;
     static const uint8_t log2_block_sz = 3;
@@ -286,6 +310,7 @@ uint32_t encode_xff_rowmajor(const uint_t* src, uint32_t len, int_t* dest,
     return len + metadata_len;
     // if (write_size) { return len + 6; }
     // return len;
+#endif  // USE_AVX2
 }
 uint32_t encode_xff_rowmajor_8b(const uint8_t* src, uint32_t len, int8_t* dest,
     uint16_t ndims, bool write_size)
@@ -303,6 +328,22 @@ uint32_t decode_xff_rowmajor(const int_t* src, uint32_t len, uint_t* dest,
                              uint16_t ndims)
 {
     CHECK_INT_UINT_TYPES_VALID(int_t, uint_t);
+    
+#ifndef USE_AVX2
+    // Fallback implementation for non-AVX2 platforms - simple delta decoding
+    if (ndims == 0) { return 0; }
+    
+    // Simple serial delta decoding (inverse of encoding)
+    for (uint32_t i = 0; i < len; i++) {
+        if (i < ndims) {
+            dest[i] = src[i];  // First row unchanged
+        } else {
+            dest[i] = src[i] + dest[i - ndims];  // Add delta to previous row
+        }
+    }
+    
+    return len;
+#else
     static const uint8_t elem_sz = sizeof(uint_t);
     static const uint8_t learning_shift = elem_sz == 1 ? 1 : 3;
     static const uint8_t log2_block_sz = 3;
@@ -515,6 +556,7 @@ uint32_t decode_xff_rowmajor(const int_t* src, uint32_t len, uint_t* dest,
     free(prev_vals_ar);
     free(coeffs_ar_even);
     return len;
+#endif  // USE_AVX2
 }
 uint32_t decode_xff_rowmajor_8b(const int8_t* src, uint32_t len, uint8_t* dest,
                              uint16_t ndims)

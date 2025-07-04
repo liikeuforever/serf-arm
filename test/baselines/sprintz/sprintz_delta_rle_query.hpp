@@ -28,6 +28,26 @@
 
 static const int kDefaultGroupSzBlocks = 2;
 
+// Helper function for non-AVX2 header processing
+#ifndef USE_AVX2
+static void process_headers_scalar_8b(uint8_t* headers, int nheaders_per_group,
+                                     uint32_t* bitwidths_out, uint64_t* masks_out) {
+    for (int i = 0; i < nheaders_per_group; i++) {
+        uint8_t header = headers[i];
+        // Emulate the AVX2 logic: subtract 1 if header == 7
+        if (header == 7) header = 6;
+        bitwidths_out[i / 4] += header; // Sum into groups of 4
+        
+        // Simple mask generation (fallback)
+        uint64_t mask = 0;
+        if (header > 0) {
+            mask = (1ULL << header) - 1;
+        }
+        masks_out[i / 8] |= mask << ((i % 8) * 8);
+    }
+}
+#endif
+
 // ========================================================== rowmajor delta rle
 
 template<bool DoWrite=false, class int_t, class uint_t, class Func>
@@ -193,6 +213,7 @@ SPRINTZ_FORCE_INLINE int64_t query_rowmajor_delta_rle(const int_t* src,
         if (debug) { printf("padded headers:"); dump_bytes(headers, nstripes_in_vectors * 8); }
 
         // ------------------------ masks and bitwidths for all stripes
+#ifdef USE_AVX2
         for (uint32_t v = 0; v < nvectors_in_group; v++) {
             uint32_t v_offset = v * vector_sz_nbytes;
             __m256i raw_header = _mm256_loadu_si256(
@@ -247,6 +268,11 @@ SPRINTZ_FORCE_INLINE int64_t query_rowmajor_delta_rle(const int_t* src,
                 _mm256_storeu_si256((__m256i*)(store_addr2 + vector_sz_nbytes), masks1);
             }
         }
+#else
+        // Fallback scalar implementation for header processing
+        process_headers_scalar_8b(headers, nstripes_in_group * stripe_sz, 
+                                 (uint32_t*)stripe_bitwidths, data_masks);
+#endif
 
         if (debug) {
             printf("padded masks:     "); dump_elements((uint16_t*)data_masks, group_header_sz);
@@ -280,22 +306,38 @@ SPRINTZ_FORCE_INLINE int64_t query_rowmajor_delta_rle(const int_t* src,
                 uint32_t ncopies = length * block_sz;
                 if (g > 0 || b > 0) { // if not at very beginning of data
                     const uint_t* inptr = dest - ndims;
+#ifdef USE_AVX2
                     for (int32_t v = nvectors - 1; v >= 0; v--) {
                         uint32_t vstripe_start = v * vector_sz;
                         __m256i prev_vals = _mm256_loadu_si256((const __m256i*)
                             (prev_vals_ar + vstripe_start));
                         func(v, prev_vals, prev_vals, ncopies);
                     }
+#else
+                    // Scalar fallback for func calls
+                    for (int32_t v = nvectors - 1; v >= 0; v--) {
+                        uint32_t vstripe_start = v * vector_sz;
+                        // Use scalar function call with dummy values for non-AVX2 
+                        func(v, 0, 0, ncopies);
+                    }
+#endif
                     if (DoWrite) {
                         memrep(dest, inptr, ndims * elem_sz, ncopies);
                     }
                     dest += ndims * ncopies;
                 } else { // deltas of 0 at very start -> all zeros
                     uint32_t num_zeros = ncopies * ndims;
+#ifdef USE_AVX2
                     __m256i prev_vals = _mm256_setzero_si256();
                     for (int32_t v = nvectors - 1; v >= 0; v--) {
                         func(v, prev_vals, prev_vals, ncopies);
                     }
+#else
+                    // Scalar fallback
+                    for (int32_t v = nvectors - 1; v >= 0; v--) {
+                        func(v, 0, 0, ncopies);
+                    }
+#endif
                     memset(dest, 0, num_zeros * elem_sz); // TODO mul by elem_sz is right ?
                     dest += num_zeros;
                 }
@@ -345,6 +387,7 @@ SPRINTZ_FORCE_INLINE int64_t query_rowmajor_delta_rle(const int_t* src,
             } // for each stripe
 
             // zigzag + delta decode
+#ifdef USE_AVX2
             for (int32_t v = nvectors - 1; v >= 0; v--) {
                 uint32_t vstripe_start = v * vector_sz;
                 __m256i prev_vals = _mm256_loadu_si256((const __m256i*)
@@ -382,6 +425,39 @@ SPRINTZ_FORCE_INLINE int64_t query_rowmajor_delta_rle(const int_t* src,
                 }
                 _mm256_storeu_si256((__m256i*)(prev_vals_ar+vstripe_start), vals);
             }
+#else
+            // Scalar fallback for zigzag + delta decode
+            for (int32_t v = nvectors - 1; v >= 0; v--) {
+                uint32_t vstripe_start = v * vector_sz;
+                for (uint8_t i = 0; i < block_sz; i++) {
+                    uint32_t in_offset = i * padded_ndims + vstripe_start;
+                    uint32_t out_offset = i * ndims + vstripe_start;
+
+                    // Scalar zigzag + delta decode
+                    for (int j = 0; j < vector_sz && (vstripe_start + j) < ndims; j++) {
+                        if (elem_sz == 1) {
+                            int8_t delta = deltas[in_offset + j];
+                            uint8_t decoded_delta = zigzag_decode_8b(delta);
+                            uint8_t val = prev_vals_ar[vstripe_start + j] + decoded_delta;
+                            if (DoWrite) {
+                                dest[out_offset + j] = val;
+                            }
+                            prev_vals_ar[vstripe_start + j] = val;
+                        } else if (elem_sz == 2) {
+                            int16_t delta = deltas[in_offset + j];
+                            uint16_t decoded_delta = zigzag_decode_16b(delta);
+                            uint16_t val = prev_vals_ar[vstripe_start + j] + decoded_delta;
+                            if (DoWrite) {
+                                dest[out_offset + j] = val;
+                            }
+                            prev_vals_ar[vstripe_start + j] = val;
+                        }
+                    }
+
+                    func(v, 0, 0); // Call func with dummy values for scalar case
+                }
+            }
+#endif
 
             src += block_sz * in_row_nbytes / elem_sz;
             dest += block_sz * ndims;

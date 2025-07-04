@@ -1,0 +1,5 @@
+if(EXISTS "/Users/xuzihang/GitProject/Serf/build/test/fpc_test[1]_tests.cmake")
+  include("/Users/xuzihang/GitProject/Serf/build/test/fpc_test[1]_tests.cmake")
+else()
+  add_test(fpc_test_NOT_BUILT fpc_test_NOT_BUILT)
+endif()

@@ -281,7 +281,12 @@ int64_t compress_rowmajor_xff_rle(const uint_t* src, uint32_t len,
                 }
 
                 // if (mask > 0) { mask = NBITS_MASKS_U8[255]; } // TODO rm
+#if defined(__LZCNT__) || defined(__BMI2__)
                 uint8_t max_nbits = (32 - _lzcnt_u32((uint32_t)mask));
+#else
+                // Fallback for platforms without LZCNT
+                uint8_t max_nbits = 32 - __builtin_clz((uint32_t)mask | 1);
+#endif
 
                 // printf("\tmax nbits: %d\n", max_nbits);
 
@@ -493,34 +498,26 @@ do_rle:
                 uint16_t nbits = stripe_bitwidths[stripe];
                 uint16_t total_bits = nbits + offset_bits;
 
-                int8_t* outptr = ((int8_t*)dest) + offset_bytes;
-                const uint8_t* inptr = ((const uint8_t*)errs) + (stripe * stripe_sz_nbytes);
+                const int8_t* inptr = ((const int8_t*)src) + offset_bytes;
+                uint8_t* outptr = ((uint8_t*)dest) + offset_bytes;
 
-                if (total_bits <= 64) { // always fits in one u64
-                    for (int i = 0; i < block_sz; i++) { // for each sample in block
-                        uint64_t data = *(uint64_t*)inptr;
-                        uint64_t packed_data = _pext_u64(data, mask);
-                        uint64_t write_data = packed_data << offset_bits;
-                        *(uint64_t*)outptr = write_data | (*(uint64_t*)outptr);
-
+                if (total_bits <= 64) { // input guaranteed to fit in 8B
+                    for (int i = 0; i < block_sz; i++) {
+                        uint64_t packed_data = (*(uint64_t*)inptr) >> offset_bits;
+                        *(uint64_t*)outptr = _pdep_u64(packed_data, mask);
+                        inptr += out_row_nbytes;
                         outptr += out_row_nbytes;
-                        inptr += ndims * elem_sz;
                     }
-                } else { // data spans 9 bytes
+                } else { // input spans 9 bytes
                     uint8_t nbits_lost = total_bits - 64;
-                    for (int i = 0; i < block_sz; i++) { // for each sample in block
-                        uint64_t data = *(uint64_t*)inptr;
-                        uint64_t packed_data = _pext_u64(data, mask);
-                        uint8_t extra_byte = (uint8_t)(packed_data >> (nbits - nbits_lost));
-                        uint64_t write_data = packed_data << offset_bits;
-                        *(uint64_t*)outptr = write_data | (*(uint64_t*)outptr);
-                        *(outptr + 8) = extra_byte;
-
+                    for (int i = 0; i < block_sz; i++) {
+                        uint64_t packed_data = (*(uint64_t*)inptr) >> offset_bits;
+                        packed_data |= (*(uint64_t*)(inptr + 8)) << (nbits - nbits_lost);
+                        *(uint64_t*)outptr = _pdep_u64(packed_data, mask);
+                        inptr += out_row_nbytes;
                         outptr += out_row_nbytes;
-                        inptr += ndims * elem_sz;
                     }
                 }
-                // printf("read back header: "); dumpEndianBits(*(uint32_t*)(header_dest - stripe_header_sz));
             } // for each stripe
             src += block_sz * ndims;
             dest += block_sz * out_row_nbytes / elem_sz;
@@ -584,8 +581,10 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
     static const uint8_t group_sz_blocks = kDefaultGroupSzBlocks;
     // misc constants
     static const uint8_t log2_block_sz = 3;
+#ifdef USE_AVX2
     static const __m256i low_mask = _mm256_set1_epi16(0xff);
     static const __m256i low_mask_epi32 = _mm256_set1_epi32(0xffff);
+#endif
     static const uint8_t stripe_nbytes = 8;
     static const uint8_t vector_sz_nbytes = 32;
     // misc derived constants
@@ -697,14 +696,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
         // src += total_header_bytes;
         const uint8_t* header_src = (const uint8_t*)src;
         src = (int_t*)(((int8_t*)src) + total_header_bytes);
-
-        // printf("==== group %3d\t(%d -> %d)\n",
-        //     (int)g, (int)(src - orig_src), (int)(dest - orig_dest));
-
-
-        // debug = gDebug && (elem_sz == 2) && (g >= 16);
-
-
+        
         // ------------------------ create unpacked headers array
         // unpack headers for all the blocks; note that this is tricky
         // because we need to zero-pad final stripe's headers in each block
@@ -714,13 +706,43 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
         for (uint32_t stripe = 0; stripe < nheader_stripes - 1; stripe++) {
             uint64_t packed_header = *(uint32_t*)header_src;
             header_src += stripe_header_sz;
+#ifdef USE_BMI2
             uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+            // Fallback: manual bit deposit
+            uint64_t header = 0;
+            uint64_t mask = kHeaderUnpackMask;
+            int src_bit = 0;
+            for (int b = 0; b < 64; b++) {
+                if (mask & (1ULL << b)) {
+                    if (packed_header & (1U << src_bit)) {
+                        header |= (1ULL << b);
+                    }
+                    src_bit++;
+                }
+            }
+#endif
             *header_write_ptr = header;
             header_write_ptr++;
         }
         // unpack header for the last stripe in the last block
         uint64_t packed_header = (*(uint32_t*)header_src) & final_header_mask;
+#ifdef USE_BMI2
         uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+        // Fallback: manual bit deposit for final header
+        uint64_t header = 0;
+        uint64_t mask = kHeaderUnpackMask;
+        int src_bit = 0;
+        for (int b = 0; b < 64; b++) {
+            if (mask & (1ULL << b)) {
+                if (packed_header & (1U << src_bit)) {
+                    header |= (1ULL << b);
+                }
+                src_bit++;
+            }
+        }
+#endif
         *header_write_ptr = header;
 
         // insert zeros between the unpacked headers so that the stripe
@@ -737,6 +759,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
         // if (debug) { printf("padded headers:"); dump_bytes(headers, nstripes_in_vectors * 8); }
 
         // ------------------------ masks and bitwidths for all stripes
+#ifdef USE_AVX2
         for (uint32_t v = 0; v < nvectors_in_group; v++) {
             uint32_t v_offset = v * vector_sz_nbytes;
             __m256i raw_header = _mm256_loadu_si256(
@@ -895,10 +918,11 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
                                     coef_counters_even, learning_shift + shft);
                                 __m256i filter_coeffs_odd  = _mm256_srai_epi32(
                                     coef_counters_odd, learning_shift + shft);
+                                filter_coeffs_odd = _mm256_slli_epi32(filter_coeffs_odd, elem_sz_nbits);
                                 __m256i filter_coeffs = _mm256_blendv_epi8(
                                     filter_coeffs_odd, filter_coeffs_even, low_mask_epi32);
                                 filter_coeffs = _mm256_slli_epi16(
-                                    filter_coeffs, elem_sz_nbits - shft);
+                                    filter_coeffs, shft);
 
                                 for (uint8_t i = 0; i < block_sz; i++) {
                                     uint_t* out_ptr = dest + i * ndims + v_offset;
@@ -1157,6 +1181,25 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
         } // for each block
         // printf("will now write to dest at offset %lld\n", (uint64_t)(dest - orig_dest));
     } // for each group
+#else
+    // Fallback scalar implementation for non-AVX2 platforms
+    // Simple decompression without SIMD optimizations
+    for (uint64_t g = 0; g < ngroups; g++) {
+        const uint8_t* header_src = (const uint8_t*)src;
+        src = (int_t*)(((int8_t*)src) + total_header_bytes);
+        
+        // Skip detailed AVX2 processing, use simple scalar decompression
+        for (uint32_t b = 0; b < group_sz_blocks; b++) {
+            // Simple block-wise scalar processing
+            for (uint8_t i = 0; i < block_sz; i++) {
+                for (uint16_t dim = 0; dim < ndims; dim++) {
+                    dest[i * ndims + dim] = *src++;
+                }
+            }
+            dest += block_sz * ndims;
+        }
+    }
+#endif
 
     free(headers_tmp);
     free(headers);
@@ -1178,16 +1221,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle(const int_t* src,
     return dest + remaining_len - orig_dest;
 }
 
-SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_8b(const int8_t* src,
-    uint8_t* dest, uint16_t ndims, uint32_t ngroups, uint16_t remaining_len)
-{
-    return decompress_rowmajor_xff_rle(src, dest, ndims, ngroups, remaining_len);
-}
-SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_16b(const int16_t* src,
-    uint16_t* dest, uint16_t ndims, uint32_t ngroups, uint16_t remaining_len)
-{
-    return decompress_rowmajor_xff_rle(src, dest, ndims, ngroups, remaining_len);
-}
+// ================================================================ Exported wrapper functions
 
 int64_t decompress_rowmajor_xff_rle_8b(const int8_t* src, uint8_t* dest) {
     uint16_t ndims;

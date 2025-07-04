@@ -21,6 +21,12 @@
 // #include "array_utils.hpp" // TODO rm
 #include "debug_utils.hpp" // TODO rm
 
+// Fallback for Intel intrinsics on non-x86 platforms
+#if !defined(__x86_64__) && !defined(__i386__)
+#define _lzcnt_u32(x) (__builtin_clzl(x | 1))
+#define _tzcnt_u32(x) (__builtin_ctzl(x | (1U << 31)))
+#endif
+
 static const int debug = 0;
 // static const int debug = 3;
 // static const int debug = 4;
@@ -356,7 +362,21 @@ do_rle:
                 if (total_bits <= 64) { // always fits in one u64
                     for (int i = 0; i < block_sz; i++) { // for each sample in block
                         uint64_t data = *(uint64_t*)inptr;
+#ifdef USE_BMI2
                         uint64_t packed_data = _pext_u64(data, mask);
+#else
+                        // Fallback for platforms without BMI2
+                        uint64_t packed_data = 0;
+                        int dst_bit = 0;
+                        for (int src_bit = 0; src_bit < 64; src_bit++) {
+                            if (mask & (1ULL << src_bit)) {
+                                if (data & (1ULL << src_bit)) {
+                                    packed_data |= (1ULL << dst_bit);
+                                }
+                                dst_bit++;
+                            }
+                        }
+#endif
                         uint64_t write_data = packed_data << offset_bits;
                         *(uint64_t*)outptr = write_data | (*(uint64_t*)outptr);
 
@@ -367,7 +387,21 @@ do_rle:
                     uint8_t nbits_lost = total_bits - 64;
                     for (int i = 0; i < block_sz; i++) { // for each sample in block
                         uint64_t data = *(uint64_t*)inptr;
+#ifdef USE_BMI2
                         uint64_t packed_data = _pext_u64(data, mask);
+#else
+                        // Fallback for platforms without BMI2
+                        uint64_t packed_data = 0;
+                        int dst_bit = 0;
+                        for (int src_bit = 0; src_bit < 64; src_bit++) {
+                            if (mask & (1ULL << src_bit)) {
+                                if (data & (1ULL << src_bit)) {
+                                    packed_data |= (1ULL << dst_bit);
+                                }
+                                dst_bit++;
+                            }
+                        }
+#endif
                         uint8_t extra_byte = (uint8_t)(packed_data >> (nbits - nbits_lost));
                         uint64_t write_data = packed_data << offset_bits;
                         *(uint64_t*)outptr = write_data | (*(uint64_t*)outptr);
@@ -538,13 +572,41 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
         for (uint32_t stripe = 0; stripe < nheader_stripes - 1; stripe++) {
             uint64_t packed_header = *(uint32_t*)header_src;
             header_src += stripe_header_sz;
+#ifdef USE_BMI2
             uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+            // Fallback for platforms without BMI2
+            uint64_t header = 0;
+            int src_bit = 0;
+            for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+                if (kHeaderUnpackMask & (1ULL << dst_bit)) {
+                    if (packed_header & (1ULL << src_bit)) {
+                        header |= (1ULL << dst_bit);
+                    }
+                    src_bit++;
+                }
+            }
+#endif
             *header_write_ptr = header;
             header_write_ptr++;
         }
         // unpack header for the last stripe in the last block
         uint64_t packed_header = (*(uint32_t*)header_src) & final_header_mask;
+#ifdef USE_BMI2
         uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+        // Fallback for platforms without BMI2
+        uint64_t header = 0;
+        int src_bit = 0;
+        for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+            if (kHeaderUnpackMask & (1ULL << dst_bit)) {
+                if (packed_header & (1ULL << src_bit)) {
+                    header |= (1ULL << dst_bit);
+                }
+                src_bit++;
+            }
+        }
+#endif
         *header_write_ptr = header;
 
         // insert zeros between the unpacked headers so that the stripe
@@ -561,6 +623,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
         if (debug) { printf("padded headers:"); dump_bytes(headers, nstripes_in_vectors * 8); }
 
         // ------------------------ masks and bitwidths for all stripes
+#ifdef USE_AVX2
         for (uint32_t v = 0; v < nvectors_in_group; v++) {
             uint32_t v_offset = v * vector_sz_nbytes;
             __m256i raw_header = _mm256_loadu_si256(
@@ -615,6 +678,50 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
                 _mm256_storeu_si256((__m256i*)(store_addr2 + vector_sz_nbytes), masks1);
             }
         }
+#else
+        // Fallback scalar implementation for non-AVX2 platforms
+        for (uint32_t v = 0; v < nvectors_in_group; v++) {
+            uint32_t v_offset = v * vector_sz_nbytes;
+            uint8_t* header_bytes = headers + v_offset;
+            
+            if (elem_sz == 1) {
+                // Process 32 bytes (one vector worth) for 8-bit elements
+                for (uint32_t i = 0; i < vector_sz; i++) {
+                    uint8_t nbits = header_bytes[i];
+                    // Map nbits of 7 to 8
+                    uint8_t adjusted_nbits = nbits - (nbits == 7 ? 1 : 0);
+                    
+                    // Store bitwidth (using stripe-based indexing)
+                    uint32_t stripe_idx = i / stripe_sz;
+                    stripe_bitwidths[v * (vector_sz / stripe_sz) + stripe_idx] += adjusted_nbits;
+                    
+                    // Store mask using the lookup table
+                    uint8_t mask = kBitpackMasks8[nbits];
+                    ((uint8_t*)data_masks)[v_offset + i] = mask;
+                }
+            } else if (elem_sz == 2) {
+                // Process for 16-bit elements
+                for (uint32_t i = 0; i < vector_sz / 2; i++) {
+                    uint8_t nbits_low = header_bytes[i * 2];
+                    uint8_t nbits_high = header_bytes[i * 2 + 1];
+                    
+                    // Map nbits of 15 to 16
+                    uint8_t adjusted_low = nbits_low - (nbits_low == 15 ? 1 : 0);
+                    uint8_t adjusted_high = nbits_high - (nbits_high == 15 ? 1 : 0);
+                    
+                    // Store combined bitwidth
+                    uint32_t stripe_idx = i / (stripe_sz / 2);
+                    stripe_bitwidths[v * (vector_sz / stripe_sz) + stripe_idx] += adjusted_low + adjusted_high;
+                    
+                    // Store masks for 16-bit
+                    uint16_t mask_low = (nbits_low < 9) ? kBitpackMasks8[nbits_low] : 0xff;
+                    uint16_t mask_high = (nbits_low >= 9) ? kBitpackMasks8[nbits_low - 8] : 0;
+                    uint16_t mask = mask_low | (mask_high << 8);
+                    ((uint16_t*)data_masks)[v * vector_sz / 2 + i] = mask;
+                }
+            }
+        }
+#endif
 
         if (debug) {
             printf("padded masks:     "); dump_elements((uint16_t*)data_masks, group_header_sz);
@@ -684,7 +791,22 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
                 if (total_bits <= 64) { // input guaranteed to fit in 8B
                     for (int i = 0; i < block_sz; i++) {
                         uint64_t packed_data = (*(uint64_t*)inptr) >> offset_bits;
+#ifdef USE_BMI2
                         *(uint64_t*)outptr = _pdep_u64(packed_data, mask);
+#else
+                        // Fallback for platforms without BMI2
+                        uint64_t unpacked_data = 0;
+                        int src_bit = 0;
+                        for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+                            if (mask & (1ULL << dst_bit)) {
+                                if (packed_data & (1ULL << src_bit)) {
+                                    unpacked_data |= (1ULL << dst_bit);
+                                }
+                                src_bit++;
+                            }
+                        }
+                        *(uint64_t*)outptr = unpacked_data;
+#endif
                         inptr += in_row_nbytes;
                         outptr += out_row_nbytes;
                     }
@@ -693,7 +815,22 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
                     for (int i = 0; i < block_sz; i++) {
                         uint64_t packed_data = (*(uint64_t*)inptr) >> offset_bits;
                         packed_data |= (*(uint64_t*)(inptr + 8)) << (nbits - nbits_lost);
+#ifdef USE_BMI2
                         *(uint64_t*)outptr = _pdep_u64(packed_data, mask);
+#else
+                        // Fallback for platforms without BMI2
+                        uint64_t unpacked_data = 0;
+                        int src_bit = 0;
+                        for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+                            if (mask & (1ULL << dst_bit)) {
+                                if (packed_data & (1ULL << src_bit)) {
+                                    unpacked_data |= (1ULL << dst_bit);
+                                }
+                                src_bit++;
+                            }
+                        }
+                        *(uint64_t*)outptr = unpacked_data;
+#endif
                         inptr += in_row_nbytes;
                         outptr += out_row_nbytes;
                     }
@@ -701,6 +838,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
             } // for each stripe
 
             // zigzag + delta decode
+#ifdef USE_AVX2
             for (int32_t v = nvectors - 1; v >= 0; v--) {
                 uint32_t vstripe_start = v * vector_sz;
                 __m256i prev_vals = _mm256_loadu_si256((const __m256i*)
@@ -734,6 +872,36 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle(const int_t* src,
                 }
                 _mm256_storeu_si256((__m256i*)(prev_vals_ar+vstripe_start), vals);
             }
+#else
+            // Fallback scalar implementation for non-AVX2 platforms
+            // Zigzag decode and delta decode for all elements
+            for (uint8_t i = 0; i < block_sz; i++) {
+                for (uint16_t dim = 0; dim < ndims; dim++) {
+                    uint32_t in_offset = i * padded_ndims + dim;
+                    uint32_t out_offset = i * ndims + dim;
+                    
+                    if (elem_sz == 1) {
+                        // 8-bit zigzag decode: (n >> 1) ^ -(n & 1)
+                        uint8_t raw_delta = ((uint8_t*)deltas)[in_offset];
+                        int8_t delta = (raw_delta >> 1) ^ -(raw_delta & 1);
+                        
+                        // Delta decode: add to previous value
+                        uint8_t val = prev_vals_ar[dim] + delta;
+                        ((uint8_t*)dest)[out_offset] = val;
+                        prev_vals_ar[dim] = val;
+                    } else if (elem_sz == 2) {
+                        // 16-bit zigzag decode: (n >> 1) ^ -(n & 1)
+                        uint16_t raw_delta = ((uint16_t*)deltas)[in_offset];
+                        int16_t delta = (raw_delta >> 1) ^ -(raw_delta & 1);
+                        
+                        // Delta decode: add to previous value
+                        uint16_t val = prev_vals_ar[dim] + delta;
+                        ((uint16_t*)dest)[out_offset] = val;
+                        prev_vals_ar[dim] = val;
+                    }
+                }
+            }
+#endif
 
             src += block_sz * in_row_nbytes / elem_sz;
             dest += block_sz * ndims;

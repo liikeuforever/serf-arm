@@ -1,5 +1,16 @@
 #include "output_bit_stream.h"
 
+#ifdef __APPLE__
+#include <machine/endian.h>
+#include <libkern/OSByteOrder.h>
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+#elif defined(__linux__)
+#include <endian.h>
+#endif
+
 OutputBitStream::OutputBitStream(uint32_t buffer_size) {
     data_ = Array<uint32_t>(buffer_size / 4 + 1);
     buffer_ = 0;

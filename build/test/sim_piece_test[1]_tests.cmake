@@ -1,0 +1,5 @@
+add_test([=[TestSimPiece.CorrectnessTest]=]  /Users/xuzihang/GitProject/Serf/build/test/sim_piece_test [==[--gtest_filter=TestSimPiece.CorrectnessTest]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[TestSimPiece.CorrectnessTest]=]  PROPERTIES WORKING_DIRECTORY /Users/xuzihang/GitProject/Serf/build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+add_test([=[TestSimPiece.Simple]=]  /Users/xuzihang/GitProject/Serf/build/test/sim_piece_test [==[--gtest_filter=TestSimPiece.Simple]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[TestSimPiece.Simple]=]  PROPERTIES WORKING_DIRECTORY /Users/xuzihang/GitProject/Serf/build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+set(  sim_piece_test_TESTS TestSimPiece.CorrectnessTest TestSimPiece.Simple)

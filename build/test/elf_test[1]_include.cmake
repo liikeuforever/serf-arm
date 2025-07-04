@@ -1,0 +1,5 @@
+if(EXISTS "/Users/xuzihang/GitProject/Serf/build/test/elf_test[1]_tests.cmake")
+  include("/Users/xuzihang/GitProject/Serf/build/test/elf_test[1]_tests.cmake")
+else()
+  add_test(elf_test_NOT_BUILT elf_test_NOT_BUILT)
+endif()

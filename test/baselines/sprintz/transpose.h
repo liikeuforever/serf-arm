@@ -10,7 +10,9 @@
 #define transpose_h
 
 #include <stdint.h>
+#ifdef USE_AVX2
 #include "immintrin.h" // for pext, pdep
+#endif
 
 #include "debug_utils.hpp" // TODO rm
 
@@ -44,6 +46,7 @@
  * c7 d7
  */
 static inline void transpose_2x8_8b(const uint8_t* src, uint8_t* dest) {
+#ifdef USE_AVX2
     static const int a = 0;
     static const int b = 8;
     static const int c = 0;
@@ -71,6 +74,13 @@ static inline void transpose_2x8_8b(const uint8_t* src, uint8_t* dest) {
     __m256i vsrc = _mm256_loadu_si256((const __m256i*)src);
     __m256i shuffled = _mm256_shuffle_epi8(vsrc, idxs);
     _mm256_storeu_si256((__m256i*)dest, shuffled);
+#else
+    // Fallback scalar implementation
+    for (int i = 0; i < 8; i++) {
+        dest[2*i] = src[i];
+        dest[2*i+1] = src[8+i];
+    }
+#endif
 }
 
 /* 2x8 (rowmajor) -> 8x2 (rowmajor) transpose.
@@ -92,6 +102,7 @@ static inline void transpose_2x8_8b(const uint8_t* src, uint8_t* dest) {
  * a7 b7
  */
 static inline void transpose_2x8_16b(const uint16_t* src, uint16_t* dest) {
+#ifdef USE_AVX2
     static const int a = 0;
     static const int b = 0;
     static const __m256i idxs0 = _mm256_setr_epi8(
@@ -127,6 +138,13 @@ static inline void transpose_2x8_16b(const uint16_t* src, uint16_t* dest) {
     __m256i blended = _mm256_or_si256(shuffled0, shuffled1);
 
     _mm256_storeu_si256((__m256i*)dest, blended);
+#else
+    // Fallback scalar implementation
+    for (int i = 0; i < 8; i++) {
+        dest[2*i] = src[i];
+        dest[2*i+1] = src[8+i];
+    }
+#endif
 }
 
 /* 3x8 (rowmajor) -> 8x3 (rowmajor) transpose.
@@ -150,6 +168,7 @@ static inline void transpose_2x8_16b(const uint16_t* src, uint16_t* dest) {
  * 0 0 0 0 0 0 0 0
  */
 static inline void transpose_3x8_8b(const uint8_t* src, uint8_t* dest) {
+#ifdef USE_AVX2
     static const int a = 0;
     static const int b = 8;
     static const int c = 16 - 16;
@@ -192,6 +211,14 @@ static inline void transpose_3x8_8b(const uint8_t* src, uint8_t* dest) {
     __m256i blended = _mm256_or_si256(shuffled0, shuffled1);
 
     _mm256_storeu_si256((__m256i*)dest, blended);
+#else
+    // Fallback scalar implementation
+    for (int i = 0; i < 8; i++) {
+        dest[3*i] = src[i];
+        dest[3*i+1] = src[8+i];
+        dest[3*i+2] = src[16+i];
+    }
+#endif
 }
 
 
@@ -220,6 +247,7 @@ static inline void transpose_3x8_8b(const uint8_t* src, uint8_t* dest) {
  * 0 0 0 0 0 0 0 0
  */
 static inline void transpose_3x8_16b(const uint16_t* src, uint16_t* dest) {
+#ifdef USE_AVX2
     // int a = 0, b = 0;//, c = 0;
     // shuffle idxs for mat (output rows 0-1)
     //  a0-3  b0-3
@@ -288,8 +316,14 @@ static inline void transpose_3x8_16b(const uint16_t* src, uint16_t* dest) {
 
     // __m256i shuffled12 = _mm256_shuffle_epi8(b_and_c, idxs12);
     // __m256i blended = _mm256_or_si256(shuffled0, shuffled1);
-
-
+#else
+    // Fallback scalar implementation
+    for (int row = 0; row < 8; row++) {
+        dest[3*row] = src[row];
+        dest[3*row+1] = src[8+row]; 
+        dest[3*row+2] = src[16+row];
+    }
+#endif
 }
 
 /* 4x8 (rowmajor) -> 8x4 (rowmajor) transpose.
@@ -313,6 +347,7 @@ static inline void transpose_3x8_16b(const uint16_t* src, uint16_t* dest) {
  * a7 b7 c7 d7
  */
 static inline void transpose_4x8_8b(const uint8_t* src, uint8_t* dest) {
+#ifdef USE_AVX2
     static const int a = 0;
     static const int b = 8;
     static const int c = 16 - 16;
@@ -352,6 +387,15 @@ static inline void transpose_4x8_8b(const uint8_t* src, uint8_t* dest) {
     __m256i blended = _mm256_or_si256(shuffled0, shuffled1);
 
     _mm256_storeu_si256((__m256i*)dest, blended);
+#else
+    // Fallback scalar implementation
+    for (int i = 0; i < 8; i++) {
+        dest[4*i] = src[i];
+        dest[4*i+1] = src[8+i];
+        dest[4*i+2] = src[16+i];
+        dest[4*i+3] = src[24+i];
+    }
+#endif
 }
 
 

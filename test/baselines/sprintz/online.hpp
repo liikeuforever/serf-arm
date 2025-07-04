@@ -83,32 +83,41 @@ inline uint16_t _add_with_wraparound(uint16_t a, int16_t b) {
     // return a + b;  // technically undefined behavior, but usually works
 
     // force 2s complement add
-    #ifdef __arm__
+    #ifdef __aarch64__
+        // ARM64 fallback
+        return (uint16_t)(a + b);
+    #elif defined(__arm__)
         uint16_t ret;
         // asm("add %[c], %[a], %[b]" : [c] "=g" (ret) : [a] "g" (a), [b] "g" (b));
         asm("add %[a], %[b], %[c]" : [c] "=g" (ret) : [a] "g" (a), [b] "g" (b));
         return ret;
-    #else  // assumes x86
-        // asm("add %[a], %[b]" : [a] "+g" (a) : [b] "g" (b));
-        // asm("add %[b], %[a]" : [a] "+%g" (a) : [b] "g" (b));
+    #elif defined(__x86_64__) || defined(__i386__)
+        // x86/x64 implementation
         asm("add %[a], %[b]" : [b] "+g" (b) : [a] "g" (a));
-        // return a;
         return b;
+    #else
+        // Generic fallback
+        return (uint16_t)(a + b);
     #endif
 }
 
 inline int16_t _sub_with_wraparound(uint16_t a, int16_t b) {
     // force 2s complement sub
-    #ifdef __arm__
+    #ifdef __aarch64__
+        // ARM64 fallback
+        return (int16_t)(a - b);
+    #elif defined(__arm__)
         int16_t ret;
         // asm("sub %[c], %[a], %[b]" : [c] "=g" (ret) : [a] "g" (a), [b] "g" (b));
         asm("sub %[a], %[b], %[c]" : [c] "=g" (ret) : [a] "g" (a), [b] "g" (b));
         return ret;
-    #else  // assumes x86
-        // asm("sub %[a], %[b]" : [a] "+%g" (a) : [b] "g" (b));
-        // return a;
+    #elif defined(__x86_64__) || defined(__i386__)
+        // x86/x64 implementation
         asm("sub %[b], %[a]" : [a] "+%g" (a) : [b] "g" (b));
         return a;
+    #else
+        // Generic fallback
+        return (int16_t)(a - b);
     #endif
 }
 

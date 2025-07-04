@@ -14,6 +14,11 @@
 
 #include "bitpack.h"
 
+// Fallback for platforms without BMI2
+#if !defined(__BMI2__)
+#include <limits.h>
+#endif
+
 // #define VERBOSE_COMPRESS
 
 // #include "debug_utils.hpp" // TODO rm
@@ -131,10 +136,40 @@ int64_t compress8b_delta_simple(uint8_t* src, size_t len, int8_t* dest,
         uint64_t data0 = *(uint64_t*)(delta_buff + 8 * 0);
         uint64_t data1 = *(uint64_t*)(delta_buff + 8 * 1);
 
+#ifdef USE_BMI2
         *((uint64_t*)dest) = _pext_u64(data0, mask0);
         dest += nbits0;
         *((uint64_t*)dest) = _pext_u64(data1, mask1);
         dest += nbits1;
+#else
+        // Fallback: manual bit extraction for data0
+        uint64_t result0 = 0;
+        int bit_pos0 = 0;
+        for (int b = 0; b < 64; b++) {
+            if (mask0 & (1ULL << b)) {
+                if (data0 & (1ULL << b)) {
+                    result0 |= (1ULL << bit_pos0);
+                }
+                bit_pos0++;
+            }
+        }
+        *((uint64_t*)dest) = result0;
+        dest += nbits0;
+        
+        // Fallback: manual bit extraction for data1
+        uint64_t result1 = 0;
+        int bit_pos1 = 0;
+        for (int b = 0; b < 64; b++) {
+            if (mask1 & (1ULL << b)) {
+                if (data1 & (1ULL << b)) {
+                    result1 |= (1ULL << bit_pos1);
+                }
+                bit_pos1++;
+            }
+        }
+        *((uint64_t*)dest) = result1;
+        dest += nbits1;
+#endif
     }
     // final trailing samples just get copied with no compression
     size_t remaining_len = len % group_sz;
@@ -183,10 +218,40 @@ int64_t decompress8b_delta_simple(int8_t* src, uint8_t* dest, uint64_t orig_len)
 
         uint64_t mask0 = kBitUnpackMasks8[nbits0];
         uint64_t mask1 = kBitUnpackMasks8[nbits1];
+#ifdef USE_BMI2
         int64_t deltas0 = _pdep_u64(*(uint64_t*)src, mask0);
         src += nbits0;
         int64_t deltas1 = _pdep_u64(*(uint64_t*)src, mask1);
         src += nbits1;
+#else
+        // Fallback: manual bit deposit for deltas0
+        uint64_t packed0 = *(uint64_t*)src;
+        int64_t deltas0 = 0;
+        int src_bit0 = 0;
+        for (int b = 0; b < 64; b++) {
+            if (mask0 & (1ULL << b)) {
+                if (packed0 & (1ULL << src_bit0)) {
+                    deltas0 |= (1ULL << b);
+                }
+                src_bit0++;
+            }
+        }
+        src += nbits0;
+        
+        // Fallback: manual bit deposit for deltas1
+        uint64_t packed1 = *(uint64_t*)src;
+        int64_t deltas1 = 0;
+        int src_bit1 = 0;
+        for (int b = 0; b < 64; b++) {
+            if (mask1 & (1ULL << b)) {
+                if (packed1 & (1ULL << src_bit1)) {
+                    deltas1 |= (1ULL << b);
+                }
+                src_bit1++;
+            }
+        }
+        src += nbits1;
+#endif
 
         // cumsum each block; the tricky part here is that we unpacked
         // everything into the most significant bits, so that we could
@@ -257,12 +322,43 @@ int64_t compress8b_online(uint8_t* src, size_t len, int8_t* dest,
             // write out packed data
             uint64_t mask = kBitpackMasks8[nbits];
             // *((uint64_t*)dest) = _pext_u64(delta_buff_u64, mask);
+#ifdef USE_BMI2
             *((uint64_t*)dest) = _pext_u64(*(uint64_t*)src, mask);
+#else
+            // Fallback: manual bit extraction
+            uint64_t data = *(uint64_t*)src;
+            uint64_t result = 0;
+            int bit_pos = 0;
+            for (int b = 0; b < 64; b++) {
+                if (mask & (1ULL << b)) {
+                    if (data & (1ULL << b)) {
+                        result |= (1ULL << bit_pos);
+                    }
+                    bit_pos++;
+                }
+            }
+            *((uint64_t*)dest) = result;
+#endif
             dest += nbits + (nbits == 7);
             src += block_sz;
         }
         // write out header for whole group; 3b for each nbits
+#ifdef USE_BMI2
         uint32_t packed_header = (uint32_t)_pext_u64(nbits_buff_u64, kHeaderMask8b);
+#else
+        // Fallback: manual bit extraction for header
+        uint64_t header_mask = kHeaderMask8b;
+        uint32_t packed_header = 0;
+        int header_bit_pos = 0;
+        for (int b = 0; b < 64; b++) {
+            if (header_mask & (1ULL << b)) {
+                if (nbits_buff_u64 & (1ULL << b)) {
+                    packed_header |= (1U << header_bit_pos);
+                }
+                header_bit_pos++;
+            }
+        }
+#endif
         memcpy(header_dest, &packed_header, 3);
     }
     // just memcpy remaining bytes (up to 63 of them)
@@ -298,7 +394,22 @@ int64_t decompress8b_online(int8_t* src, uint8_t* dest) {
         uint32_t header = *(uint32_t*)src;
         src += stripe_header_sz;
 
+#ifdef USE_BMI2
         uint64_t nbits_u64 = _pdep_u64(header, kBitpackMasks8[nbits_sz_bits]);
+#else
+        // Fallback: manual bit deposit for header
+        uint64_t nbits_u64 = 0;
+        uint64_t mask = kBitpackMasks8[nbits_sz_bits];
+        int src_bit = 0;
+        for (int b = 0; b < 64; b++) {
+            if (mask & (1ULL << b)) {
+                if (header & (1U << src_bit)) {
+                    nbits_u64 |= (1ULL << b);
+                }
+                src_bit++;
+            }
+        }
+#endif
 
         // read deltas for each block
         for (int b = 0; b < group_sz_blocks; b++) {
@@ -308,7 +419,22 @@ int64_t decompress8b_online(int8_t* src, uint8_t* dest) {
             // XXX this masks array can't handle negative numbers; just getting
             // us an upper bound on speed we could get without deltas
             uint64_t mask = kBitpackMasks8[nbits];
+#ifdef USE_BMI2
             uint64_t unpacked = _pdep_u64(*(uint64_t*)src, mask);
+#else
+            // Fallback: manual bit deposit for unpacking
+            uint64_t packed = *(uint64_t*)src;
+            uint64_t unpacked = 0;
+            int unpack_src_bit = 0;
+            for (int bit = 0; bit < 64; bit++) {
+                if (mask & (1ULL << bit)) {
+                    if (packed & (1ULL << unpack_src_bit)) {
+                        unpacked |= (1ULL << bit);
+                    }
+                    unpack_src_bit++;
+                }
+            }
+#endif
             nbits += nbits == 7;
             src += nbits;
 
@@ -1028,7 +1154,21 @@ int64_t compress8b_delta_rle2(uint8_t* src, size_t len, int8_t* dest,
                 // additional zeros can be 8, in which case the length
                 // that gets written would overflow and cause decoder to
                 // see the wrong number
+#if defined(__BMI2__)
                 uint8_t tzcnt = (uint8_t)_tzcnt_u64(delta_buff_u64);
+#else
+                // Fallback for platforms without BMI2: count trailing zeros manually
+                uint8_t tzcnt = 0;
+                uint64_t temp = delta_buff_u64;
+                if (temp == 0) {
+                    tzcnt = 64;
+                } else {
+                    while ((temp & 1) == 0 && tzcnt < 64) {
+                        temp >>= 1;
+                        tzcnt++;
+                    }
+                }
+#endif
                 uint8_t additional_zeros = (tzcnt >> 3) & 0x7;
                 // if (ngroups < 5) {
                 //     printf("nconstant_blocks, additional zeros: %d, %d\n", nconstant_blocks, additional_zeros);
@@ -1071,7 +1211,22 @@ int64_t compress8b_delta_rle2(uint8_t* src, size_t len, int8_t* dest,
             // ------------------------ case 1: didn't just finish const section
             // write out packed data
             uint64_t mask = kBitpackMasks8[nbits];
+#ifdef USE_BMI2
             *((uint64_t*)dest) = _pext_u64(delta_buff_u64, mask);
+#else
+            // Fallback: manual bit extraction
+            uint64_t result = 0;
+            int bit_pos = 0;
+            for (int b = 0; b < 64; b++) {
+                if (mask & (1ULL << b)) {
+                    if (delta_buff_u64 & (1ULL << b)) {
+                        result |= (1ULL << bit_pos);
+                    }
+                    bit_pos++;
+                }
+            }
+            *((uint64_t*)dest) = result;
+#endif
             dest += nbits + (nbits == 7);
 
             nconstant_blocks = 0;
@@ -1079,7 +1234,22 @@ int64_t compress8b_delta_rle2(uint8_t* src, size_t len, int8_t* dest,
         }
 
         // write out header for whole group; 3b for each nbits
+#ifdef USE_BMI2
         uint32_t packed_header = (uint32_t)_pext_u64(nbits_buff_u64, kHeaderMask8b);
+#else
+        // Fallback: manual bit extraction for header
+        uint64_t header_mask = kHeaderMask8b;
+        uint32_t packed_header = 0;
+        int header_bit_pos = 0;
+        for (int b = 0; b < 64; b++) {
+            if (header_mask & (1ULL << b)) {
+                if (nbits_buff_u64 & (1ULL << b)) {
+                    packed_header |= (1U << header_bit_pos);
+                }
+                header_bit_pos++;
+            }
+        }
+#endif
         memcpy(header_dest, &packed_header, 3);
         ngroups++;  // increment counter only if we got thru the whole group
     }

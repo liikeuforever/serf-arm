@@ -1,0 +1,37 @@
+# CMake generated Testfile for 
+# Source directory: /Users/xuzihang/GitProject/Serf/test
+# Build directory: /Users/xuzihang/GitProject/Serf/build/test
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+include("/Users/xuzihang/GitProject/Serf/build/test/buff_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/chimp_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/deflate_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/elf_star_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/elf_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/fpc_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/gorilla_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/lz4_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/lz77_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/machete_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/serf_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/sim_piece_test[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/PerformanceProgram[1]_include.cmake")
+include("/Users/xuzihang/GitProject/Serf/build/test/PerformanceProgram_ADT[1]_include.cmake")
+subdirs("baselines/deflate")
+subdirs("baselines/fpc")
+subdirs("baselines/lz4")
+subdirs("baselines/chimp128")
+subdirs("baselines/gorilla")
+subdirs("baselines/elf")
+subdirs("baselines/elf_star")
+subdirs("baselines/machete")
+subdirs("baselines/lz77")
+subdirs("baselines/sz2")
+subdirs("baselines/buff")
+subdirs("baselines/snappy")
+subdirs("baselines/zstd/build/cmake")
+subdirs("baselines/sim_piece")
+subdirs("baselines/alp")
+subdirs("baselines/sz_adt")
+subdirs("../_deps/googletest-build")

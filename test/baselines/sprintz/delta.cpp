@@ -12,7 +12,11 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef USE_AVX2
 #include "immintrin.h"
+#elif defined(USE_NEON)
+#include <arm_neon.h>
+#endif
 
 // #include "debug_utils.hpp" // TODO rm
 #include "format.h"
@@ -83,6 +87,7 @@ uint32_t encode_delta_rowmajor(const uint_t* src, uint32_t len,
     // nblocks = 0;
 
     for (int32_t b = 0; b < nblocks; b++) { // for each block
+#ifdef USE_AVX2
         for (int32_t v = nvectors - 1; v >= 0; v--) { // for each stripe
             __m256i* prev_vals_ptr = (__m256i*)(prev_vals_ar + v * vector_sz);
             __m256i prev_vals = _mm256_loadu_si256(prev_vals_ptr);
@@ -98,6 +103,18 @@ uint32_t encode_delta_rowmajor(const uint_t* src, uint32_t len,
             }
             _mm256_storeu_si256((__m256i*)(prev_vals_ptr), prev_vals);
         } // for each vector
+#else
+        // Fallback scalar implementation
+        for (uint8_t i = 0; i < block_sz; i++) {
+            for (uint16_t j = 0; j < ndims; j++) {
+                const uint_t* in_ptr = src + i * ndims + j;
+                int_t* out_ptr = dest + i * ndims + j;
+                uint_t* prev_ptr = prev_vals_ar + j;
+                *out_ptr = (int_t)(*in_ptr - *prev_ptr);
+                *prev_ptr = *in_ptr;
+            }
+        }
+#endif
         src += block_sz_elems;
         dest += block_sz_elems;
     } // for each block
@@ -198,6 +215,7 @@ uint32_t decode_delta_rowmajor_large_ndims(const int_t* src, uint32_t len,
     if (nblocks > 1 && overrun_ndims > trailing_nelements) { nblocks -= 1; }
 
     for (uint32_t b = 0; b < nblocks; b++) { // for each block
+#ifdef USE_AVX2
         const int_t* block_in_ptr = src + (nvectors - 1) * vector_sz;
         uint_t* block_out_ptr = dest + (nvectors - 1) * vector_sz;
         for (int32_t v = nvectors - 1; v >= 0; v--) { // for each stripe
@@ -219,6 +237,18 @@ uint32_t decode_delta_rowmajor_large_ndims(const int_t* src, uint32_t len,
             block_in_ptr -= vector_sz;
             block_out_ptr -= vector_sz;
         } // for each vector
+#else
+        // Fallback scalar implementation
+        for (uint8_t i = 0; i < block_sz; i++) {
+            for (uint16_t j = 0; j < ndims; j++) {
+                const int_t* in_ptr = src + i * ndims + j;
+                uint_t* out_ptr = dest + i * ndims + j;
+                uint_t* prev_ptr = prev_vals_ar + j;
+                *out_ptr = (uint_t)(*in_ptr + (int_t)*prev_ptr);
+                *prev_ptr = *out_ptr;
+            }
+        }
+#endif
         src += block_sz_elems;
         dest += block_sz_elems;
     } // for each block
@@ -262,6 +292,7 @@ uint32_t decode_delta_rowmajor(const int_t* src, uint32_t len, uint_t* dest) {
     // printf("using nblocks: %d\n", nblocks);
 
     for (uint32_t b = 0; b < nblocks; b++) { // for each block
+#ifdef USE_AVX2
         const int_t* block_in_ptr = src + (nvectors - 1) * vector_sz;
         uint_t* block_out_ptr = dest + (nvectors - 1) * vector_sz;
         for (int32_t v = nvectors - 1; v >= 0; v--) { // for each stripe
@@ -292,6 +323,18 @@ uint32_t decode_delta_rowmajor(const int_t* src, uint32_t len, uint_t* dest) {
             block_in_ptr -= vector_sz;
             block_out_ptr -= vector_sz;
         } // for each vector
+#else
+        // Fallback scalar implementation
+        for (uint8_t i = 0; i < block_sz; i++) {
+            for (uint16_t j = 0; j < ndims; j++) {
+                const int_t* in_ptr = src + i * ndims + j;
+                uint_t* out_ptr = dest + i * ndims + j;
+                uint_t* prev_ptr = prev_vals_ar + j;
+                *out_ptr = (uint_t)(*in_ptr + (int_t)*prev_ptr);
+                *prev_ptr = *out_ptr;
+            }
+        }
+#endif
         src += block_sz_elems;
         dest += block_sz_elems;
     } // for each block
@@ -566,6 +609,7 @@ uint32_t encode_doubledelta_rowmajor(const uint_t* src, uint32_t len,
     if (nblocks > 1 && overrun_ndims > trailing_nelements) { nblocks -= 1; }
 
     for (int32_t b = 0; b < nblocks; b++) { // for each block
+#ifdef USE_AVX2
         for (int32_t v = nvectors - 1; v >= 0; v--) { // for each stripe
             __m256i* prev_vals_ptr = (__m256i*)(prev_vals_ar + v * vector_sz);
             __m256i* prev_deltas_ptr = (__m256i*)(prev_deltas_ar + v * vector_sz);
@@ -592,6 +636,22 @@ uint32_t encode_doubledelta_rowmajor(const uint_t* src, uint32_t len,
             _mm256_storeu_si256((__m256i*)prev_vals_ptr, prev_vals);
             _mm256_storeu_si256((__m256i*)prev_deltas_ptr, prev_deltas);
         } // for each vector
+#else
+        // Fallback scalar implementation for double delta encode
+        for (uint8_t i = 0; i < block_sz; i++) {
+            for (uint16_t j = 0; j < ndims; j++) {
+                const uint_t* in_ptr = src + i * ndims + j;
+                int_t* out_ptr = dest + i * ndims + j;
+                uint_t* prev_val_ptr = prev_vals_ar + j;
+                int_t* prev_delta_ptr = prev_deltas_ar + j;
+                
+                int_t delta = (int_t)(*in_ptr - *prev_val_ptr);
+                *out_ptr = delta - *prev_delta_ptr;
+                *prev_delta_ptr = delta;
+                *prev_val_ptr = *in_ptr;
+            }
+        }
+#endif
         src += block_sz_elems;
         dest += block_sz_elems;
     } // for each block
@@ -647,6 +707,7 @@ uint32_t decode_doubledelta_rowmajor(const int_t* src, uint32_t len,
     if (nblocks > 1 && overrun_ndims > trailing_nelements) { nblocks -= 1; }
 
     for (uint32_t b = 0; b < nblocks; b++) { // for each block
+#ifdef USE_AVX2
         for (int32_t v = nvectors - 1; v >= 0; v--) { // for each stripe
             __m256i* prev_vals_ptr = (__m256i*)(prev_vals_ar + v * vector_sz);
             __m256i* prev_deltas_ptr = (__m256i*)(prev_deltas_ar + v * vector_sz);
@@ -673,6 +734,22 @@ uint32_t decode_doubledelta_rowmajor(const int_t* src, uint32_t len,
             _mm256_storeu_si256((__m256i*)prev_vals_ptr, prev_vals);
             _mm256_storeu_si256((__m256i*)prev_deltas_ptr, prev_deltas);
         } // for each vector
+#else
+        // Fallback scalar implementation for double delta decode
+        for (uint8_t i = 0; i < block_sz; i++) {
+            for (uint16_t j = 0; j < ndims; j++) {
+                const int_t* in_ptr = src + i * ndims + j;
+                uint_t* out_ptr = dest + i * ndims + j;
+                uint_t* prev_val_ptr = prev_vals_ar + j;
+                int_t* prev_delta_ptr = prev_deltas_ar + j;
+                
+                int_t delta = *in_ptr + *prev_delta_ptr;
+                *out_ptr = (uint_t)(delta + (int_t)*prev_val_ptr);
+                *prev_delta_ptr = delta;
+                *prev_val_ptr = *out_ptr;
+            }
+        }
+#endif
         src += block_sz_elems;
         dest += block_sz_elems;
     } // for each block

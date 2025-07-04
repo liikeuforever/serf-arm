@@ -19,8 +19,46 @@
 
 #include "bitpack.h"
 
+#ifdef USE_AVX2
 #include "immintrin.h" // for pext, pdep
+#endif
+#ifdef USE_AVX2
 #include "smmintrin.h"  // for _mm_minpos_epu16
+#endif
+
+// Fallback implementations for BMI2 instructions on non-x86 platforms
+#if !defined(__BMI2__) || !defined(__x86_64__)
+static inline uint64_t _pext_u64_fallback(uint64_t a, uint64_t mask) {
+    uint64_t result = 0;
+    uint64_t bb = 1;
+    for (uint64_t aa = 1; mask; aa += aa, mask >>= 1) {
+        if (mask & 1) {
+            if (a & aa) {
+                result |= bb;
+            }
+            bb += bb;
+        }
+    }
+    return result;
+}
+
+static inline uint64_t _pdep_u64_fallback(uint64_t a, uint64_t mask) {
+    uint64_t result = 0;
+    uint64_t bb = 1;
+    for (uint64_t aa = 1; mask; aa += aa, mask >>= 1) {
+        if (mask & 1) {
+            if (a & bb) {
+                result |= aa;
+            }
+            bb += bb;
+        }
+    }
+    return result;
+}
+
+#define _pext_u64(a, mask) _pext_u64_fallback(a, mask)
+#define _pdep_u64(a, mask) _pdep_u64_fallback(a, mask)
+#endif
 
 #include "debug_utils.hpp" // TODO rm
 #include "macros.h"
@@ -167,6 +205,7 @@ static const uint64_t kBitpackMasks16[17] = {
 //     return x ^ y ^ z;
 // }
 
+#ifdef USE_AVX2
 static const __m256i nbits_to_mask_8b = _mm256_setr_epi8(
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,
     0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // unused
@@ -176,13 +215,14 @@ static const __m256i nbits_to_mask_8b = _mm256_setr_epi8(
 static const __m256i nbits_to_mask_16b_low = _mm256_setr_epi8(
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff,   // 0-8
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,               // 9-15
-    0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff,   // 0-8
+    0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,   // 0-8
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff);              // 9-15
 static const __m256i nbits_to_mask_16b_high = _mm256_setr_epi8(
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,         // 0-7
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,         // 8-15
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,         // 0-7
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff);        // 8-15
+#endif
 
 
 // ------------------------------------------------ Computing needed nbits
@@ -209,6 +249,7 @@ static const __m256i nbits_to_mask_16b_high = _mm256_setr_epi8(
 //    return maxval ? _bit_scan_reverse(maxval) + 1 : 0; // bsr undefined if input all 0s
 //}
 
+#ifdef USE_AVX2
 static inline uint8_t needed_nbits_epi16x8(__m128i v) {
     int all_zeros = _mm_test_all_zeros(v, v);
     if (all_zeros) { return 0; }
@@ -244,6 +285,7 @@ static inline uint8_t needed_nbits_i8x8(const int8_t* x) {
     __m128i v = _mm_loadu_si128((__m128i*)x);
     return needed_nbits_epi8x8(v);
 }
+#endif
 
 static inline uint8_t needed_nbits_i8x8_simple(const int8_t* x) {
     uint8_t max_nbits = NBITS_COST_I8[*x];
@@ -286,6 +328,17 @@ static inline uint8_t needed_nbits_u16x8_simple(
     return ret == 15 ? 16 : ret; // count 15 bits as 16 bits
 }
 
+#ifndef USE_AVX2
+// Fallback scalar implementations for non-AVX2 platforms
+static inline uint8_t needed_nbits_i16x8(const int16_t* x) {
+    return needed_nbits_i16x8_simple(x);
+}
+
+static inline uint8_t needed_nbits_i8x8(const int8_t* x) {
+    return needed_nbits_i8x8_simple(x);
+}
+#endif
+
 // ------------------------------------------------ zigzag
 
 // static inline uint8_t zigzag_encode_i16(int8_t x) {
@@ -316,6 +369,7 @@ static inline int16_t zigzag_decode_16b(uint16_t x) {
     return (x >> 1) ^ -(x & 0x01);
 }
 
+#ifdef USE_AVX2
 // __attribute__((always_inline)) + static in header is only thing that seems
 // to actually force it to get inlined
 // extern inline __m256i mm256_zigzag_encode_epi8(const __m256i& x) {
@@ -356,6 +410,7 @@ SPRINTZ_FORCE_INLINE static __m256i mm256_zigzag_decode_epi16(const __m256i& x)
     __m256i invert_mask = _mm256_cmpgt_epi16(zeros, _mm256_slli_epi64(x, 15));
     return _mm256_xor_si256(invert_mask, shifted);
 }
+#endif
 
 // ------------------------------------------------ horz bit packing
 // (These functions are basically for debugging / validating bitpacking consts)
@@ -469,7 +524,7 @@ static inline uint64_t decompress8b_bitpack(const uint8_t* src, uint64_t in_sz, 
     // MAIN_LOOP(nbits);
 #undef MAIN_LOOP
 
-    #ifdef VECTOR_STORES
+    #if defined(VECTOR_STORES) && defined(USE_AVX2)
         __m256i fourVals = _mm256_setzero_si256();
         for (uint64_t g = 0; g < ngroups; g++) {
             for (int b = 0; b < group_sz; b++) {

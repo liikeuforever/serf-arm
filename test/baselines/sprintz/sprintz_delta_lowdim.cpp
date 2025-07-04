@@ -18,14 +18,21 @@
 #include "format.h"
 #include "transpose.h"
 
+// Fallback for Intel intrinsics on non-x86 platforms
+#if !defined(__x86_64__) && !defined(__i386__)
+#define _lzcnt_u32(x) (__builtin_clzl(x | 1))
+#define _tzcnt_u32(x) (__builtin_ctzl(x | (1U << 31)))
+#endif
+
 static constexpr uint64_t kHeaderMask8b = TILE_BYTE(0x07); // 3 ones
 
+#ifdef USE_AVX2
 static const __m256i nbits_to_mask = _mm256_setr_epi8(
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,
     0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // unused
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,
     0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00); // unused
-
+#endif
 
 static const int kDefaultGroupSzBlocks = 2;
 // static const int kDefaultGroupSzBlocks = 8;  // slight pareto improvement
@@ -308,7 +315,23 @@ do_rle:
                 uint8_t nbits = dims_nbits[dim];
                 if (elem_sz == 1) {
                     uint64_t mask = kBitpackMasks8[nbits];
+#ifdef USE_BMI2
                     *((uint64_t*)dest) = _pext_u64(delta_buff_u64[dim], mask);
+#else
+                    // Fallback for platforms without BMI2
+                    uint64_t data = delta_buff_u64[dim];
+                    uint64_t packed_data = 0;
+                    int dst_bit = 0;
+                    for (int src_bit = 0; src_bit < 64; src_bit++) {
+                        if (mask & (1ULL << src_bit)) {
+                            if (data & (1ULL << src_bit)) {
+                                packed_data |= (1ULL << dst_bit);
+                            }
+                            dst_bit++;
+                        }
+                    }
+                    *((uint64_t*)dest) = packed_data;
+#endif
                 } else if (elem_sz == 2) {
                     uint64_t mask = kBitpackMasks16[nbits];
                     static const uint8_t stripe_sz = stripe_sz_nbytes / elem_sz;
@@ -340,8 +363,23 @@ do_rle:
                         uint8_t byte_offset = total_bit_offset >> 3;
                         uint8_t bit_offset = total_bit_offset & 0x07;
                         // if (debug) { printf("packing deltas: "); dump_bytes(delta_buff_u64[in_idx]); }
+#ifdef USE_BMI2
                         uint64_t packed_data = _pext_u64(
                             delta_buff_u64[in_idx], mask);
+#else
+                        // Fallback for platforms without BMI2
+                        uint64_t data = delta_buff_u64[in_idx];
+                        uint64_t packed_data = 0;
+                        int dst_bit = 0;
+                        for (int src_bit = 0; src_bit < 64; src_bit++) {
+                            if (mask & (1ULL << src_bit)) {
+                                if (data & (1ULL << src_bit)) {
+                                    packed_data |= (1ULL << dst_bit);
+                                }
+                                dst_bit++;
+                            }
+                        }
+#endif
                         *(uint64_t*)(dest8 + byte_offset) |= packed_data << bit_offset;
                         total_bit_offset += nbits * stripe_sz;
                         // if (debug) printf("total_bit_offset: %d\n", total_bit_offset);
@@ -498,7 +536,21 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
         uint64_t* header_write_ptr = (uint64_t*)headers;
         for (size_t stripe = 0; stripe < nheader_stripes - 1; stripe++) {
             uint64_t packed_header = *(uint32_t*)header_src;
+#ifdef USE_BMI2
             uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+            // Fallback for platforms without BMI2
+            uint64_t header = 0;
+            int src_bit = 0;
+            for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+                if (kHeaderUnpackMask & (1ULL << dst_bit)) {
+                    if (packed_header & (1ULL << src_bit)) {
+                        header |= (1ULL << dst_bit);
+                    }
+                    src_bit++;
+                }
+            }
+#endif
             *header_write_ptr = header;
             header_src += stripe_header_sz;
             header_write_ptr++;
@@ -506,7 +558,21 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
         // unpack header for the last stripe in the last block
         // uint64_t packed_header = (*(uint32_t*)header_src) & final_header_mask;
         uint64_t packed_header = (*(uint32_t*)header_src);
+#ifdef USE_BMI2
         uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+        // Fallback for platforms without BMI2
+        uint64_t header = 0;
+        int src_bit = 0;
+        for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+            if (kHeaderUnpackMask & (1ULL << dst_bit)) {
+                if (packed_header & (1ULL << src_bit)) {
+                    header |= (1ULL << dst_bit);
+                }
+                src_bit++;
+            }
+        }
+#endif
         *header_write_ptr = header;
 
         // if (debug) { printf("unpacked header: "); dump_bits(headers, ndims * group_sz_blocks); }
@@ -564,7 +630,23 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
                 if (elem_sz == 1) {
                     uint64_t mask = kBitpackMasks8[nbits];
                     int8_t* outptr = ((int8_t*)deltas) + (dim * block_sz);
+#ifdef USE_BMI2
                     *((uint64_t*)outptr) = _pdep_u64(*(uint64_t*)src, mask);
+#else
+                    // Fallback for platforms without BMI2
+                    uint64_t packed_data = *(uint64_t*)src;
+                    uint64_t unpacked_data = 0;
+                    int src_bit = 0;
+                    for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+                        if (mask & (1ULL << dst_bit)) {
+                            if (packed_data & (1ULL << src_bit)) {
+                                unpacked_data |= (1ULL << dst_bit);
+                            }
+                            src_bit++;
+                        }
+                    }
+                    *((uint64_t*)outptr) = unpacked_data;
+#endif
                 } else if (elem_sz == 2) {
                     uint64_t mask = kBitpackMasks16[nbits];
                     // if (debug) { printf("true nbits: %d;  ", true_nbits); }
@@ -581,8 +663,23 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
                         uint8_t byte_offset = total_bit_offset >> 3;
                         uint8_t bit_offset = total_bit_offset & 0x07;
                         uint64_t packed_data = *(uint64_t*)(src8 + byte_offset);
+#ifdef USE_BMI2
                         uint64_t unpacked_data = _pdep_u64(
                             packed_data >> bit_offset, mask);
+#else
+                        // Fallback for platforms without BMI2
+                        uint64_t shifted_data = packed_data >> bit_offset;
+                        uint64_t unpacked_data = 0;
+                        int src_bit = 0;
+                        for (int dst_bit = 0; dst_bit < 64; dst_bit++) {
+                            if (mask & (1ULL << dst_bit)) {
+                                if (shifted_data & (1ULL << src_bit)) {
+                                    unpacked_data |= (1ULL << dst_bit);
+                                }
+                                src_bit++;
+                            }
+                        }
+#endif
                         delta_buff_u64[out_idx] = unpacked_data;
                         // delta_buff_u64[out_idx] = _pext_u64(
                             // packed_data >> bit_offset, mask);
@@ -623,6 +720,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
                         return -1;
                 }
 
+#ifdef USE_AVX2
                 __m256i raw_vdeltas = _mm256_loadu_si256((const __m256i*)deltas);
                 __m256i vdeltas = mm256_zigzag_decode_epi8(raw_vdeltas);
 
@@ -697,6 +795,24 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
 
             #undef LOOP_BODY
                 }
+#else
+                // Fallback scalar implementation for non-AVX2 platforms
+                // Zigzag decode and delta decode for 8-bit elements
+                uint8_t* raw_deltas = (uint8_t*)deltas;
+                
+                for (uint8_t i = 0; i < block_sz; i++) {
+                    for (uint16_t dim = 0; dim < ndims; dim++) {
+                        // Zigzag decode: (n >> 1) ^ -(n & 1)
+                        uint8_t raw_delta = raw_deltas[i * ndims + dim];
+                        int8_t delta = (raw_delta >> 1) ^ -(raw_delta & 1);
+                        
+                        // Delta decode: add to previous value
+                        uint8_t val = prev_vals_ar[dim] + delta;
+                        dest[i * ndims + dim] = val;
+                        prev_vals_ar[dim] = val;
+                    }
+                }
+#endif
             } else if (elem_sz == 2) {
 
                 // if (debug && g <= 2) {
@@ -713,6 +829,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
                 //     printf("deltas after transpose: \n"); dump_elements(deltas, ndims * block_sz, ndims);
                 // }
 
+#ifdef USE_AVX2
                 __m256i raw_vdeltas = _mm256_loadu_si256((const __m256i*)deltas);
                 __m256i vdeltas = mm256_zigzag_decode_epi16(raw_vdeltas);
                 __m256i swapped128_vdeltas = _mm256_permute2x128_si256(
@@ -762,6 +879,24 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_delta_rle_lowdim(
                     break;
         #undef LOOP_BODY
                 }
+#else
+                // Fallback scalar implementation for non-AVX2 platforms  
+                // Zigzag decode and delta decode for 16-bit elements
+                uint16_t* raw_deltas = (uint16_t*)deltas;
+                
+                for (uint8_t i = 0; i < block_sz; i++) {
+                    for (uint16_t dim = 0; dim < ndims; dim++) {
+                        // Zigzag decode: (n >> 1) ^ -(n & 1)
+                        uint16_t raw_delta = raw_deltas[i * ndims + dim];
+                        int16_t delta = (raw_delta >> 1) ^ -(raw_delta & 1);
+                        
+                        // Delta decode: add to previous value
+                        uint16_t val = prev_vals_ar[dim] + delta;
+                        dest[i * ndims + dim] = val;
+                        prev_vals_ar[dim] = val;
+                    }
+                }
+#endif
             } // elem_sz
             dest += block_sz * ndims;
         } // for each block

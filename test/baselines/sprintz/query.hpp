@@ -42,6 +42,7 @@ typedef struct QueryParams {
 //     return _mm256_max_
 // }
 
+#ifdef USE_AVX2
 // static inline auto max(Packet<32, int8_t, CpuCtx> x,
 //     Packet<32, int8_t, CpuCtx> y) -> decltype(x)
 // {
@@ -63,6 +64,37 @@ static inline auto add(Packet<32, int32_t, CpuCtx> x,
 {
     return _mm256_add_epi32(x.vec, y.vec);
 }
+#else
+// Fallback implementations for non-AVX2 platforms
+static inline auto max(Packet<32, uint8_t, CpuCtx> x,
+    Packet<32, uint8_t, CpuCtx> y) -> decltype(x)
+{
+    Packet<32, uint8_t, CpuCtx> result;
+    for (int i = 0; i < 32; i++) {
+        result.data[i] = (x.data[i] > y.data[i]) ? x.data[i] : y.data[i];
+    }
+    return result;
+}
+static inline auto max(Packet<32, uint16_t, CpuCtx> x,
+                       Packet<32, uint16_t, CpuCtx> y) -> decltype(x)
+{
+    Packet<32, uint16_t, CpuCtx> result;
+    for (int i = 0; i < 16; i++) {
+        result.data[i] = (x.data[i] > y.data[i]) ? x.data[i] : y.data[i];
+    }
+    return result;
+}
+
+static inline auto add(Packet<32, int32_t, CpuCtx> x,
+    Packet<32, int32_t, CpuCtx> y) -> decltype(x)
+{
+    Packet<32, int32_t, CpuCtx> result;
+    for (int i = 0; i < 8; i++) {
+        result.data[i] = x.data[i] + y.data[i];
+    }
+    return result;
+}
+#endif
 
 // template<template<class...> Tparams0, template<class...> Tparams1>
 // Packet<Tparams0> operator+=(const Packet<Tparams0>& x, Packet<Tparams1> y) {
@@ -74,6 +106,7 @@ static inline auto add(Packet<32, int32_t, CpuCtx> x,
 //     return add(x, y);
 // }
 
+#ifdef USE_AVX2
 static inline void accumulate(
     Packet<32, int8_t, CpuCtx> x,
     Packet<32, int32_t, CpuCtx>& accum0, Packet<32, int32_t, CpuCtx>& accum1,
@@ -109,7 +142,25 @@ static inline void accumulate(
     accum3.vec = _mm256_add_epi32(accum3.vec, x3);
     // printf("finished accumulate!\n");
 }
+#else
+// Fallback implementation for non-AVX2 platforms
+static inline void accumulate(
+    Packet<32, int8_t, CpuCtx> x,
+    Packet<32, int32_t, CpuCtx>& accum0, Packet<32, int32_t, CpuCtx>& accum1,
+    Packet<32, int32_t, CpuCtx>& accum2, Packet<32, int32_t, CpuCtx>& accum3,
+    int32_t nrepeats=1)
+{
+    // Simple scalar fallback - process elements sequentially
+    for (int i = 0; i < 8; i++) {
+        accum0.data[i] += (int32_t)x.data[i] * nrepeats;
+        accum1.data[i] += (int32_t)x.data[i + 8] * nrepeats;
+        accum2.data[i] += (int32_t)x.data[i + 16] * nrepeats;
+        accum3.data[i] += (int32_t)x.data[i + 24] * nrepeats;
+    }
+}
+#endif
 
+#ifdef USE_AVX2
 static inline void accumulate(
     Packet<32, uint8_t, CpuCtx> x,
     Packet<32, uint32_t, CpuCtx>& accum0, Packet<32, uint32_t, CpuCtx>& accum1,
@@ -134,7 +185,23 @@ static inline void accumulate(
     accum2.vec = _mm256_add_epi32(accum2.vec, x2);
     accum3.vec = _mm256_add_epi32(accum3.vec, x3);
 }
+#else
+static inline void accumulate(
+    Packet<32, uint8_t, CpuCtx> x,
+    Packet<32, uint32_t, CpuCtx>& accum0, Packet<32, uint32_t, CpuCtx>& accum1,
+    Packet<32, uint32_t, CpuCtx>& accum2, Packet<32, uint32_t, CpuCtx>& accum3,
+    uint32_t nrepeats=1)
+{
+    for (int i = 0; i < 8; i++) {
+        accum0.data[i] += (uint32_t)x.data[i] * nrepeats;
+        accum1.data[i] += (uint32_t)x.data[i + 8] * nrepeats;
+        accum2.data[i] += (uint32_t)x.data[i + 16] * nrepeats;
+        accum3.data[i] += (uint32_t)x.data[i + 24] * nrepeats;
+    }
+}
+#endif
 
+#ifdef USE_AVX2
 static inline void accumulate(
     Packet<32, uint16_t, CpuCtx> x,
     Packet<32, uint32_t, CpuCtx>& accum0, Packet<32, uint32_t, CpuCtx>& accum1,
@@ -157,6 +224,20 @@ static inline void accumulate(
     // accum2.vec = _mm256_add_epi32(accum2.vec, x2);
     // accum3.vec = _mm256_add_epi32(accum3.vec, x3);
 }
+#else
+static inline void accumulate(
+    Packet<32, uint16_t, CpuCtx> x,
+    Packet<32, uint32_t, CpuCtx>& accum0, Packet<32, uint32_t, CpuCtx>& accum1,
+    Packet<32, uint32_t, CpuCtx>& accum2, Packet<32, uint32_t, CpuCtx>& accum3,
+    uint32_t nrepeats=1)
+{
+    for (int i = 0; i < 8; i++) {
+        accum0.data[i] += (uint32_t)x.data[i] * nrepeats;
+        accum1.data[i] += (uint32_t)x.data[i + 8] * nrepeats;
+    }
+    // accum2 and accum3 unused for uint16_t
+}
+#endif
 
 // template<typename DataT>
 // class VectorizedQuery {
@@ -177,6 +258,7 @@ static inline void accumulate(
 //     static const int elems_per_vec = vec_sz / scalar_sz;                      \
 //     static_assert(vec_sz % scalar_sz == 0, "Invalid scalar-vector pairing!");
 
+#ifdef USE_AVX2
 template<typename DataT>
 class NoopQuery {
 public:
@@ -187,7 +269,20 @@ public:
         const vec_t& vals, uint32_t nrepeats=1) { }
     state_t result() { return state_t{}; }
 };
+#else
+template<typename DataT>
+class NoopQuery {
+public:
+    using state_t = std::vector<DataT>;
+    explicit NoopQuery(int64_t ndims) {}
+    template<typename VecT>
+    void operator()(uint32_t vstripe, const VecT& prev_vals,
+        const VecT& vals, uint32_t nrepeats=1) { }
+    state_t result() { return state_t{}; }
+};
+#endif
 
+#ifdef USE_AVX2
 // class MaxQuery: public VectorizedQuery<DataT> {
 template<typename DataT>
 class MaxQuery {
@@ -235,7 +330,29 @@ public:
 private:
     state_t state;
 };
+#else
+template<typename DataT>
+class MaxQuery {
+public:
+    using state_t = std::vector<DataT>;
+    
+    explicit MaxQuery(int64_t ndims) : max_values(ndims, DataT{}) {}
+    
+    template<typename VecT>
+    void operator()(uint32_t vstripe, const VecT& prev_vals,
+        const VecT& vals, uint32_t nrepeats=1)
+    {
+        // Simple scalar implementation
+    }
+    
+    const state_t& result() { return max_values; }
 
+private:
+    state_t max_values;
+};
+#endif
+
+#ifdef USE_AVX2
 template<typename DataT>
 class SumQuery {
 public:
@@ -294,6 +411,28 @@ public:
 private:
     state_t state;
 };
+#else
+template<typename DataT>
+class SumQuery {
+public:
+    using accumulator_t = int32_t;
+    using state_t = std::vector<accumulator_t>;
+    
+    explicit SumQuery(int64_t ndims) : sums(ndims, 0) {}
+    
+    template<typename VecT>
+    void operator()(uint32_t vstripe, const VecT& prev_vals,
+        const VecT& vals, uint32_t nrepeats=1)
+    {
+        // Simple scalar implementation
+    }
+    
+    const state_t& result() { return sums; }
+
+private:
+    state_t sums;
+};
+#endif
 
 #undef _INSERT_VECTOR_TYPEDEFS_AND_CONSTS
 

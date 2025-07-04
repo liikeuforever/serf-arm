@@ -93,8 +93,7 @@ TEST(Correctness, NetSerfXOR) {
       NetSerfXORDecompressor net_serf_xor_decompressor(kBlockSizeOverall, adjust_digit);
 
       double originalData;
-      while (!data_set_input_stream.eof()) {
-        data_set_input_stream >> originalData;
+      while (data_set_input_stream >> originalData) {
         Array<uint8_t> result = net_serf_xor_compressor.Compress(originalData);
         double decompressed = net_serf_xor_decompressor.Decompress(result);
         if (std::abs(originalData - decompressed) > max_diff) {
@@ -122,8 +121,7 @@ TEST(Correctness, TestNetSerfQt) {
       NetSerfQtDecompressor net_serf_qt_decompressor(max_diff);
 
       double originalData;
-      while (!data_set_input_stream.eof()) {
-        data_set_input_stream >> originalData;
+      while (data_set_input_stream >> originalData) {
         Array<uint8_t> result = net_serf_qt_compressor.Compress(originalData);
         double decompressed = net_serf_qt_decompressor.Decompress(result);
         if (std::abs(originalData - decompressed) > max_diff) {

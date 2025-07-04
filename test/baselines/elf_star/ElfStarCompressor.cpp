@@ -2,7 +2,12 @@
 #include <assert.h>
 #include <math.h>
 #include <sys/types.h>
-#include <bits/stdc++.h>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <cstdlib>
+#include <climits>
+#include <cstring>
 
 #include "elf_star.h"
 #include "defs.h"

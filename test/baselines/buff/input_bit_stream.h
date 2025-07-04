@@ -1,7 +1,16 @@
 #ifndef SERF_INPUT_BIT_STREAM_H
 #define SERF_INPUT_BIT_STREAM_H
 
+#ifdef __APPLE__
+#include <machine/endian.h>
+#include <libkern/OSByteOrder.h>
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+#elif defined(__linux__)
 #include <endian.h>
+#endif
 
 #include <cstdlib>
 #include <cstring>

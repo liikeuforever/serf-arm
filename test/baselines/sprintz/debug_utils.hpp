@@ -191,7 +191,7 @@ inline void dump_bytes(T x, size_t newline_every=1) {
 	dump_bytes((uint8_t*)&x, sizeof(T), newline_every, -1);
 }
 
-#ifdef __AVX__
+#if defined(__AVX__) && defined(USE_AVX2)
 #include <immintrin.h>
 
 template<class CastToT=uint8_t>

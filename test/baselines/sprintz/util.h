@@ -25,7 +25,9 @@
 #include <algorithm>  // for std::swap
 #include <string.h>
 
+#ifdef USE_AVX2
 #include "immintrin.h"  // TODO memrep impl without avx2
+#endif
 
 #define DIV_ROUND_UP(X, Y) ( ((X) / (Y)) + (((X) % (Y)) > 0) )
 
@@ -181,6 +183,7 @@ private:
  * @param out0 Epi16 array of values associated with the low 128b of `idxs`
  * @param out1 Epi16 array of values associated with the high 128b of `idxs`
  */
+#ifdef USE_AVX2
 static inline void mm256_shuffle_epi8_to_epi16(const __m256i& tbl_low,
     const __m256i& tbl_high, const __m256i& idxs, __m256i& out0, __m256i& out1)
 {
@@ -193,6 +196,7 @@ static inline void mm256_shuffle_epi8_to_epi16(const __m256i& tbl_low,
     out1 = _mm256_permute2x128_si256(
         first_third_u64s, second_fourth_u64s, 1 + (3 << 4));
 }
+#endif
 
 inline void memrep(void* dest_, const void* src_, int32_t in_nbytes,
                     int32_t ncopies)
@@ -203,6 +207,7 @@ inline void memrep(void* dest_, const void* src_, int32_t in_nbytes,
     uint8_t* dest = (uint8_t*)dest_;
     const uint8_t* src = (const uint8_t*)src_;
 
+#ifdef USE_AVX2
     static const int vector_sz = 32;
 
     // uint8_t* orig_dest = dest;
@@ -345,6 +350,13 @@ inline void memrep(void* dest_, const void* src_, int32_t in_nbytes,
     }
 
     // printf("everything we wrote: "); dump_bytes(orig_dest, (int)(dest - orig_dest));
+#else
+    // Fallback scalar implementation
+    for (int32_t i = 0; i < ncopies; i++) {
+        memcpy(dest, src, in_nbytes);
+        dest += in_nbytes;
+    }
+#endif
 }
 
 

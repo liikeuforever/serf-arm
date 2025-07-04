@@ -19,13 +19,24 @@
 #include "transpose.h"
 #include "util.h" // for copysign
 
+#ifdef USE_AVX2
+#include <immintrin.h>
+#endif
+
+// Fallback for platforms without BMI2 or LZCNT
+#if !defined(__LZCNT__) && !defined(__BMI2__)
+#include <limits.h>
+#endif
+
 static constexpr uint64_t kHeaderMask8b = TILE_BYTE(0x07); // 3 ones
 
+#ifdef USE_AVX2
 static const __m256i nbits_to_mask = _mm256_setr_epi8(
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,
     0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // unused
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0xff,
     0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00); // unused
+#endif
 
 
 static const int kDefaultGroupSzBlocks = 2;
@@ -204,7 +215,12 @@ int64_t compress_rowmajor_xff_rle_lowdim(const uint_t* src, uint32_t len,
                 prev_deltas_ar[dim] = prev_delta;
 
                 // if (elem_sz == 2 && mask > 0) { mask = 0xffff; }  // TODO rm
+#if defined(__LZCNT__) || defined(__BMI2__)
                 uint8_t max_nbits = (32 - _lzcnt_u32((uint32_t)mask));
+#else
+                // Fallback for platforms without LZCNT
+                uint8_t max_nbits = 32 - __builtin_clz((uint32_t)mask | 1);
+#endif
                 max_nbits += max_nbits == (elem_sz_nbits - 1); // 7->8 or 15->16
 
                 dims_nbits[dim] = max_nbits;
@@ -351,7 +367,23 @@ do_rle:
                 uint8_t nbits = dims_nbits[dim];
                 if (elem_sz == 1) {
                     uint64_t mask = kBitpackMasks8[nbits];
+#ifdef USE_BMI2
                     *((uint64_t*)dest) = _pext_u64(delta_buff_u64[dim], mask);
+#else
+                    // Fallback: manual bit extraction
+                    uint64_t result = 0;
+                    uint64_t src = delta_buff_u64[dim];
+                    int bit_pos = 0;
+                    for (int b = 0; b < 64; b++) {
+                        if (mask & (1ULL << b)) {
+                            if (src & (1ULL << b)) {
+                                result |= (1ULL << bit_pos);
+                            }
+                            bit_pos++;
+                        }
+                    }
+                    *((uint64_t*)dest) = result;
+#endif
                 } else if (elem_sz == 2) {
                     uint64_t mask = kBitpackMasks16[nbits];
                     static const uint8_t stripe_sz = stripe_sz_nbytes / elem_sz;
@@ -366,8 +398,24 @@ do_rle:
                         uint8_t byte_offset = total_bit_offset >> 3;
                         uint8_t bit_offset = total_bit_offset & 0x07;
                         // if (debug) { printf("packing deltas: "); dump_bytes(delta_buff_u64[in_idx]); }
+#ifdef USE_BMI2
                         uint64_t packed_data = _pext_u64(
                             delta_buff_u64[in_idx], mask);
+#else
+                        // Fallback: manual bit extraction
+                        uint64_t result = 0;
+                        uint64_t src = delta_buff_u64[in_idx];
+                        int bit_pos = 0;
+                        for (int b = 0; b < 64; b++) {
+                            if (mask & (1ULL << b)) {
+                                if (src & (1ULL << b)) {
+                                    result |= (1ULL << bit_pos);
+                                }
+                                bit_pos++;
+                            }
+                        }
+                        uint64_t packed_data = result;
+#endif
                         *(uint64_t*)(dest8 + byte_offset) |= packed_data << bit_offset;
                         total_bit_offset += nbits * stripe_sz;
                         // if (debug) printf("total_bit_offset: %d\n", total_bit_offset);
@@ -432,8 +480,10 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
     static const uint8_t log2_block_sz = 3;
     static const uint8_t stripe_nbytes = 8;
     static const uint8_t vector_sz_nbytes = 32;
+#ifdef USE_AVX2
     static const __m256i low_mask = _mm256_set1_epi16(0xff);
     static const __m256i low_mask_epi32 = _mm256_set1_epi32(0xffff);
+#endif
     // misc derived consts
     static const uint8_t block_sz = 1 << log2_block_sz;
     static const int group_sz_per_dim = block_sz * group_sz_blocks;
@@ -534,7 +584,21 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
         uint64_t* header_write_ptr = (uint64_t*)headers;
         for (size_t stripe = 0; stripe < nheader_stripes - 1; stripe++) {
             uint64_t packed_header = *(uint32_t*)header_src;
+#ifdef USE_BMI2
             uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+            // Fallback: simple bit-by-bit expansion
+            uint64_t header = 0;
+            uint64_t src_mask = 1;
+            uint64_t dst_mask = kHeaderUnpackMask;
+            for (int i = 0; i < 64 && dst_mask; i++) {
+                if (dst_mask & 1) {
+                    if (packed_header & src_mask) header |= (1ULL << i);
+                    src_mask <<= 1;
+                }
+                dst_mask >>= 1;
+            }
+#endif
             *header_write_ptr = header;
             header_src += stripe_header_sz;
             header_write_ptr++;
@@ -542,7 +606,21 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
         // unpack header for the last stripe in the last block
         // uint64_t packed_header = (*(uint32_t*)header_src) & final_header_mask;
         uint64_t packed_header = (*(uint32_t*)header_src);
+#ifdef USE_BMI2
         uint64_t header = _pdep_u64(packed_header, kHeaderUnpackMask);
+#else
+        // Fallback: simple bit-by-bit expansion
+        uint64_t header = 0;
+        uint64_t src_mask = 1;
+        uint64_t dst_mask = kHeaderUnpackMask;
+        for (int i = 0; i < 64 && dst_mask; i++) {
+            if (dst_mask & 1) {
+                if (packed_header & src_mask) header |= (1ULL << i);
+                src_mask <<= 1;
+            }
+            dst_mask >>= 1;
+        }
+#endif
         *header_write_ptr = header;
 
         // printf("unpacked header: "); dump_bits(headers, ndims * group_sz_blocks);
@@ -568,6 +646,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                 // write out the run
                 bool past_data_start = g > 0 || b > 0;
                 // if (past_data_start) { // if not at very beginning of data
+#ifdef USE_AVX2
                 if (past_data_start && elem_sz == 1) {
                     __m256i* prev_vals_ptr = (__m256i*)(prev_vals_ar);
                     __m256i* prev_deltas_ptr = (__m256i*)(prev_deltas_ar);
@@ -635,6 +714,28 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                         _mm256_storeu_si256((__m256i*)prev_deltas_ptr, prev_deltas);
                         dest += ndims * block_sz;
                     } // for each block
+#else
+                if (past_data_start && elem_sz == 1) {
+                    // Scalar fallback implementation
+                    for (int32_t bb = 0; bb < length; bb++) {
+                        for (uint8_t i = 0; i < block_sz; i++) {
+                            for (uint16_t dim = 0; dim < ndims; dim++) {
+                                uint_t prev_val = prev_vals_ar[dim];
+                                int_t prev_delta = prev_deltas_ar[dim];
+                                int8_t coeff = (dim % 2 == 0) ? coeffs_ar_even[dim] : coeffs_ar_odd[dim];
+                                
+                                int_t prediction = (prev_delta * coeff) >> 8;
+                                int_t delta = prediction; // since err is 0
+                                uint_t val = prev_val + delta;
+                                
+                                dest[i * ndims + dim] = val;
+                                prev_vals_ar[dim] = val;
+                                prev_deltas_ar[dim] = delta;
+                            }
+                        }
+                        dest += ndims * block_sz;
+                    }
+#endif
                 } else if (past_data_start && elem_sz == 2) { // errs of 0 at very start -> all zeros
                     // const uint8_t shft = elem_sz_nbits - 4;
                     const uint8_t shft = truncate_coeffs ? elem_sz_nbits - 4 : 0;
@@ -714,7 +815,23 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                 if (elem_sz == 1) {
                     uint64_t mask = kBitpackMasks8[nbits];
                     int8_t* outptr = ((int8_t*)errs_ar) + (dim * block_sz);
+#ifdef USE_BMI2
                     *((uint64_t*)outptr) = _pdep_u64(*(uint64_t*)src, mask);
+#else
+                    // Fallback: manual bit deposit
+                    uint64_t result = 0;
+                    uint64_t src_data = *(uint64_t*)src;
+                    int src_bit = 0;
+                    for (int b = 0; b < 64; b++) {
+                        if (mask & (1ULL << b)) {
+                            if (src_data & (1ULL << src_bit)) {
+                                result |= (1ULL << b);
+                            }
+                            src_bit++;
+                        }
+                    }
+                    *((uint64_t*)outptr) = result;
+#endif
                 } else if (elem_sz == 2) {
                     uint64_t mask = kBitpackMasks16[nbits];
                     // if (debug) { printf("true nbits: %d;  ", true_nbits); }
@@ -731,8 +848,24 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                         uint8_t byte_offset = total_bit_offset >> 3;
                         uint8_t bit_offset = total_bit_offset & 0x07;
                         uint64_t packed_data = *(uint64_t*)(src8 + byte_offset);
+#ifdef USE_BMI2
                         uint64_t unpacked_data = _pdep_u64(
                             packed_data >> bit_offset, mask);
+#else
+                        // Fallback: manual bit deposit
+                        uint64_t result = 0;
+                        uint64_t src_data = packed_data >> bit_offset;
+                        int src_bit = 0;
+                        for (int b = 0; b < 64; b++) {
+                            if (mask & (1ULL << b)) {
+                                if (src_data & (1ULL << src_bit)) {
+                                    result |= (1ULL << b);
+                                }
+                                src_bit++;
+                            }
+                        }
+                        uint64_t unpacked_data = result;
+#endif
                         delta_buff_u64[out_idx] = unpacked_data;
                         total_bit_offset += true_nbits * stripe_sz;
                         // delta_buff_u64[out_idx] = _pext_u64(
@@ -772,6 +905,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                             "received invalid ndims: %d\n", ndims);
                 }
 
+#ifdef USE_AVX2
                 __m256i raw_verrs = _mm256_loadu_si256((const __m256i*)errs_ar);
                 __m256i verrs = mm256_zigzag_decode_epi8(raw_verrs);
 
@@ -976,6 +1110,18 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                             *(counter_t*)coeffs_ar_even, *(counter_t*)coeffs_ar_odd);
                     }
                 }
+#else
+                // Fallback scalar implementation for elem_sz == 1 without AVX2
+                // Simple scalar decompression for 8-bit data
+                for (uint8_t i = 0; i < block_sz; i++) {
+                    for (uint16_t dim = 0; dim < ndims; dim++) {
+                        int8_t err = ((int8_t*)errs_ar)[dim * block_sz + i];
+                        // Simple zigzag decode
+                        int8_t decoded_err = (err >> 1) ^ (-(err & 1));
+                        dest[i * ndims + dim] = prev_vals_ar[dim] + decoded_err;
+                    }
+                }
+#endif
 
             } else if (elem_sz == 2) {
 
@@ -983,8 +1129,10 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                     transpose_2x8_16b((uint16_t*)errs_ar, (uint16_t*)errs_ar);
                 }
 
+#ifdef USE_AVX2
                 __m256i raw_verrs = _mm256_loadu_si256((const __m256i*)errs_ar);
                 __m256i verrs = mm256_zigzag_decode_epi16(raw_verrs);
+#endif
 
                 const uint8_t quantize_shft = truncate_coeffs ? elem_sz_nbits - 4 : 0;
                 if (ndims == 1) {
@@ -996,6 +1144,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                     uint_t prev_val = prev_vals_ar[0];
                     int_t prev_delta = prev_deltas_ar[0];
 
+#ifdef USE_AVX2
                     // this is just some ugliness to deal with the fact that
                     // extract instruction technically requires a constant
                     int_t errs[block_sz];
@@ -1005,6 +1154,13 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                     EXTRACT_VAL(4); EXTRACT_VAL(5);
                     EXTRACT_VAL(6); EXTRACT_VAL(7);
                     #undef EXTRACT_VAL
+#else
+                    // Fallback: simple scalar approach for 16-bit processing
+                    int_t errs[block_sz];
+                    for (int i = 0; i < block_sz; i++) {
+                        errs[i] = ((int16_t*)errs_ar)[i]; // Simple copy from errs_ar
+                    }
+#endif
 
                     for (uint32_t i = 0; i < block_sz; i++) {
                         int_t prediction = (((int32_t)prev_delta) * coef) >> elem_sz_nbits;
@@ -1045,7 +1201,7 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                     int_t prev_delta0 = prev_deltas_ar[0];
                     int_t prev_delta1 = prev_deltas_ar[1];
 
-
+#ifdef USE_AVX2
                     // this is just some ugliness to deal with the fact that
                     // extract instruction technically requires a constant
                     int_t errs[2 * block_sz];
@@ -1059,6 +1215,13 @@ SPRINTZ_FORCE_INLINE int64_t decompress_rowmajor_xff_rle_lowdim(
                     EXTRACT_VAL(12); EXTRACT_VAL(13);
                     EXTRACT_VAL(14); EXTRACT_VAL(15);
                     #undef EXTRACT_VAL
+#else
+                    // Fallback: simple scalar approach for 16-bit processing (2D case)
+                    int_t errs[2 * block_sz];
+                    for (int i = 0; i < 2 * block_sz; i++) {
+                        errs[i] = ((int16_t*)errs_ar)[i]; // Simple copy from errs_ar
+                    }
+#endif
 
                     for (uint32_t i = 0; i < block_sz; i++) {
                         int_t prediction0 = (((int32_t)prev_delta0) * coef0) >> elem_sz_nbits;

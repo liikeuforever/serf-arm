@@ -1,0 +1,5 @@
+if(EXISTS "/Users/xuzihang/GitProject/Serf/build/test/sprintz_test[1]_tests.cmake")
+  include("/Users/xuzihang/GitProject/Serf/build/test/sprintz_test[1]_tests.cmake")
+else()
+  add_test(sprintz_test_NOT_BUILT sprintz_test_NOT_BUILT)
+endif()

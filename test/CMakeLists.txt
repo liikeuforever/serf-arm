@@ -2,12 +2,17 @@ cmake_minimum_required(VERSION 3.20)
 
 project(PerfTest)
 
+# Set C++ standard version
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_subdirectory(baselines/deflate)
 add_subdirectory(baselines/fpc)
 add_subdirectory(baselines/lz4)
 add_subdirectory(baselines/chimp128)
 add_subdirectory(baselines/gorilla)
 add_subdirectory(baselines/elf)
+add_subdirectory(baselines/elf_star)
 add_subdirectory(baselines/machete)
 add_subdirectory(baselines/lz77)
 add_subdirectory(baselines/sz2)
@@ -15,7 +20,7 @@ add_subdirectory(baselines/buff)
 add_subdirectory(baselines/snappy)
 add_subdirectory(baselines/zstd/build/cmake)
 add_subdirectory(baselines/sim_piece)
-add_subdirectory(baselines/sprintz)
+# add_subdirectory(baselines/sprintz)  # Temporarily disabled due to compilation errors
 add_subdirectory(baselines/alp)
 add_subdirectory(baselines/sz_adt)
 
@@ -53,14 +58,18 @@ foreach(F ${TEST_SRC})
     add_executable(${TEST_PROG} ${F})
     string(REPLACE "_test" "" LIB_NAME ${TEST_PROG})
     target_link_libraries(${TEST_PROG} PRIVATE ${LIB_NAME} GTest::gtest_main)
+    # Link filesystem library for tests that need it
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(${TEST_PROG} PRIVATE stdc++fs)
+    endif()
     gtest_discover_tests(${TEST_PROG})
 endforeach(F)
 
 add_executable(PerformanceProgram Perf.cc)
 add_executable(PerformanceProgram_ADT Perf_Conflict_ADT.cc)
 
-target_link_libraries(PerformanceProgram PRIVATE chimp deflate elf fpc gorilla lz77 lz4 machete sz serf
-        libzstd_shared snappy sim_piece GTest::gtest_main sprintz alp)
+target_link_libraries(PerformanceProgram PRIVATE chimp deflate elf elf_star fpc gorilla lz77 lz4 machete sz serf
+        libzstd_shared snappy sim_piece GTest::gtest_main alp)
 target_link_libraries(PerformanceProgram_ADT PRIVATE TSZ GTest::gtest_main)
 
 gtest_discover_tests(PerformanceProgram)

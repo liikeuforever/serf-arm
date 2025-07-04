@@ -12,7 +12,9 @@
 #include <array>
 #include <cstdint>
 
+#ifdef USE_AVX2
 #include <immintrin.h> // XXX don't assume AVX2
+#endif
 
 // template<class vec_t> struct VecBox {};
 // template<> struct VecBox<__m256i> {
@@ -34,6 +36,7 @@ struct CpuCtx {};
 template <int Nbytes, typename ScalarT, typename ContextT = CpuCtx>
 struct Packet;
 
+#ifdef USE_AVX2
 template <typename VecT> struct vector_traits {};
 template <> struct vector_traits<__m256i> {
   static const bool is_integral = true;
@@ -85,7 +88,44 @@ template <> struct scalar_traits<uint32_t> {
   static const int size = sizeof(scalar_type);
   static const bool is_integral = true;
 };
+#else
+// Fallback for non-AVX2 platforms
+template <typename VecT> struct vector_traits {};
 
+template <typename DataT> struct scalar_traits {};
+template <> struct scalar_traits<int8_t> {
+  using scalar_type = int8_t;
+  static const int size = sizeof(scalar_type);
+  static const bool is_integral = true;
+};
+template <> struct scalar_traits<uint8_t> {
+  using scalar_type = uint8_t;
+  static const int size = sizeof(scalar_type);
+  static const bool is_integral = true;
+};
+template <> struct scalar_traits<int16_t> {
+  using scalar_type = int16_t;
+  static const int size = sizeof(scalar_type);
+  static const bool is_integral = true;
+};
+template <> struct scalar_traits<uint16_t> {
+  using scalar_type = uint16_t;
+  static const int size = sizeof(scalar_type);
+  static const bool is_integral = true;
+};
+template <> struct scalar_traits<int32_t> {
+  using scalar_type = int32_t;
+  static const int size = sizeof(scalar_type);
+  static const bool is_integral = true;
+};
+template <> struct scalar_traits<uint32_t> {
+  using scalar_type = uint32_t;
+  static const int size = sizeof(scalar_type);
+  static const bool is_integral = true;
+};
+#endif
+
+#ifdef USE_AVX2
 template <int Nbytes, typename ScalarT, typename ContextT> struct Packet {
   using self_t = Packet<Nbytes, ScalarT, ContextT>;
   using scalar_t = ScalarT;
@@ -108,6 +148,34 @@ template <int Nbytes, typename ScalarT, typename ContextT> struct Packet {
 
   // }
 };
+#else
+// Fallback Packet for non-AVX2 platforms
+template <int Nbytes, typename ScalarT, typename ContextT> struct Packet {
+  using self_t = Packet<Nbytes, ScalarT, ContextT>;
+  using scalar_t = ScalarT;
+  
+  // Simple scalar fallback
+  ScalarT data[Nbytes / sizeof(ScalarT)];
+  
+  Packet() { 
+    for (int i = 0; i < Nbytes / sizeof(ScalarT); i++) {
+      data[i] = 0;
+    }
+  }
+  
+  Packet(const Packet &v) { 
+    for (int i = 0; i < Nbytes / sizeof(ScalarT); i++) {
+      data[i] = v.data[i];
+    }
+  }
+  
+  void operator=(const Packet &other) { 
+    for (int i = 0; i < Nbytes / sizeof(ScalarT); i++) {
+      data[i] = other.data[i];
+    }
+  }
+};
+#endif
 
 // typedef struct Packet32x8i {
 //     using scalar_t = int8_t;
