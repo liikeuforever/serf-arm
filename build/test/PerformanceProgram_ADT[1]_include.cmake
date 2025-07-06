@@ -1,5 +1,0 @@
-if(EXISTS "/Users/xuzihang/GitProject/Serf/build/test/PerformanceProgram_ADT[1]_tests.cmake")
-  include("/Users/xuzihang/GitProject/Serf/build/test/PerformanceProgram_ADT[1]_tests.cmake")
-else()
-  add_test(PerformanceProgram_ADT_NOT_BUILT PerformanceProgram_ADT_NOT_BUILT)
-endif()

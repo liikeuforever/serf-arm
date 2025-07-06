@@ -1,5 +1,0 @@
-if(EXISTS "/Users/xuzihang/GitProject/Serf/build/test/machete_test[1]_tests.cmake")
-  include("/Users/xuzihang/GitProject/Serf/build/test/machete_test[1]_tests.cmake")
-else()
-  add_test(machete_test_NOT_BUILT machete_test_NOT_BUILT)
-endif()

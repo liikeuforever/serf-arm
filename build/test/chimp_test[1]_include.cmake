@@ -1,5 +1,0 @@
-if(EXISTS "/Users/xuzihang/GitProject/Serf/build/test/chimp_test[1]_tests.cmake")
-  include("/Users/xuzihang/GitProject/Serf/build/test/chimp_test[1]_tests.cmake")
-else()
-  add_test(chimp_test_NOT_BUILT chimp_test_NOT_BUILT)
-endif()

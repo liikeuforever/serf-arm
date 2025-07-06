@@ -1,5 +1,0 @@
-add_test([=[TestChimp.CorrectnessTest]=]  /Users/xuzihang/GitProject/Serf/build/test/chimp_test [==[--gtest_filter=TestChimp.CorrectnessTest]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[TestChimp.CorrectnessTest]=]  PROPERTIES WORKING_DIRECTORY /Users/xuzihang/GitProject/Serf/build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-add_test([=[TestChimp32.CorrectnessTest]=]  /Users/xuzihang/GitProject/Serf/build/test/chimp_test [==[--gtest_filter=TestChimp32.CorrectnessTest]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[TestChimp32.CorrectnessTest]=]  PROPERTIES WORKING_DIRECTORY /Users/xuzihang/GitProject/Serf/build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-set(  chimp_test_TESTS TestChimp.CorrectnessTest TestChimp32.CorrectnessTest)

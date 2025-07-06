@@ -1,5 +1,90 @@
+# IDE and Editor files
 .idea
 .vscode
+*.swp
+*.swo
+*~
+
+# CMake build directories
 cmake-build-debug
 cmake-build-release
+build/
+Build/
+BUILD/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# C/C++ compiled files
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# Static libraries
+*.lib
+*.la
+*.lo
+
+# Shared libraries
+*.so.*
+*.dylib.*
+
+# Test outputs
 test/*.csv
+*.log
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Rust build files (for baselines)
+target/
+Cargo.lock
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Archive files
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# Data files (you might want to keep some)
+*.bin
+*.dat
+
+# Any file named "git" (temporary file)
+git

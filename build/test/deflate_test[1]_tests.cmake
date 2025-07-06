@@ -1,5 +1,0 @@
-add_test([=[TestDeflate.CorrectnessTest]=]  /Users/xuzihang/GitProject/Serf/build/test/deflate_test [==[--gtest_filter=TestDeflate.CorrectnessTest]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[TestDeflate.CorrectnessTest]=]  PROPERTIES WORKING_DIRECTORY /Users/xuzihang/GitProject/Serf/build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-add_test([=[TestDeflate32.CorrectnessTest]=]  /Users/xuzihang/GitProject/Serf/build/test/deflate_test [==[--gtest_filter=TestDeflate32.CorrectnessTest]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[TestDeflate32.CorrectnessTest]=]  PROPERTIES WORKING_DIRECTORY /Users/xuzihang/GitProject/Serf/build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-set(  deflate_test_TESTS TestDeflate.CorrectnessTest TestDeflate32.CorrectnessTest)
